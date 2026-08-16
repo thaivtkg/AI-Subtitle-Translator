@@ -92,6 +92,23 @@ class TranslationController(QObject):
 
     @Slot(int, str)
     def acceptTranslation(self, index, final_text):
+        """Kiểm tra chặt chẽ ở backend trước khi chấp nhận bản dịch"""
+        subtitles = self._subtitle_model.get_all_data()
+        if 0 <= index < len(subtitles):
+            original = subtitles[index].get("original", "").strip()
+            clean_text = final_text.strip()
+            
+            if not clean_text:
+                self.statusChanged.emit("ERROR")
+                self.translationUpdated.emit("Lỗi: Không thể chấp nhận bản dịch trống!")
+                return
+                
+            if clean_text == original:
+                self.statusChanged.emit("ERROR")
+                self.translationUpdated.emit("Lỗi: Bản dịch không được trùng với văn bản gốc!")
+                return
+
+        # Nếu vượt qua kiểm tra, tiến hành lưu vào Model
         self._subtitle_model.update_translation(index, final_text, "ACCEPTED")
         self._status = "ACCEPTED"
         self.statusChanged.emit(self._status)

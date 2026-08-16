@@ -26,10 +26,15 @@ class ProjectController(QObject):
     
     @Slot(str)
     def exportSrt(self, file_path):
-        """Chỉ được chạy sau khi chọn file thành công"""
+        """DEFENSE-IN-DEPTH: Bắt buộc validate bên trong backend trước khi ghi file"""
         subtitles = self._subtitle_model.get_all_data()
         
-        # Đã loại bỏ logic kiểm tra validator ở đây vì đã kiểm trước ở UI
+        # KIỂM TRA TÍNH TOÀN VỆN NGAY TẠI LÕI
+        is_valid, val_msg = SRTValidator.validate_for_export(subtitles)
+        if not is_valid:
+            self.notify.emit("ERROR", f"Lỗi xuất file: {val_msg}")
+            return
+            
         if file_path.startswith("file:///"):
             file_path = QUrl(file_path).toLocalFile()
             
