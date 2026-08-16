@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Môi trường ảo (Virtual Environment)
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Project specific files (Không đưa file dự án cá nhân lên mạng)
+*.aisrt
+*.srt
+!test.srt  # Ngoại trừ file test.srt để dev có cái test nhanh
+output_translated.srt
+
+# AI Models (Bắt buộc chặn để không làm phình Git)
+models/*.gguf
+models/*.bin
+models/*.pt
+models/*.safetensors
+
+# Logs và IDE
+*.log
+.vscode/
+.idea/
+.DS_Store
