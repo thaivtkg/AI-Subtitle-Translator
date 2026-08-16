@@ -120,6 +120,13 @@ ApplicationWindow {
                             wrapMode: Text.WordWrap
                             background: null
                             selectByMouse: true
+                            
+                            // THÊM ĐIỀU KIỆN CHUẨN ĐỂ ĐÁNH DẤU EDITED Ở ĐÚNG VỊ TRÍ
+                            onTextChanged: {
+                                if (translationInput.focus && translationController.status !== "TRANSLATING") {
+                                    translationController.markAsEdited()
+                                }
+                            }
                         }
                     }
                 }
@@ -143,7 +150,8 @@ ApplicationWindow {
                     Button {
                         text: "✓ Accept"
                         font.pixelSize: 16
-                        enabled: (translationController.status === "TRANSLATED" || translationController.status === "ACCEPTED" || translationInput.text !== "") && subListView.currentIndex >= 0
+                        // KHÔNG CHO ACCEPT NẾU LÀ PENDING
+                        enabled: (translationController.status === "TRANSLATED" || translationController.status === "EDITED" || translationController.status === "ACCEPTED") && subListView.currentIndex >= 0
                         onClicked: {
                             translationController.acceptTranslation(subListView.currentIndex, translationInput.text)
                             if (subListView.currentIndex < subListView.count - 1) {
@@ -153,7 +161,6 @@ ApplicationWindow {
                     }
                 }
 
-                // ---- VỊ TRÍ MỚI CỦA KHỐI THÔNG BÁO ----
                 Text {
                     id: notificationText
                     Layout.fillWidth: true
@@ -162,12 +169,10 @@ ApplicationWindow {
                     color: "#A1A1AA"
                     font.pixelSize: 15
                     horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap // Tự động rớt dòng nếu chữ quá dài
+                    wrapMode: Text.WordWrap
                 }
-                // ----------------------------------------
             }
 
-            // Thanh công cụ dưới đáy (Bottom Bar) - Giờ chỉ chứa các nút
             Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
@@ -176,7 +181,7 @@ ApplicationWindow {
                 color: "#27272A"
                 
                 RowLayout {
-                    anchors.centerIn: parent // Căn giữa tất cả các nút
+                    anchors.centerIn: parent
                     spacing: 15
                     
                     Button {
@@ -207,13 +212,11 @@ ApplicationWindow {
                 }
             }
 
-            // Các hộp thoại
             FileDialog { id: importSrtDialog; title: "Chọn file SRT gốc"; nameFilters: ["Subtitle files (*.srt)"]; onAccepted: projectController.importSrt(selectedFile) }
             FileDialog { id: loadProjectDialog; title: "Mở file dự án"; nameFilters: ["AI Subtitle Project (*.aisrt)"]; onAccepted: projectController.loadProject(selectedFile) }
             FileDialog { id: saveProjectDialog; title: "Lưu dự án"; fileMode: FileDialog.SaveFile; nameFilters: ["AI Subtitle Project (*.aisrt)"]; defaultSuffix: "aisrt"; onAccepted: projectController.saveProject(selectedFile, storySummaryInput.text) }
             FileDialog { id: exportSrtDialog; title: "Xuất file SRT đã dịch"; fileMode: FileDialog.SaveFile; nameFilters: ["Subtitle files (*.srt)"]; defaultSuffix: "srt"; onAccepted: projectController.exportSrt(selectedFile) }
             
-            // Bắt tín hiệu
             Connections {
                 target: projectController
                 function onNotify(title, msg) {

@@ -2,30 +2,42 @@ class PromptBuilder:
     @staticmethod
     def build(story_summary: str, source_lang: str, target_lang: str, 
               prev_context: list, current_sub: str, next_context: list) -> str:
-        prompt = (
-            f"You are a professional subtitle translator translating from {source_lang} to {target_lang}.\n\n"
+        
+        # 1. HỆ THỐNG LỆNH (SYSTEM PROMPT)
+        system_prompt = (
+            f"You are a professional subtitle translator translating from {source_lang} to {target_lang}.\n"
+            "You must strictly follow the rules below. Do NOT output any explanations, tags, markdown, or thinking process.\n"
+        )
+        
+        if story_summary and story_summary.strip():
+            system_prompt += f"\nSTORY SUMMARY:\n{story_summary.strip()}\n"
+            
+        system_prompt += (
+            "\nRULES:\n"
+            "- Translate ONLY the current subtitle.\n"
+            "- Do NOT translate character names.\n"
+            "- Keep proper nouns and special formats intact.\n"
+            "- Do NOT add, remove, or modify the core meaning.\n"
+            "- Output ONLY the raw translated text. Absolutely no extra words."
         )
 
-        if story_summary and story_summary.strip():
-            prompt += f"<story_summary>\n{story_summary.strip()}\n</story_summary>\n\n"
-
-        prompt += "<rules>\n"
-        prompt += "- Translate ONLY the current subtitle.\n"
-        prompt += "- Do NOT translate character names (Name Protection).\n"
-        prompt += "- Keep proper nouns and special formats intact.\n"
-        prompt += "- Do NOT add, remove, or modify the core meaning.\n"
-        prompt += "- Do NOT translate the surrounding context.\n"
-        prompt += "- Do NOT output any explanations or notes.\n"
-        prompt += "- Follow the tone and character relationships defined in story_summary.\n"
-        prompt += "</rules>\n\n"
-
+        # 2. DỮ LIỆU ĐẦU VÀO (USER PROMPT)
+        user_prompt = ""
         if prev_context:
-            prompt += "<context_previous>\n" + "\n".join(prev_context) + "\n</context_previous>\n\n"
-
-        prompt += f"<current_subtitle_to_translate>\n{current_sub}\n</current_subtitle_to_translate>\n\n"
-
+            user_prompt += "--- PREVIOUS SUBTITLES ---\n" + "\n".join(prev_context) + "\n\n"
+            
+        user_prompt += "--- CURRENT SUBTITLE TO TRANSLATE ---\n" + current_sub + "\n\n"
+        
         if next_context:
-            prompt += "<context_next>\n" + "\n".join(next_context) + "\n</context_next>\n\n"
+            user_prompt += "--- NEXT SUBTITLES ---\n" + "\n".join(next_context) + "\n\n"
+            
+        user_prompt += f"Provide the exact {target_lang} translation for the current subtitle."
 
-        prompt += f"TASK: Output the exact {target_lang} translation for <current_subtitle_to_translate> now."
+        # 3. ĐÓNG GÓI THEO CHUẨN CHATML CỦA QWEN
+        prompt = (
+            f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
+            f"<|im_start|>user\n{user_prompt}<|im_end|>\n"
+            f"<|im_start|>assistant\n"
+        )
+        
         return prompt

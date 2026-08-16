@@ -2,6 +2,7 @@ from PySide6.QtCore import QObject, Slot, Signal, Property
 from app.llm.worker import TranslationWorker
 from app.core.context_engine import ContextEngine
 from app.core.prompt_builder import PromptBuilder
+from app.core.hardware_detector import HardwareDetector # IMPORT MỚI
 
 class TranslationController(QObject):
     statusChanged = Signal(str)
@@ -13,6 +14,8 @@ class TranslationController(QObject):
         self._current_translation = ""
         self._subtitle_model = subtitle_model
         self.worker = None
+        # NẠP PROFILE TỪ LÚC BOOT
+        self.hardware_profile = HardwareDetector.get_recommended_profile()
 
     @Property(str, notify=statusChanged)
     def status(self):
@@ -22,12 +25,35 @@ class TranslationController(QObject):
     def currentTranslation(self):
         return self._current_translation
 
+    @Slot(int)
+    def loadSubtitle(self, index):
+        if index < 0: return
+        subtitles = self._subtitle_model.get_all_data()
+        if index >= len(subtitles): return
+        sub = subtitles[index]
+        
+        if sub["status"] == "ACCEPTED":
+            self._current_translation = sub["translation"]
+            self._status = "ACCEPTED"
+        else:
+            self._current_translation = sub["original"]
+            self._status = "PENDING"
+            
+        self.statusChanged.emit(self._status)
+        self.translationUpdated.emit(self._current_translation)
+
+    # --- HÀM MỚI: TRIGGER STATE 'EDITED' KHI USER TỰ GÕ ---
+    @Slot()
+    def markAsEdited(self):
+        if self._status in ["PENDING", "TRANSLATED", "ACCEPTED"]:
+            self._status = "EDITED"
+            self.statusChanged.emit(self._status)
+
     @Slot(int, str, str, str)
     def requestTranslation(self, index, source_lang, target_lang, story_summary):
-        # DỪNG AN TOÀN THAY VÌ TERMINATE
         if self.worker and self.worker.isRunning():
             self.worker.cancel()
-            self.worker.wait() # Đợi worker dọn dẹp và thoát
+            self.worker.wait()
 
         self._status = "TRANSLATING"
         self.statusChanged.emit(self._status)
@@ -38,7 +64,8 @@ class TranslationController(QObject):
         prev_ctx, current, next_ctx = ContextEngine.get_context(subtitles, index)
         prompt = PromptBuilder.build(story_summary, source_lang, target_lang, prev_ctx, current, next_ctx)
 
-        self.worker = TranslationWorker(prompt)
+        # TRUYỀN PROFILE XUỐNG WORKER
+        self.worker = TranslationWorker(prompt, self.hardware_profile)
         self.worker.progress.connect(self.on_progress)
         self.worker.finished.connect(self.on_finished)
         self.worker.error.connect(self.on_error)
@@ -52,7 +79,7 @@ class TranslationController(QObject):
     @Slot(str)
     def on_finished(self, text):
         self._current_translation = text
-        self._status = "TRANSLATED" # SỬA READY THÀNH TRANSLATED
+        self._status = "TRANSLATED"
         self.statusChanged.emit(self._status)
         self.translationUpdated.emit(text)
 
@@ -65,31 +92,7 @@ class TranslationController(QObject):
 
     @Slot(int, str)
     def acceptTranslation(self, index, final_text):
-        """Lưu bản dịch cuối cùng vào Data Model và đổi trạng thái"""
-        self._subtitle_model.update_translation(index, final_text, "accepted")
+        self._subtitle_model.update_translation(index, final_text, "ACCEPTED")
         self._status = "ACCEPTED"
         self.statusChanged.emit(self._status)
         self.translationUpdated.emit(final_text)
-
-    @Slot(int)
-    def loadSubtitle(self, index):
-        """Tải dữ liệu của subtitle khi người dùng click vào thẻ bên trái"""
-        if index < 0:
-            return
-        
-        subtitles = self._subtitle_model.get_all_data()
-        if index >= len(subtitles):
-            return
-        
-        sub = subtitles[index]
-        
-        # Nếu đã accept thì hiện bản dịch, nếu chưa thì hiện text gốc
-        if sub["status"] == "accepted":
-            self._current_translation = sub["translation"]
-            self._status = "ACCEPTED"
-        else:
-            self._current_translation = sub["original"]
-            self._status = "PENDING"
-            
-        self.statusChanged.emit(self._status)
-        self.translationUpdated.emit(self._current_translation)
