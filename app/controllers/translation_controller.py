@@ -24,9 +24,10 @@ class TranslationController(QObject):
 
     @Slot(int, str, str, str)
     def requestTranslation(self, index, source_lang, target_lang, story_summary):
+        # DỪNG AN TOÀN THAY VÌ TERMINATE
         if self.worker and self.worker.isRunning():
-            self.worker.terminate()
-            self.worker.wait()
+            self.worker.cancel()
+            self.worker.wait() # Đợi worker dọn dẹp và thoát
 
         self._status = "TRANSLATING"
         self.statusChanged.emit(self._status)
@@ -35,7 +36,6 @@ class TranslationController(QObject):
 
         subtitles = self._subtitle_model.get_all_data()
         prev_ctx, current, next_ctx = ContextEngine.get_context(subtitles, index)
-        # Bổ sung tham số story_summary vào đây
         prompt = PromptBuilder.build(story_summary, source_lang, target_lang, prev_ctx, current, next_ctx)
 
         self.worker = TranslationWorker(prompt)
@@ -52,7 +52,7 @@ class TranslationController(QObject):
     @Slot(str)
     def on_finished(self, text):
         self._current_translation = text
-        self._status = "READY"
+        self._status = "TRANSLATED" # SỬA READY THÀNH TRANSLATED
         self.statusChanged.emit(self._status)
         self.translationUpdated.emit(text)
 

@@ -6,17 +6,12 @@ import QtQuick.Dialogs
 
 ApplicationWindow {
     visible: true
-    
-    // Thu nhỏ kích thước mặc định để không bị lấn màn hình
     width: 1024
     height: 720
-    
-    // Tự động căn giữa tâm màn hình
     x: Screen.width / 2 - width / 2
     y: Screen.height / 2 - height / 2
-
     title: "AI Subtitle Translator - Phase 1 MVP"
-    color: "#18181B" // Dark mode background
+    color: "#18181B"
 
     RowLayout {
         anchors.fill: parent
@@ -35,14 +30,12 @@ ApplicationWindow {
 
                 Text { text: "📖 Context & Story Summary"; color: "#A1A1AA"; font.bold: true }
 
-                // Ô nhập Story Summary
                 Rectangle {
                     Layout.fillWidth: true
                     height: 120
                     color: "#18181B"
                     border.color: "#3F3F46"
                     radius: 6
-
                     ScrollView {
                         anchors.fill: parent
                         anchors.margins: 10
@@ -58,7 +51,6 @@ ApplicationWindow {
 
                 Text { text: "💬 Danh sách Subtitle"; color: "#A1A1AA"; font.bold: true; Layout.topMargin: 5 }
 
-                // ListView
                 ListView {
                     id: subListView
                     Layout.fillWidth: true
@@ -77,7 +69,7 @@ ApplicationWindow {
                     delegate: Rectangle {
                         width: subListView.width
                         height: 80
-                        color: status === "accepted" ? "#166534" : "#3F3F46"
+                        color: status === "ACCEPTED" ? "#166534" : "#3F3F46"
                         radius: 6
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: 10; spacing: 4
@@ -105,12 +97,11 @@ ApplicationWindow {
 
                 Text {
                     text: "Trạng thái: " + translationController.status
-                    color: translationController.status === "READY" ? "#4CAF50" : (translationController.status === "TRANSLATING" ? "#3B82F6" : "#A1A1AA")
+                    color: translationController.status === "TRANSLATED" ? "#4CAF50" : (translationController.status === "TRANSLATING" ? "#3B82F6" : "#A1A1AA")
                     font.pixelSize: 14
                     font.bold: true
                 }
 
-                // Hộp hiển thị Duy nhất (Gộp Gốc và Dịch)
                 Rectangle {
                     Layout.fillWidth: true
                     height: 200
@@ -118,31 +109,21 @@ ApplicationWindow {
                     radius: 8
                     border.color: translationController.status === "TRANSLATING" ? "#3B82F6" : "transparent"
                     border.width: 2
-                    
                     ScrollView {
                         anchors.fill: parent
                         anchors.margins: 15
-                        
                         TextArea {
                             id: translationInput
                             text: translationController.currentTranslation
-                            // Đổi màu thông minh: Trắng nếu là gốc, Xanh ngọc nếu là Dịch
                             color: translationController.status === "PENDING" ? "#F4F4F5" : "#A7F3D0"
                             font.pixelSize: 18
                             wrapMode: Text.WordWrap
                             background: null
                             selectByMouse: true
-                            
-                            onTextChanged: {
-                                if (translationInput.focus) {
-                                    // User tự gõ
-                                }
-                            }
                         }
                     }
                 }
 
-                // Cụm phím điều khiển (Retry - Dịch - Accept)
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter
                     spacing: 20
@@ -153,34 +134,40 @@ ApplicationWindow {
                         enabled: translationController.status !== "TRANSLATING" && subListView.currentIndex >= 0
                         onClicked: translationController.requestTranslation(subListView.currentIndex, "English", "Vietnamese", storySummaryInput.text)
                     }
-
                     Button {
                         text: "✦ Dịch AI"
                         font.pixelSize: 16
                         enabled: translationController.status !== "TRANSLATING" && subListView.currentIndex >= 0
                         onClicked: translationController.requestTranslation(subListView.currentIndex, "English", "Vietnamese", storySummaryInput.text)
                     }
-
                     Button {
                         text: "✓ Accept"
                         font.pixelSize: 16
-                        // Chỉ cho phép Accept khi đã dịch xong hoặc đang xem câu đã accept
-                        enabled: (translationController.status === "READY" || translationController.status === "ACCEPTED" || translationInput.text !== "") && subListView.currentIndex >= 0
-                        
+                        enabled: (translationController.status === "TRANSLATED" || translationController.status === "ACCEPTED" || translationInput.text !== "") && subListView.currentIndex >= 0
                         onClicked: {
-                            // Lưu vào Model
                             translationController.acceptTranslation(subListView.currentIndex, translationInput.text)
-                            
-                            // Auto-Next: Tự nhảy xuống câu tiếp theo, ListView sẽ tự kích hoạt loadSubtitle
                             if (subListView.currentIndex < subListView.count - 1) {
                                 subListView.currentIndex += 1
                             }
                         }
                     }
                 }
+
+                // ---- VỊ TRÍ MỚI CỦA KHỐI THÔNG BÁO ----
+                Text {
+                    id: notificationText
+                    Layout.fillWidth: true
+                    Layout.topMargin: 15
+                    text: "Dự án đã sẵn sàng."
+                    color: "#A1A1AA"
+                    font.pixelSize: 15
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap // Tự động rớt dòng nếu chữ quá dài
+                }
+                // ----------------------------------------
             }
 
-            // Thanh công cụ dưới đáy (Bottom Bar)
+            // Thanh công cụ dưới đáy (Bottom Bar) - Giờ chỉ chứa các nút
             Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
@@ -189,91 +176,54 @@ ApplicationWindow {
                 color: "#27272A"
                 
                 RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 15
-                    spacing: 10
-                    
-                    Text {
-                        id: notificationText
-                        text: "Dự án đã sẵn sàng."
-                        color: "#A1A1AA"
-                        font.pixelSize: 14
-                        Layout.fillWidth: true
-                    }
+                    anchors.centerIn: parent // Căn giữa tất cả các nút
+                    spacing: 15
                     
                     Button {
                         text: "📁 Mở SRT"
                         font.pixelSize: 14
                         onClicked: importSrtDialog.open()
                     }
-
                     Button {
                         text: "📂 Mở Project"
                         font.pixelSize: 14
                         onClicked: loadProjectDialog.open()
                     }
-
                     Button {
                         text: "💾 Lưu Project"
                         font.pixelSize: 14
                         onClicked: saveProjectDialog.open()
                     }
-                    
                     Button {
                         text: "📤 Xuất SRT"
                         font.pixelSize: 14
                         font.bold: true
-                        onClicked: exportSrtDialog.open()
+                        onClicked: {
+                            if (projectController.validateBeforeExport()) {
+                                exportSrtDialog.open()
+                            }
+                        }
                     }
                 }
             }
 
-            // --- CÁC HỘP THOẠI QUẢN LÝ FILE ---
-            FileDialog {
-                id: importSrtDialog
-                title: "Chọn file SRT gốc"
-                nameFilters: ["Subtitle files (*.srt)"]
-                onAccepted: projectController.importSrt(selectedFile)
-            }
-
-            FileDialog {
-                id: loadProjectDialog
-                title: "Mở file dự án"
-                nameFilters: ["AI Subtitle Project (*.aisrt)"]
-                onAccepted: projectController.loadProject(selectedFile)
-            }
-
-            FileDialog {
-                id: saveProjectDialog
-                title: "Lưu dự án"
-                fileMode: FileDialog.SaveFile
-                nameFilters: ["AI Subtitle Project (*.aisrt)"]
-                defaultSuffix: "aisrt"
-                onAccepted: projectController.saveProject(selectedFile, storySummaryInput.text)
-            }
-
-            FileDialog {
-                id: exportSrtDialog
-                title: "Xuất file SRT đã dịch"
-                fileMode: FileDialog.SaveFile
-                nameFilters: ["Subtitle files (*.srt)"]
-                defaultSuffix: "srt"
-                onAccepted: projectController.exportSrt(selectedFile)
-            }
+            // Các hộp thoại
+            FileDialog { id: importSrtDialog; title: "Chọn file SRT gốc"; nameFilters: ["Subtitle files (*.srt)"]; onAccepted: projectController.importSrt(selectedFile) }
+            FileDialog { id: loadProjectDialog; title: "Mở file dự án"; nameFilters: ["AI Subtitle Project (*.aisrt)"]; onAccepted: projectController.loadProject(selectedFile) }
+            FileDialog { id: saveProjectDialog; title: "Lưu dự án"; fileMode: FileDialog.SaveFile; nameFilters: ["AI Subtitle Project (*.aisrt)"]; defaultSuffix: "aisrt"; onAccepted: projectController.saveProject(selectedFile, storySummaryInput.text) }
+            FileDialog { id: exportSrtDialog; title: "Xuất file SRT đã dịch"; fileMode: FileDialog.SaveFile; nameFilters: ["Subtitle files (*.srt)"]; defaultSuffix: "srt"; onAccepted: projectController.exportSrt(selectedFile) }
             
-            // --- BẮT TÍN HIỆU TỪ PYTHON ---
+            // Bắt tín hiệu
             Connections {
                 target: projectController
                 function onNotify(title, msg) {
                     notificationText.text = msg
                     notificationText.color = (title === "SUCCESS") ? "#4CAF50" : "#F87171"
                 }
-                
-                // Khôi phục chữ trong ô Story Summary khi load project
                 function onProjectLoaded(summary) {
                     storySummaryInput.text = summary
                 }
             }
-        } // ĐÓNG RECTANGLE CỦA MAIN PANEL Ở ĐÂY (Vị trí đã được sửa)
-    } // Kết thúc RowLayout tổng
-} // Kết thúc ApplicationWindow
+        }
+    }
+}

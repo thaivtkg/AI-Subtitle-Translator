@@ -3,6 +3,7 @@ import json
 from PySide6.QtCore import QObject, Slot, Signal, QUrl
 from app.core.srt_exporter import SRTExporter
 from app.core.srt_parser import SRTParser
+from app.core.srt_validator import SRTValidator
 
 class ProjectController(QObject):
     notify = Signal(str, str)
@@ -13,10 +14,22 @@ class ProjectController(QObject):
         super().__init__()
         self._subtitle_model = subtitle_model
 
+    @Slot(result=bool)
+    def validateBeforeExport(self):
+        """Hàm này sẽ được QML gọi ĐẦU TIÊN khi bấm nút Xuất SRT"""
+        subtitles = self._subtitle_model.get_all_data()
+        is_valid, val_msg = SRTValidator.validate_for_export(subtitles)
+        if not is_valid:
+            self.notify.emit("ERROR", f"Lỗi Validator: {val_msg}")
+            return False
+        return True
+    
     @Slot(str)
     def exportSrt(self, file_path):
+        """Chỉ được chạy sau khi chọn file thành công"""
         subtitles = self._subtitle_model.get_all_data()
-        # Xóa prefix file:/// nếu xuất hiện từ QML SaveDialog
+        
+        # Đã loại bỏ logic kiểm tra validator ở đây vì đã kiểm trước ở UI
         if file_path.startswith("file:///"):
             file_path = QUrl(file_path).toLocalFile()
             

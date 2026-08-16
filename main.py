@@ -3,6 +3,7 @@ import os
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QUrl
+from app.core.hardware_detector import HardwareDetector
 
 from app.models.subtitle import SubtitleModel
 from app.core.srt_parser import SRTParser
@@ -20,6 +21,17 @@ def create_dummy_srt():
 def main():
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
+
+    profile = HardwareDetector.get_recommended_profile()
+    gpu_info = profile['gpu_info']
+    print("\n" + "="*50)
+    print(" 🖥️  AI SUBTITLE TRANSLATOR - HARDWARE PROFILE")
+    print("="*50)
+    print(f"[*] GPU Name      : {gpu_info['name']}")
+    print(f"[*] VRAM Available: {gpu_info['vram_gb']:.1f} GB")
+    print(f"[*] Target Model  : {profile['model_name']}")
+    print(f"[*] GPU Layers    : {profile['n_gpu_layers']}")
+    print("="*50 + "\n")
 
     # 1. Khởi tạo Data Model
     subtitle_model = SubtitleModel()

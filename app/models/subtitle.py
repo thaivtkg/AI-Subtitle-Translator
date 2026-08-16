@@ -1,11 +1,12 @@
 from PySide6.QtCore import Qt, QAbstractListModel, QModelIndex, Slot, QByteArray
 
 class SubtitleStatus:
-    PENDING = "pending"
-    TRANSLATING = "translating"
-    EDITED = "edited"
-    ACCEPTED = "accepted"
-    ERROR = "error"
+    PENDING = "PENDING"
+    TRANSLATING = "TRANSLATING"
+    TRANSLATED = "TRANSLATED"  # Sửa READY thành TRANSLATED
+    EDITED = "EDITED"
+    ACCEPTED = "ACCEPTED"
+    ERROR = "ERROR"
 
 class SubtitleModel(QAbstractListModel):
     IndexRole = Qt.UserRole + 1
