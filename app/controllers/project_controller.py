@@ -62,12 +62,15 @@ class ProjectController(QObject):
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
     @Slot(str, str)
     def saveProject(self, file_url, story_summary):
-        """Lưu toàn bộ Model và Context vào file .aisrt (JSON)"""
         file_path = QUrl(file_url).toLocalFile()
         if not file_path.endswith('.aisrt'):
             file_path += '.aisrt'
             
         data = {
+            "metadata": {
+                "source_language": "English",
+                "target_language": "Vietnamese",
+            },
             "story_summary": story_summary,
             "subtitles": self._subtitle_model.get_all_data()
         }

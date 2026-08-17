@@ -16,14 +16,15 @@ def main():
 
     profile = HardwareDetector.get_recommended_profile()
     gpu_info = profile['gpu_info']
-    print("\n" + "="*50)
-    print(" 🖥️  AI SUBTITLE TRANSLATOR - HARDWARE PROFILE")
-    print("="*50)
-    print(f"[*] GPU Name      : {gpu_info['name']}")
-    print(f"[*] VRAM Available: {gpu_info['vram_gb']:.1f} GB")
-    print(f"[*] Target Model  : {profile['model_name']}")
-    print(f"[*] GPU Layers    : {profile['n_gpu_layers']}")
-    print("="*50 + "\n")
+    print("\n" + "="*55)
+    print(" 🖥️  AI SUBTITLE TRANSLATOR - RUNTIME VERIFICATION")
+    print("="*55)
+    print(f"[*] Hardware Detected : {gpu_info['name']} ({gpu_info['vram_gb']:.1f} GB VRAM)")
+    print(f"[*] Llama.cpp Backend : {profile['backend_status']}")
+    print(f"[*] Target Model File : {profile['model_name']}")
+    print(f"[*] Context (n_ctx)   : {profile['n_ctx']}")
+    print(f"[*] GPU Layers        : {profile['n_gpu_layers']}")
+    print("="*55 + "\n")
 
     subtitle_model = SubtitleModel()
     
