@@ -197,7 +197,7 @@ ApplicationWindow {
                     Button {
                         text: "💾 Lưu Project"
                         font.pixelSize: 14
-                        onClicked: saveProjectDialog.open()
+                        onClicked: projectController.saveProject(selectedFile, storySummaryInput.text, "English", "Vietnamese")
                     }
                     Button {
                         text: "📤 Xuất SRT"

@@ -60,22 +60,26 @@ class ProjectController(QObject):
         self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT: {os.path.basename(file_path)}")
 
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
-    @Slot(str, str)
-    def saveProject(self, file_url, story_summary):
+    @Slot(str, str, str, str)  # Bổ sung tham số source_lang và target_lang
+    def saveProject(self, file_url, story_summary, source_lang="English", target_lang="Vietnamese"):
         file_path = QUrl(file_url).toLocalFile()
         if not file_path.endswith('.aisrt'):
             file_path += '.aisrt'
             
         data = {
             "metadata": {
-                "source_language": "English",
-                "target_language": "Vietnamese",
+                "source_file": os.path.basename(file_path).replace('.aisrt', '.srt'),
+                "source_language": source_lang,
+                "target_language": target_lang,
+                "version": "1.0"
             },
             "story_summary": story_summary,
             "subtitles": self._subtitle_model.get_all_data()
         }
+        
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
+                import json
                 json.dump(data, f, ensure_ascii=False, indent=2)
             self.notify.emit("SUCCESS", f"Đã lưu dự án: {os.path.basename(file_path)}")
         except Exception as e:
