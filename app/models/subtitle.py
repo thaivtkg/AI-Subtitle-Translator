@@ -62,11 +62,16 @@ class SubtitleModel(QAbstractListModel):
         """Trả về toàn bộ danh sách subtitle để Context Engine xử lý"""
         return self._subtitles
 
-    def update_translation(self, row, text, status):
-        """Cập nhật bản dịch và trạng thái, báo cho UI biết để render lại"""
-        if 0 <= row < len(self._subtitles):
-            self._subtitles[row]["translation"] = text
-            self._subtitles[row]["status"] = status
+    def update_translation(self, row_index, translation_text, status):
+        """Cập nhật bản dịch và trạng thái, sau đó báo cho QML vẽ lại"""
+        if 0 <= row_index < len(self._subtitles):
+            # 1. Cập nhật dữ liệu trong bộ nhớ Python
+            self._subtitles[row_index]["translation"] = translation_text
+            self._subtitles[row_index]["status"] = status
             
-            idx = self.index(row, 0)
-            self.dataChanged.emit(idx, idx, [self.TranslationRole, self.StatusRole])
+            # 2. DÒNG QUAN TRỌNG NHẤT BỊ THIẾU: Bắn tín hiệu cho QML update màu sắc
+            # Tạo index trỏ đúng vào dòng vừa được Accept
+            q_index = self.createIndex(row_index, 0)
+            
+            # Phát tín hiệu báo dòng này đã thay đổi dữ liệu
+            self.dataChanged.emit(q_index, q_index)

@@ -2,11 +2,12 @@ from PySide6.QtCore import QObject, Slot, Signal, Property
 from app.llm.worker import TranslationWorker
 from app.core.context_engine import ContextEngine
 from app.core.prompt_builder import PromptBuilder
-from app.core.hardware_detector import HardwareDetector # IMPORT MỚI
+from app.core.hardware_detector import HardwareDetector
 
 class TranslationController(QObject):
     statusChanged = Signal(str)
     translationUpdated = Signal(str)
+    notify = Signal(str, str)  # TÍN HIỆU MỚI: Bắn thông báo xuống thanh đáy
 
     def __init__(self, subtitle_model):
         super().__init__()
@@ -14,7 +15,6 @@ class TranslationController(QObject):
         self._current_translation = ""
         self._subtitle_model = subtitle_model
         self.worker = None
-        # NẠP PROFILE TỪ LÚC BOOT
         self.hardware_profile = HardwareDetector.get_recommended_profile()
 
     @Property(str, notify=statusChanged)
@@ -42,7 +42,6 @@ class TranslationController(QObject):
         self.statusChanged.emit(self._status)
         self.translationUpdated.emit(self._current_translation)
 
-    # --- HÀM MỚI: TRIGGER STATE 'EDITED' KHI USER TỰ GÕ ---
     @Slot()
     def markAsEdited(self):
         if self._status in ["PENDING", "TRANSLATED", "ACCEPTED"]:
@@ -64,7 +63,6 @@ class TranslationController(QObject):
         prev_ctx, current, next_ctx = ContextEngine.get_context(subtitles, index)
         prompt = PromptBuilder.build(story_summary, source_lang, target_lang, prev_ctx, current, next_ctx)
 
-        # TRUYỀN PROFILE XUỐNG WORKER
         self.worker = TranslationWorker(prompt, self.hardware_profile)
         self.worker.progress.connect(self.on_progress)
         self.worker.finished.connect(self.on_finished)
@@ -90,26 +88,25 @@ class TranslationController(QObject):
         self.statusChanged.emit(self._status)
         self.translationUpdated.emit(self._current_translation)
 
-    @Slot(int, str)
+    @Slot(int, str, result=bool)
     def acceptTranslation(self, index, final_text):
-        """Kiểm tra chặt chẽ ở backend trước khi chấp nhận bản dịch"""
+        """Đã sửa: Trả về cờ Bool và bắn lỗi xuống Notification Bar thay vì ghi đè text"""
         subtitles = self._subtitle_model.get_all_data()
         if 0 <= index < len(subtitles):
             original = subtitles[index].get("original", "").strip()
             clean_text = final_text.strip()
             
             if not clean_text:
-                self.statusChanged.emit("ERROR")
-                self.translationUpdated.emit("Lỗi: Không thể chấp nhận bản dịch trống!")
-                return
+                self.notify.emit("ERROR", "Lỗi: Không thể duyệt bản dịch trống!")
+                return False
                 
             if clean_text == original:
-                self.statusChanged.emit("ERROR")
-                self.translationUpdated.emit("Lỗi: Bản dịch không được trùng với văn bản gốc!")
-                return
+                self.notify.emit("ERROR", "Lỗi: Bản dịch không được trùng khớp y hệt văn bản gốc!")
+                return False
 
-        # Nếu vượt qua kiểm tra, tiến hành lưu vào Model
+        # Nếu vượt qua kiểm tra
         self._subtitle_model.update_translation(index, final_text, "ACCEPTED")
         self._status = "ACCEPTED"
         self.statusChanged.emit(self._status)
-        self.translationUpdated.emit(final_text)
+        self.notify.emit("SUCCESS", f"Đã lưu thành công câu #{index + 1}")
+        return True

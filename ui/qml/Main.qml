@@ -150,11 +150,11 @@ ApplicationWindow {
                     Button {
                         text: "✓ Accept"
                         font.pixelSize: 16
-                        // KHÔNG CHO ACCEPT NẾU LÀ PENDING
                         enabled: (translationController.status === "TRANSLATED" || translationController.status === "EDITED" || translationController.status === "ACCEPTED") && subListView.currentIndex >= 0
                         onClicked: {
-                            translationController.acceptTranslation(subListView.currentIndex, translationInput.text)
-                            if (subListView.currentIndex < subListView.count - 1) {
+                            // CHỈ NHẢY CÂU KHI BACKEND TRẢ VỀ TRUE
+                            let isSuccess = translationController.acceptTranslation(subListView.currentIndex, translationInput.text)
+                            if (isSuccess && subListView.currentIndex < subListView.count - 1) {
                                 subListView.currentIndex += 1
                             }
                         }
@@ -218,13 +218,16 @@ ApplicationWindow {
             FileDialog { id: exportSrtDialog; title: "Xuất file SRT đã dịch"; fileMode: FileDialog.SaveFile; nameFilters: ["Subtitle files (*.srt)"]; defaultSuffix: "srt"; onAccepted: projectController.exportSrt(selectedFile) }
             
             Connections {
-                target: projectController
+                target: translationController
                 function onNotify(title, msg) {
                     notificationText.text = msg
                     notificationText.color = (title === "SUCCESS") ? "#4CAF50" : "#F87171"
                 }
-                function onProjectLoaded(summary) {
-                    storySummaryInput.text = summary
+                function onTranslationUpdated(newText) {
+                    // Cập nhật text an toàn để không bị lỗi vỡ Binding khi user gõ phím
+                    if (translationInput.text !== newText) {
+                        translationInput.text = newText
+                    }
                 }
             }
         }
