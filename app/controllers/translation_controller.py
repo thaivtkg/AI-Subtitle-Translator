@@ -27,7 +27,12 @@ class TranslationController(QObject):
 
     @Slot(int)
     def loadSubtitle(self, index):
-        if index < 0: return
+        if index < 0:
+            self._current_translation = ""
+            self._status = "PENDING"
+            self.statusChanged.emit(self._status)
+            self.translationUpdated.emit(self._current_translation)
+            return
         subtitles = self._subtitle_model.get_all_data()
         if index >= len(subtitles): return
         sub = subtitles[index]

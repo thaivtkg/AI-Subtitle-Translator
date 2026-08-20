@@ -15,6 +15,7 @@ class ProjectController(QObject):
     def __init__(self, subtitle_model):
         super().__init__()
         self._subtitle_model = subtitle_model
+        self._original_source_file = "unknown.srt"
 
     @Slot(result=bool)
     def validateBeforeExport(self):
@@ -50,19 +51,26 @@ class ProjectController(QObject):
     def importSrt(self, file_url):
         file_path = QUrl(file_url).toLocalFile()
         if not os.path.exists(file_path):
-            self.notify.emit("ERROR", "Không tìm thấy file!")
+            self.notify.emit("ERROR", "Không tìm thấy file SRT!")
             return
             
+        self._original_source_file = os.path.basename(file_path)
+        
         parsed_data = SRTParser.parse(file_path)
         if not parsed_data:
-            self.notify.emit("ERROR", "File SRT bị lỗi hoặc trống!")
+            self.notify.emit("ERROR", "Không thể đọc nội dung file SRT hoặc file rỗng!")
             return
             
+        # 1. Nạp dữ liệu mới vào Model
         self._subtitle_model.load_data(parsed_data)
-        self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT: {os.path.basename(file_path)}")
+        
+        # 2. Reset trạng thái giao diện để tránh kẹt dữ liệu cũ
+        self.projectLoaded.emit("")          # Xóa Story Summary cũ
+        self.languageLoaded.emit("English") # Đưa dropdown về mặc định
+        self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT: {self._original_source_file}")
 
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
-    @Slot(str, str, str, str)  # Bổ sung tham số source_lang và target_lang
+    @Slot(str, str, str, str)
     def saveProject(self, file_url, story_summary, source_lang="English", target_lang="Vietnamese"):
         file_path = QUrl(file_url).toLocalFile()
         if not file_path.endswith('.aisrt'):
@@ -70,7 +78,8 @@ class ProjectController(QObject):
             
         data = {
             "metadata": {
-                "source_file": os.path.basename(file_path).replace('.aisrt', '.srt'),
+                # SỬA LẠI: Dùng biến đã lưu thay vì tự chế tên file
+                "source_file": self._original_source_file, 
                 "source_language": source_lang,
                 "target_language": target_lang,
                 "version": "1.0"

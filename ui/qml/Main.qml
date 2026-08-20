@@ -75,7 +75,7 @@ ApplicationWindow {
                             anchors.fill: parent; anchors.margins: 10; spacing: 4
                             Text { text: "#" + subIndex + " | " + startTime + " → " + endTime; color: "#A1A1AA"; font.pixelSize: 12 }
                             Text { 
-                                // Nếu chưa duyệt hiện tiếng Anh (originalText), đã duyệt hiện tiếng Việt (translationText)
+                                // Nếu chưa duyệt hiển thị original, đã duyệt hiển thị translation
                                 text: status === "ACCEPTED" ? translationText : originalText
                                 color: "#F4F4F5"
                                 font.pixelSize: 14
@@ -157,8 +157,15 @@ ApplicationWindow {
                             selectByMouse: true
                             
                             // THÊM ĐIỀU KIỆN CHUẨN ĐỂ ĐÁNH DẤU EDITED Ở ĐÚNG VỊ TRÍ
+                            // THÊM ĐIỀU KIỆN CHUẨN ĐỂ ĐÁNH DẤU EDITED Ở ĐÚNG VỊ TRÍ
                             onTextChanged: {
-                                if (translationInput.focus && translationController.status !== "TRANSLATING") {
+                                // Chỉ chuyển sang EDITED nếu:
+                                // 1. Ô text đang được trỏ chuột (focus)
+                                // 2. AI không phải đang dịch
+                                // 3. Text thực sự khác với text do Backend trả về (Tức là user vừa tự gõ thêm)
+                                if (translationInput.focus && 
+                                    translationController.status !== "TRANSLATING" &&
+                                    translationInput.text !== translationController.currentTranslation) {
                                     translationController.markAsEdited()
                                 }
                             }
@@ -283,12 +290,18 @@ ApplicationWindow {
                         sourceLangCombo.currentIndex = index
                     }
                 }
-
                 // 2. Bắt tín hiệu khôi phục Story Summary vào ô text
                 function onProjectLoaded(summary) {
                     storySummaryInput.text = summary
+                    
+                    // THỦ THUẬT: Ép currentIndex đổi về -1 rồi nhảy lại 0 để kích hoạt loadSubtitle
+                    subListView.currentIndex = -1
+                    if (subListView.count > 0) {
+                        subListView.currentIndex = 0
+                    } else {
+                        translationController.loadSubtitle(-1)
+                    }
                 }
-
                 // 3. Bắt tín hiệu thông báo (Lưu/Mở thành công hoặc thất bại)
                 function onNotify(title, msg) {
                     notificationText.text = msg
