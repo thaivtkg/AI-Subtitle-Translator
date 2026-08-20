@@ -54,6 +54,7 @@ class ProjectController(QObject):
             self.notify.emit("ERROR", "Không tìm thấy file SRT!")
             return
             
+        # FIX: Ghi nhận chính xác tên file gốc lúc import
         self._original_source_file = os.path.basename(file_path)
         
         parsed_data = SRTParser.parse(file_path)
@@ -78,8 +79,8 @@ class ProjectController(QObject):
             
         data = {
             "metadata": {
-                # SỬA LẠI: Dùng biến đã lưu thay vì tự chế tên file
-                "source_file": self._original_source_file, 
+                # FIX: Dùng biến state đã lưu, không tự đoán từ file_path
+                "source_file": getattr(self, "_original_source_file", "unknown.srt"),
                 "source_language": source_lang,
                 "target_language": target_lang,
                 "version": "1.0"
@@ -108,12 +109,14 @@ class ProjectController(QObject):
                 data = json.load(f)
             
             self._subtitle_model.load_data(data.get("subtitles", []))
-            
-            # Khôi phục Story Summary
             self.projectLoaded.emit(data.get("story_summary", ""))
-            
+
             # --- PHASE 1.6: KHÔI PHỤC NGÔN NGỮ NGUỒN ---
             metadata = data.get("metadata", {})
+
+            self._original_source_file = metadata.get("source_file", "unknown.srt") 
+            self.languageLoaded.emit(metadata.get("source_language", "English"))
+
             source_lang = metadata.get("source_language", "English")
             self.languageLoaded.emit(source_lang)
             # ------------------------------------------
