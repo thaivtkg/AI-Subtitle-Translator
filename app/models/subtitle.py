@@ -28,18 +28,19 @@ class SubtitleModel(QAbstractListModel):
             return None
 
         sub = self._subtitles[index.row()]
+        # Dùng .get() để tránh lỗi vỡ Binding nếu key chưa tồn tại
         if role == self.IndexRole:
-            return sub["index"]
+            return sub.get("index")
         elif role == self.StartTimeRole:
-            return sub["start_time"]
+            return sub.get("start_time")
         elif role == self.EndTimeRole:
-            return sub["end_time"]
+            return sub.get("end_time")
         elif role == self.OriginalRole:
-            return sub["original"]
+            return sub.get("original", "")
         elif role == self.TranslationRole:
-            return sub["translation"]
+            return sub.get("translation", "")
         elif role == self.StatusRole:
-            return sub["status"]
+            return sub.get("status", "PENDING")
         return None
 
     def roleNames(self):
@@ -69,9 +70,6 @@ class SubtitleModel(QAbstractListModel):
             self._subtitles[row_index]["translation"] = translation_text
             self._subtitles[row_index]["status"] = status
             
-            # 2. DÒNG QUAN TRỌNG NHẤT BỊ THIẾU: Bắn tín hiệu cho QML update màu sắc
-            # Tạo index trỏ đúng vào dòng vừa được Accept
+            # 2. Tạo index và ÉP QML CẬP NHẬT CHÍNH XÁC 2 BIẾN NÀY
             q_index = self.createIndex(row_index, 0)
-            
-            # Phát tín hiệu báo dòng này đã thay đổi dữ liệu
-            self.dataChanged.emit(q_index, q_index)
+            self.dataChanged.emit(q_index, q_index, [self.TranslationRole, self.StatusRole])

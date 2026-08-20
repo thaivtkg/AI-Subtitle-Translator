@@ -74,7 +74,15 @@ ApplicationWindow {
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: 10; spacing: 4
                             Text { text: "#" + subIndex + " | " + startTime + " → " + endTime; color: "#A1A1AA"; font.pixelSize: 12 }
-                            Text { text: originalText; color: "#F4F4F5"; font.pixelSize: 14; font.bold: true; elide: Text.ElideRight; Layout.fillWidth: true }
+                            Text { 
+                                // Nếu chưa duyệt hiện tiếng Anh (originalText), đã duyệt hiện tiếng Việt (translationText)
+                                text: status === "ACCEPTED" ? translationText : originalText
+                                color: "#F4F4F5"
+                                font.pixelSize: 14
+                                font.bold: true
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true 
+                            }
                         }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: subListView.currentIndex = index }
                     }
@@ -94,6 +102,33 @@ ApplicationWindow {
                 anchors.centerIn: parent
                 width: parent.width * 0.7
                 spacing: 20
+
+                // --- THANH CHỌN NGÔN NGỮ (PHASE 1.6) ---
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 15
+
+                    Text { text: "Ngôn ngữ nguồn:"; color: "#A1A1AA"; font.pixelSize: 14 }
+                    
+                    ComboBox {
+                        id: sourceLangCombo
+                        model: ["English", "Japanese", "Chinese (Simplified)", "Chinese (Traditional)", "Korean", "Spanish", "French", "German", "Russian"]
+                        font.pixelSize: 14
+                        currentIndex: 0 // Mặc định là English
+                        // Styling cho combobox (tùy chọn)
+                    }
+
+                    Text { text: " ➔ "; color: "#A1A1AA"; font.pixelSize: 16; font.bold: true }
+
+                    Text { text: "Đích:"; color: "#A1A1AA"; font.pixelSize: 14 }
+                    
+                    ComboBox {
+                        id: targetLangCombo
+                        model: ["Vietnamese"] // Cố định
+                        font.pixelSize: 14
+                        enabled: false // Không cho phép chọn ngôn ngữ khác
+                    }
+                }
 
                 Text {
                     text: "Trạng thái: " + translationController.status
@@ -139,13 +174,13 @@ ApplicationWindow {
                         text: "↻ Retry"
                         font.pixelSize: 16
                         enabled: translationController.status !== "TRANSLATING" && subListView.currentIndex >= 0
-                        onClicked: translationController.requestTranslation(subListView.currentIndex, "English", "Vietnamese", storySummaryInput.text)
+                        onClicked: translationController.requestTranslation(subListView.currentIndex, sourceLangCombo.currentText, "Vietnamese", storySummaryInput.text)
                     }
                     Button {
                         text: "✦ Dịch AI"
                         font.pixelSize: 16
                         enabled: translationController.status !== "TRANSLATING" && subListView.currentIndex >= 0
-                        onClicked: translationController.requestTranslation(subListView.currentIndex, "English", "Vietnamese", storySummaryInput.text)
+                        onClicked: translationController.requestTranslation(subListView.currentIndex, sourceLangCombo.currentText, "Vietnamese", storySummaryInput.text)
                     }
                     Button {
                         text: "✓ Accept"
@@ -197,8 +232,8 @@ ApplicationWindow {
                     Button {
                         text: "💾 Lưu Project"
                         font.pixelSize: 14
-                        onClicked: projectController.saveProject(selectedFile, storySummaryInput.text, "English", "Vietnamese")
-                    }
+                        onClicked: saveProjectDialog.open() // FIX: Khôi phục lại đúng luồng Dialog
+                    }   
                     Button {
                         text: "📤 Xuất SRT"
                         font.pixelSize: 14
@@ -214,7 +249,15 @@ ApplicationWindow {
 
             FileDialog { id: importSrtDialog; title: "Chọn file SRT gốc"; nameFilters: ["Subtitle files (*.srt)"]; onAccepted: projectController.importSrt(selectedFile) }
             FileDialog { id: loadProjectDialog; title: "Mở file dự án"; nameFilters: ["AI Subtitle Project (*.aisrt)"]; onAccepted: projectController.loadProject(selectedFile) }
-            FileDialog { id: saveProjectDialog; title: "Lưu dự án"; fileMode: FileDialog.SaveFile; nameFilters: ["AI Subtitle Project (*.aisrt)"]; defaultSuffix: "aisrt"; onAccepted: projectController.saveProject(selectedFile, storySummaryInput.text) }
+            FileDialog { 
+                id: saveProjectDialog; 
+                title: "Lưu dự án"; 
+                fileMode: FileDialog.SaveFile; 
+                nameFilters: ["AI Subtitle Project (*.aisrt)"]; 
+                defaultSuffix: "aisrt"; 
+                // TRUYỀN ĐỘNG BIẾN NGÔN NGỮ TỪ COMBOBOX VÀO CONTROLLER
+                onAccepted: projectController.saveProject(selectedFile, storySummaryInput.text, sourceLangCombo.currentText, "Vietnamese") 
+            }
             FileDialog { id: exportSrtDialog; title: "Xuất file SRT đã dịch"; fileMode: FileDialog.SaveFile; nameFilters: ["Subtitle files (*.srt)"]; defaultSuffix: "srt"; onAccepted: projectController.exportSrt(selectedFile) }
             
             Connections {
@@ -228,6 +271,28 @@ ApplicationWindow {
                     if (translationInput.text !== newText) {
                         translationInput.text = newText
                     }
+                }
+            }
+            Connections {
+                target: projectController
+                
+                // 1. Bắt tín hiệu khôi phục ngôn ngữ nguồn cho Dropdown
+                function onLanguageLoaded(lang) {
+                    let index = sourceLangCombo.find(lang)
+                    if (index !== -1) {
+                        sourceLangCombo.currentIndex = index
+                    }
+                }
+
+                // 2. Bắt tín hiệu khôi phục Story Summary vào ô text
+                function onProjectLoaded(summary) {
+                    storySummaryInput.text = summary
+                }
+
+                // 3. Bắt tín hiệu thông báo (Lưu/Mở thành công hoặc thất bại)
+                function onNotify(title, msg) {
+                    notificationText.text = msg
+                    notificationText.color = (title === "SUCCESS") ? "#4CAF50" : "#F87171"
                 }
             }
         }

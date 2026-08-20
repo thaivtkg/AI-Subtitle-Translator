@@ -9,6 +9,8 @@ class ProjectController(QObject):
     notify = Signal(str, str)
     # Tín hiệu để gửi Story Summary từ file JSON ngược lên giao diện QML
     projectLoaded = Signal(str) 
+    # TÍN HIỆU MỚI: Bắn ngôn ngữ nguồn lên UI
+    languageLoaded = Signal(str)
 
     def __init__(self, subtitle_model):
         super().__init__()
@@ -87,7 +89,6 @@ class ProjectController(QObject):
 
     @Slot(str)
     def loadProject(self, file_url):
-        """Đọc file .aisrt và khôi phục trạng thái làm việc"""
         file_path = QUrl(file_url).toLocalFile()
         if not os.path.exists(file_path):
             self.notify.emit("ERROR", "Không tìm thấy file dự án!")
@@ -97,11 +98,17 @@ class ProjectController(QObject):
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             
-            # Khôi phục dữ liệu
             self._subtitle_model.load_data(data.get("subtitles", []))
             
-            # Phát tín hiệu lên QML để khôi phục chữ trong ô Story Summary
+            # Khôi phục Story Summary
             self.projectLoaded.emit(data.get("story_summary", ""))
+            
+            # --- PHASE 1.6: KHÔI PHỤC NGÔN NGỮ NGUỒN ---
+            metadata = data.get("metadata", {})
+            source_lang = metadata.get("source_language", "English")
+            self.languageLoaded.emit(source_lang)
+            # ------------------------------------------
+
             self.notify.emit("SUCCESS", f"Đã mở dự án: {os.path.basename(file_path)}")
         except Exception as e:
             self.notify.emit("ERROR", f"Lỗi mở dự án: {str(e)}")
