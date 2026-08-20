@@ -110,16 +110,14 @@ class ProjectController(QObject):
             
             self._subtitle_model.load_data(data.get("subtitles", []))
             self.projectLoaded.emit(data.get("story_summary", ""))
-
-            # --- PHASE 1.6: KHÔI PHỤC NGÔN NGỮ NGUỒN ---
+            
+            # --- ĐOẠN ĐÃ SỬA: DỌN DẸP DUPLICATE EMIT ---
             metadata = data.get("metadata", {})
-
-            self._original_source_file = metadata.get("source_file", "unknown.srt") 
-            self.languageLoaded.emit(metadata.get("source_language", "English"))
-
+            self._original_source_file = metadata.get("source_file", "unknown.srt")
             source_lang = metadata.get("source_language", "English")
-            self.languageLoaded.emit(source_lang)
-            # ------------------------------------------
+            
+            self.languageLoaded.emit(source_lang) # Chỉ emit 1 lần duy nhất
+            # -------------------------------------------
 
             self.notify.emit("SUCCESS", f"Đã mở dự án: {os.path.basename(file_path)}")
         except Exception as e:
