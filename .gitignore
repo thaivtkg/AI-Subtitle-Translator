@@ -36,7 +36,6 @@ venv.bak/
 *.srt
 !test.srt  # Ngoại trừ file test.srt để dev có cái test nhanh
 output_translated.srt
-tests/
 
 # AI Models (Bắt buộc chặn để không làm phình Git)
 models/*.gguf
