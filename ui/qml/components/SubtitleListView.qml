@@ -11,36 +11,34 @@ ColumnLayout {
     property alias currentIndex: subListView.currentIndex
     property alias count: subListView.count
 
-    // Biến trạng thái để Lọc
-    property string currentFilter: "ALL" // ALL, PENDING, DONE
+    property string currentFilter: "ALL"
 
-    // --- 1. PANEL HEADER ---
+    // --- 1. HEADER ---
     Rectangle {
         Layout.fillWidth: true; Layout.preferredHeight: 36; color: Theme.bgSurface
         RowLayout {
-            anchors.fill: parent; anchors.margins: Theme.spaceMedium
-            Text { text: "SUBTITLES"; color: Theme.textSecondary; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall; font.bold: true }
+            anchors.fill: parent; anchors.margins: Theme.space16
+            Text { text: "SUBTITLES"; color: Theme.textSecondary; font.family: Theme.fontUI; font.pixelSize: Theme.fontCaption; font.bold: true }
             Item { Layout.fillWidth: true }
-            Text { text: subListView.count + " subtitles"; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall }
+            Text { text: subListView.count + " subtitles"; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontCaption }
         }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
     }
 
-    // --- 2. TOOLBAR (Search & Filter) ---
+    // --- 2. SEARCH & FILTER ---
     Rectangle {
-        Layout.fillWidth: true; Layout.preferredHeight: 70; color: Theme.bgSurface
+        Layout.fillWidth: true; Layout.preferredHeight: 76; color: Theme.bgSurface
         
         ColumnLayout {
             anchors.fill: parent; spacing: 0
             
-            // Ô Tìm kiếm
             TextField {
                 id: searchInput
                 Layout.fillWidth: true
-                Layout.margins: Theme.spaceSmall
+                Layout.margins: Theme.space8
                 placeholderText: "🔍 Search text..."
                 font.family: Theme.fontUI
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.fontBody
                 color: Theme.textPrimary
                 background: Rectangle {
                     color: Theme.bgApp; radius: Theme.radius
@@ -48,35 +46,26 @@ ColumnLayout {
                 }
             }
             
-            // Bộ lọc (Segmented Control phong cách VS Code)
             RowLayout {
-                Layout.fillWidth: true; Layout.margins: Theme.spaceSmall; Layout.topMargin: 0
-                spacing: Theme.spaceMedium
+                Layout.fillWidth: true; Layout.margins: Theme.space8; Layout.topMargin: 0
+                spacing: Theme.space12
                 
-                Text {
-                    text: "ALL"
-                    color: root.currentFilter === "ALL" ? Theme.textPrimary : Theme.textMuted
-                    font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall; font.bold: true
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.currentFilter = "ALL" }
-                }
-                Text {
-                    text: "PENDING"
-                    color: root.currentFilter === "PENDING" ? Theme.accentSecondary : Theme.textMuted
-                    font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall; font.bold: true
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.currentFilter = "PENDING" }
-                }
-                Text {
-                    text: "DONE"
-                    color: root.currentFilter === "DONE" ? Theme.accentPrimary : Theme.textMuted
-                    font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall; font.bold: true
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.currentFilter = "DONE" }
+                // Các bộ lọc chuẩn State Machine
+                Repeater {
+                    model: ["ALL", "PENDING", "TRANSLATED", "ACCEPTED"]
+                    delegate: Text {
+                        text: modelData
+                        color: root.currentFilter === modelData ? Theme.textPrimary : Theme.textMuted
+                        font.family: Theme.fontUI; font.pixelSize: Theme.fontCaption; font.bold: true
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.currentFilter = modelData }
+                    }
                 }
             }
         }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
     }
 
-    // --- 3. HIGH DENSITY LIST ---
+    // --- 3. COMPACT LIST ---
     ListView {
         id: subListView
         Layout.fillWidth: true; Layout.fillHeight: true
@@ -89,44 +78,43 @@ ColumnLayout {
             id: delegateItem
             width: subListView.width
             
-            // LOGIC LỌC (FILTER & SEARCH) NGAY TRÊN QML
             property string sText: searchInput.text.toLowerCase()
             property bool matchSearch: sText === "" || originalText.toLowerCase().includes(sText) || (translationText !== undefined && translationText.toLowerCase().includes(sText))
             property bool matchFilter: root.currentFilter === "ALL" || 
                                      (root.currentFilter === "PENDING" && (status === "PENDING" || status === undefined)) ||
-                                     (root.currentFilter === "DONE" && (status === "ACCEPTED" || status === "TRANSLATED" || status === "EDITED"))
+                                     (root.currentFilter === "TRANSLATED" && (status === "TRANSLATED" || status === "EDITED")) ||
+                                     (root.currentFilter === "ACCEPTED" && status === "ACCEPTED")
             
             visible: matchSearch && matchFilter
-            height: visible ? 60 : 0 // Thu gọn thẻ nếu không khớp điều kiện
+            height: visible ? 56 : 0 // Nén gọn hơn
             
             property bool isSelected: ListView.isCurrentItem
             color: isSelected ? Theme.bgSurfaceElevated : (mouseArea.containsMouse ? Theme.bgSurfaceSoft : "transparent")
             
             Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 3; color: isSelected ? Theme.accentSecondary : "transparent" }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.bgApp; visible: delegateItem.visible }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; visible: delegateItem.visible; opacity: 0.5 }
 
             ColumnLayout {
-                anchors.fill: parent; anchors.margins: Theme.spaceSmall; anchors.leftMargin: Theme.spaceMedium; spacing: 2
+                anchors.fill: parent; anchors.margins: Theme.space8; anchors.leftMargin: Theme.space16; spacing: 2
                 visible: delegateItem.visible
 
                 RowLayout {
                     Layout.fillWidth: true
-                    Text { text: "#" + subIndex; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall }
-                    Text { text: " • " + startTime + " → " + endTime; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall }
+                    Text { text: "#" + subIndex; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontCaption }
+                    Text { text: " • " + startTime; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontCaption }
                     Item { Layout.fillWidth: true }
                     StatusBadge { status: model.status !== undefined ? model.status : "PENDING" }
                 }
 
                 Text { 
-                    text: status === "ACCEPTED" ? translationText : originalText
+                    text: originalText
                     color: isSelected ? Theme.textPrimary : Theme.textSecondary
-                    font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeBody
+                    font.family: Theme.fontUI; font.pixelSize: Theme.fontBody
                     elide: Text.ElideRight; Layout.fillWidth: true 
                 }
             }
 
             MouseArea { 
-                id: mouseArea
                 anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                 onClicked: subListView.currentIndex = index 
             }
@@ -139,7 +127,7 @@ ColumnLayout {
             text: "Không có dữ liệu phù hợp"
             color: Theme.textDisabled
             font.family: Theme.fontUI
-            font.pixelSize: Theme.fontSizeBody
+            font.pixelSize: Theme.fontBody
             visible: subListView.count === 0 || subListView.contentHeight === 0
         }
     }

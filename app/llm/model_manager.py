@@ -1,45 +1,35 @@
-import os
+from typing import Optional, Dict, Any, Generator
+from app.core.backends.base_backend import BaseInferenceBackend
+from app.core.backends.ollama_backend import OllamaBackend
 
 class ModelManager:
-    _instance = None
-    _llm = None
-    _current_model_path = None
+    def __init__(self, backend_type: str = "ollama"):
+        self.backend: BaseInferenceBackend
+        if backend_type == "ollama":
+            self.backend = OllamaBackend()
+        else:
+            raise ValueError(f"Backend không hỗ trợ: {backend_type}")
 
-    @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = ModelManager()
-        return cls._instance
+        self.current_model_name: str = ""
 
-    def load_model(self, model_path: str, n_ctx: int = 4096, n_gpu_layers: int = -1):
-        # Tránh load lại nếu cùng một model
-        if self._llm is not None and self._current_model_path == model_path:
-            return True
-        
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model file not found: {model_path}")
+    def load_model(self, model_name: str, **kwargs) -> bool:
+        success = self.backend.load_model(model_name, **kwargs)
+        if success:
+            self.current_model_name = model_name
+        return success
 
-        # Giải phóng VRAM model cũ nếu có
-        if self._llm is not None:
-            del self._llm
-        
-        from llama_cpp import Llama
-        self._llm = Llama(
-            model_path=model_path, 
-            n_ctx=n_ctx, 
-            n_gpu_layers=n_gpu_layers,
-            verbose=False
-        )
-        self._current_model_path = model_path
-        return True
+    def unload_model(self) -> None:
+        self.backend.unload_model()
+        self.current_model_name = ""
 
-    def generate_stream(self, prompt: str, max_tokens: int = 256):
-        if self._llm is None:
-            raise RuntimeError("Model chưa được load.")
-        
-        return self._llm(
-            prompt,
-            max_tokens=max_tokens,
-            stop=["<|im_end|>", "</current_subtitle_to_translate>"],
-            stream=True
-        )
+    def generate(self, prompt: str, system_prompt: str = "", **kwargs) -> str:
+        return self.backend.generate(prompt, system_prompt=system_prompt, **kwargs)
+
+    def stream(self, prompt: str, system_prompt: str = "", **kwargs) -> Generator[str, None, None]:
+        return self.backend.stream(prompt, system_prompt=system_prompt, **kwargs)
+
+    def cancel(self) -> None:
+        self.backend.cancel()
+
+    def get_status(self) -> Dict[str, Any]:
+        return self.backend.get_runtime_info()

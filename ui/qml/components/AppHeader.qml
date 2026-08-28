@@ -6,7 +6,7 @@ import "../theme"
 
 ToolBar {
     id: root
-    property string projectName: "Chưa mở dự án"
+    property string projectName: "Untitled"
     property bool isSaved: true
     
     signal openSrtClicked()
@@ -14,18 +14,12 @@ ToolBar {
     signal saveClicked()
     signal exportClicked()
 
-    // 1. CỐ ĐỊNH CHIỀU CAO HEADER ĐỂ CHỐNG SẬP VIỀN
     implicitHeight: 48
-    leftPadding: Theme.spaceMedium
-    rightPadding: 0 // Cho phép các nút điều khiển bám sát lề phải
+    padding: 0 
 
     background: Rectangle { 
         color: Theme.bgApp
-        
-        // Đường viền dưới giờ sẽ nằm chuẩn xác ở đáy Header
-        Rectangle { anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right; height: 1; color: Theme.border }
-
-        // VÙNG NHẬN DIỆN CHUỘT ĐỂ KÉO CỬA SỔ
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton
@@ -33,65 +27,104 @@ ToolBar {
         }
     }
 
-    // 2. GÁN ROWLAYOUT LÀM CONTENT ITEM CHUẨN CỦA QML
+    // Dùng RowLayout tổng để chống đè layout
     contentItem: RowLayout {
-        spacing: Theme.spaceMedium
+        spacing: 0
 
-        // BRANDING
-        Text { text: "◈ AI Subtitle Translator"; color: Theme.textPrimary; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeTitle; font.bold: true }
-        
-        // Thanh phân cách dọc (Bo lề trên dưới để đẹp hơn)
-        Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; Layout.topMargin: 12; Layout.bottomMargin: 12; color: Theme.border }
-
-        // PROJECT STATE
+        // 1. TRÁI: Branding
         RowLayout {
-            spacing: Theme.spaceSmall
-            Text { text: root.projectName; color: Theme.textPrimary; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeBody }
-            Text { text: root.isSaved ? "✓ Saved" : "● Unsaved changes"; color: root.isSaved ? Theme.textSecondary : Theme.warning; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall }
+            Layout.leftMargin: Theme.space16
+            Text { 
+                text: "◈ AI Subtitle Translator"
+                color: Theme.textSecondary 
+                font.family: Theme.fontUI
+                font.pixelSize: Theme.fontBody
+                font.bold: true 
+            }
         }
 
-        Item { Layout.fillWidth: true } // Spacer
+        // Spacer đẩy Center ra giữa
+        Item { Layout.fillWidth: true }
 
-        // ACTIONS
-        AppButton { text: "Open SRT"; onClicked: root.openSrtClicked() }
-        AppButton { text: "Open Project"; onClicked: root.openProjectClicked() }
-        AppButton { text: "Save"; onClicked: root.saveClicked() }
-        
-        Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; Layout.topMargin: 12; Layout.bottomMargin: 12; color: Theme.border }
-        
-        AppButton { text: "Export SRT"; isPrimary: true; onClicked: root.exportClicked() }
-
-        // CỤM NÚT WINDOW CONTROLS (Nằm chính xác ở góc phải)
+        // 2. GIỮA: Project Name & Status Chip
         RowLayout {
-            spacing: 0
-            Layout.alignment: Qt.AlignVCenter
-            Layout.leftMargin: Theme.spaceMedium
+            spacing: Theme.space12
+            Layout.alignment: Qt.AlignHCenter
 
-            // Nút Minimize
-            Button {
-                implicitWidth: 46; implicitHeight: 48
-                contentItem: Text { text: "—"; color: Theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.bold: true }
-                background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
-                onClicked: Window.window.showMinimized()
+            Text { 
+                text: root.projectName
+                color: Theme.textPrimary
+                font.family: Theme.fontUI
+                font.pixelSize: Theme.fontSection
+                font.bold: true
             }
-            
-            // Nút Maximize / Restore
-            Button {
-                implicitWidth: 46; implicitHeight: 48
-                contentItem: Text { text: Window.window.visibility === Window.Maximized ? "🗗" : "🗖"; color: Theme.textSecondary; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
-                onClicked: {
-                    if (Window.window.visibility === Window.Maximized) Window.window.showNormal()
-                    else Window.window.showMaximized()
+
+            Rectangle {
+                implicitWidth: statusText.width + Theme.space16
+                implicitHeight: 22
+                radius: 11
+                color: root.isSaved ? Theme.bgSurfaceElevated : Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.15)
+                border.color: root.isSaved ? Theme.border : Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.3)
+                border.width: 1
+
+                Text { 
+                    id: statusText
+                    anchors.centerIn: parent
+                    text: root.isSaved ? "✓ Saved" : "● Unsaved"
+                    color: root.isSaved ? Theme.textSecondary : Theme.warning
+                    font.family: Theme.fontUI
+                    font.pixelSize: Theme.fontCaption
+                    font.bold: true
                 }
             }
-            
-            // Nút Close
-            Button {
-                implicitWidth: 46; implicitHeight: 48
-                contentItem: Text { text: "✕"; color: parent.hovered ? "#FFFFFF" : Theme.textSecondary; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                background: Rectangle { color: parent.hovered ? Theme.danger : "transparent" }
-                onClicked: Window.window.close()
+        }
+
+        // Spacer đẩy Right về sát lề phải
+        Item { Layout.fillWidth: true }
+
+        // 3. PHẢI: Actions & Window Controls
+        RowLayout {
+            spacing: 0
+            Layout.alignment: Qt.AlignRight
+
+            RowLayout {
+                spacing: Theme.space8
+                Layout.rightMargin: Theme.space16
+
+                AppButton { text: "Open SRT"; onClicked: root.openSrtClicked() }
+                AppButton { text: "Open Project"; onClicked: root.openProjectClicked() }
+                AppButton { text: "Save"; onClicked: root.saveClicked() }
+                
+                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: Theme.border; Layout.margins: Theme.space4 }
+                
+                AppButton { text: "Export SRT"; isPrimary: true; onClicked: root.exportClicked() }
+            }
+
+            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }
+
+            RowLayout {
+                spacing: 0
+                Button {
+                    implicitWidth: 46; implicitHeight: 48
+                    contentItem: Text { text: "—"; color: Theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.bold: true }
+                    background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
+                    onClicked: Window.window.showMinimized()
+                }
+                Button {
+                    implicitWidth: 46; implicitHeight: 48
+                    contentItem: Text { text: Window.window.visibility === Window.Maximized ? "🗗" : "🗖"; color: Theme.textSecondary; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
+                    onClicked: {
+                        if (Window.window.visibility === Window.Maximized) Window.window.showNormal()
+                        else Window.window.showMaximized()
+                    }
+                }
+                Button {
+                    implicitWidth: 46; implicitHeight: 48
+                    contentItem: Text { text: "✕"; color: parent.hovered ? "#FFFFFF" : Theme.textSecondary; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { color: parent.hovered ? Theme.danger : "transparent" }
+                    onClicked: Window.window.close()
+                }
             }
         }
     }

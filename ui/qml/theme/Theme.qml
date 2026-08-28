@@ -16,6 +16,19 @@ QtObject {
     readonly property color danger: "#F85149"
 
     readonly property string fontUI: "Segoe UI"
+
+    readonly property int fontApp: 15      // Logo / App Title
+    readonly property int fontSection: 14  // Header các Panel
+    readonly property int fontBody: 13     // Nội dung chính
+    readonly property int fontLabel: 12    // Nút bấm, Meta data
+    readonly property int fontCaption: 11  // Badge, Status nhỏ
+
+    // --- Spacing System (4-point grid) ---
+    readonly property int space4: 4
+    readonly property int space8: 8
+    readonly property int space12: 12
+    readonly property int space16: 16
+    readonly property int space24: 24
     
     readonly property color textPrimary: "#C9D1D9"
     readonly property color textSecondary: "#9CA3AF"
