@@ -8,25 +8,53 @@ RowLayout {
     spacing: Theme.spaceMedium
     property alias sourceLang: sourceCombo.currentText
 
-    Text { text: "SOURCE"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
+    Text { text: "SOURCE"; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall; font.bold: true }
 
     ComboBox {
         id: sourceCombo
         model: ["English", "Japanese", "Chinese (Simplified)", "Chinese (Traditional)", "Korean", "Spanish", "French", "German", "Russian"]
-        font.pixelSize: 14
+        font.family: Theme.fontUI
+        font.pixelSize: Theme.fontSizeBody
         implicitWidth: 160
+        
+        background: Rectangle {
+            color: Theme.bgSurfaceElevated
+            border.color: Theme.border
+            radius: Theme.radius
+        }
+        contentItem: Text {
+            text: sourceCombo.currentText
+            color: Theme.textPrimary
+            font: sourceCombo.font
+            verticalAlignment: Text.AlignVCenter
+            leftPadding: Theme.spaceSmall
+        }
     }
 
     Text { text: " ➔ "; color: Theme.textMuted; font.pixelSize: 16; font.bold: true }
 
-    Text { text: "TARGET"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
+    Text { text: "TARGET"; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall; font.bold: true }
 
     ComboBox {
         id: targetCombo
         model: ["Vietnamese"]
-        font.pixelSize: 14
+        font.family: Theme.fontUI
+        font.pixelSize: Theme.fontSizeBody
         implicitWidth: 120
-        enabled: false // Target luôn cố định
+        enabled: false
+        
+        background: Rectangle {
+            color: Theme.bgSurfaceSoft
+            border.color: Theme.border
+            radius: Theme.radius
+        }
+        contentItem: Text {
+            text: targetCombo.currentText
+            color: Theme.textSecondary
+            font: targetCombo.font
+            verticalAlignment: Text.AlignVCenter
+            leftPadding: Theme.spaceSmall
+        }
     }
 
     function setLanguage(lang) {

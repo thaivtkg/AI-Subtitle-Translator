@@ -1,39 +1,60 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 import "../theme"
 
 Rectangle {
     id: root
-    width: Math.min(Math.max(messageText.width + Theme.spaceXl * 2, 250), 600)
-    height: messageText.height + Theme.spaceLarge
+    // Rộng linh hoạt nhưng có giới hạn tối đa 400px
+    width: Math.min(Math.max(messageText.implicitWidth + 70, 250), 400)
+    
+    // CAO LINH HOẠT: Tự động đẩy chiều cao nếu chữ rớt dòng
+    height: Math.max(48, messageText.implicitHeight + Theme.spaceLarge)
     radius: Theme.radius
     
     color: Theme.bgSurfaceElevated
-    border.color: type === "SUCCESS" ? Theme.success : (type === "ERROR" ? Theme.danger : Theme.accentCyan)
+    border.color: type === "SUCCESS" ? Theme.accentPrimary : (type === "ERROR" ? Theme.danger : Theme.accentSecondary)
     border.width: 1
 
     property string message: ""
-    property string type: "INFO" // SUCCESS, ERROR, INFO
+    property string type: "INFO" 
 
-    // Đặt vị trí mặc định giấu lên trên cùng màn hình
     y: -height - 20
     anchors.horizontalCenter: parent ? parent.horizontalCenter : undefined
-    z: 999 // Đảm bảo luôn nổi lên trên cùng
+    z: 999 
 
-    Text {
-        id: messageText
-        text: root.message
-        color: Theme.textPrimary
-        font.pixelSize: 14
-        font.bold: true
-        anchors.centerIn: parent
-        wrapMode: Text.WordWrap
-        horizontalAlignment: Text.AlignHCenter
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: Theme.spaceSmall
+        anchors.leftMargin: Theme.spaceMedium
+        anchors.rightMargin: Theme.spaceMedium
+        spacing: Theme.spaceMedium
+        
+        Text {
+            text: root.type === "SUCCESS" ? "✓" : (root.type === "ERROR" ? "✕" : "ℹ")
+            color: root.border.color
+            font.family: Theme.fontUI
+            font.pixelSize: 18 // Phóng to icon một chút
+            font.bold: true
+            Layout.alignment: Qt.AlignVCenter
+        }
+        
+        Text {
+            id: messageText
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
+            text: root.message
+            color: Theme.textPrimary
+            font.family: Theme.fontUI
+            font.pixelSize: Theme.fontSizeBody
+            wrapMode: Text.WordWrap
+            lineHeight: 1.2 // Giãn dòng nhẹ cho dễ đọc
+        }
     }
 
     Timer {
         id: hideTimer
-        interval: 3000 // Tự tắt sau 3 giây
+        interval: 3000 
         onTriggered: hide()
     }
 
@@ -52,7 +73,7 @@ Rectangle {
         id: slideIn
         to: Theme.spaceMedium
         duration: 250
-        easing.type: Easing.OutBack // Hiệu ứng nảy nhẹ
+        easing.type: Easing.OutBack
         running: false
     }
 

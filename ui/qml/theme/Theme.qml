@@ -2,35 +2,38 @@ pragma Singleton
 import QtQuick 2.15
 
 QtObject {
-    // --- Backgrounds ---
-    readonly property color bgApp: "#0B1020"
-    readonly property color bgSurface: "#111827"
-    readonly property color bgSurfaceElevated: "#172033"
-    readonly property color bgSurfaceSoft: "#1B263B"
-    readonly property color border: "#273247"
+    readonly property color bgApp: "#0E1116"
+    readonly property color bgSurface: "#161B22"
+    readonly property color bgSurfaceElevated: "#21262D"
+    readonly property color bgSurfaceSoft: "#30363D"
+    readonly property color border: "#30363D"
+    readonly property color borderFocus: "#58A6FF"
 
-    // --- Accents ---
-    readonly property color accentPurple: "#8B5CF6"
-    readonly property color accentPink: "#EC4899"
-    readonly property color accentCyan: "#38BDF8"
-    readonly property color success: "#34D399"
-    readonly property color warning: "#FBBF24"
-    readonly property color danger: "#F43F5E"
+    readonly property color accentPrimary: "#238636"
+    readonly property color accentSecondary: "#58A6FF"
+    readonly property color accentMuted: "#1F6FEB"
+    readonly property color warning: "#D29922"
+    readonly property color danger: "#F85149"
 
-    // --- Text ---
-    readonly property color textPrimary: "#F8FAFC"
-    readonly property color textSecondary: "#CBD5E1"
-    readonly property color textMuted: "#94A3B8"
-    readonly property color textDisabled: "#64748B"
+    readonly property string fontUI: "Segoe UI"
+    
+    readonly property color textPrimary: "#C9D1D9"
+    readonly property color textSecondary: "#9CA3AF"
+    readonly property color textMuted: "#6B7280"
+    
+    // --- BỔ SUNG BIẾN BỊ THIẾU ĐỂ SỬA LỖI ---
+    readonly property color textDisabled: "#6E7681" 
+    
+    readonly property int fontSizeTitle: 15
+    readonly property int fontSizeBody: 13
+    readonly property int fontSizeSmall: 11
+    readonly property int fontSizeBadge: 10
 
-    // --- Spacing ---
     readonly property int spaceXs: 4
     readonly property int spaceSmall: 8
     readonly property int spaceMedium: 16
     readonly property int spaceLarge: 24
-    readonly property int spaceXl: 32
-
-    // --- Radius & Animation ---
-    readonly property int radius: 6
-    readonly property int animDuration: 150
+    
+    readonly property int radius: 4
+    readonly property int animDuration: 120
 }
