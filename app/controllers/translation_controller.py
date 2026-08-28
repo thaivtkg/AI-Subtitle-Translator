@@ -7,45 +7,72 @@ from app.core.hardware_detector import HardwareDetector
 class TranslationController(QObject):
     statusChanged = Signal(str)
     translationUpdated = Signal(str)
-    notify = Signal(str, str)  # TÍN HIỆU MỚI: Bắn thông báo xuống thanh đáy
+    notify = Signal(str, str)
+    contextUpdated = Signal() # TÍN HIỆU MỚI CHO CONTEXT
 
     def __init__(self, subtitle_model):
         super().__init__()
         self._status = "PENDING"
         self._current_translation = ""
+        self._current_original = ""
+        self._context_prev = "" # LƯU CONTEXT TRƯỚC
+        self._context_next = "" # LƯU CONTEXT SAU
+        
         self._subtitle_model = subtitle_model
         self.worker = None
         self.hardware_profile = HardwareDetector.get_recommended_profile()
 
     @Property(str, notify=statusChanged)
-    def status(self):
-        return self._status
+    def status(self): return self._status
 
     @Property(str, notify=translationUpdated)
-    def currentTranslation(self):
-        return self._current_translation
+    def currentTranslation(self): return self._current_translation
+
+    @Property(str, notify=translationUpdated)
+    def currentOriginal(self): return self._current_original
+
+    # EXPOSE CONTEXT RA QML
+    @Property(str, notify=contextUpdated)
+    def contextPrev(self): return self._context_prev
+
+    @Property(str, notify=contextUpdated)
+    def contextNext(self): return self._context_next
 
     @Slot(int)
     def loadSubtitle(self, index):
-        if index < 0:
+        if index < 0: 
+            self._current_original = ""
             self._current_translation = ""
+            self._context_prev = ""
+            self._context_next = ""
             self._status = "PENDING"
             self.statusChanged.emit(self._status)
             self.translationUpdated.emit(self._current_translation)
+            self.contextUpdated.emit()
             return
+            
         subtitles = self._subtitle_model.get_all_data()
         if index >= len(subtitles): return
         sub = subtitles[index]
         
-        if sub["status"] == "ACCEPTED":
-            self._current_translation = sub["translation"]
-            self._status = "ACCEPTED"
+        self._current_original = sub.get("original", "")
+        status = sub.get("status", "PENDING")
+        
+        if status in ["ACCEPTED", "EDITED", "TRANSLATED"]:
+            self._current_translation = sub.get("translation", "")
         else:
-            self._current_translation = sub["original"]
-            self._status = "PENDING"
+            self._current_translation = ""
             
+        self._status = status
+        
+        # TRÍCH XUẤT CONTEXT ĐỂ HIỂN THỊ LÊN UI
+        prev_ctx, _, next_ctx = ContextEngine.get_context(subtitles, index)
+        self._context_prev = "\n\n".join(prev_ctx) if prev_ctx else "Không có dữ liệu trước."
+        self._context_next = "\n\n".join(next_ctx) if next_ctx else "Không có dữ liệu sau."
+        
         self.statusChanged.emit(self._status)
         self.translationUpdated.emit(self._current_translation)
+        self.contextUpdated.emit()
 
     @Slot()
     def markAsEdited(self):
@@ -95,7 +122,6 @@ class TranslationController(QObject):
 
     @Slot(int, str, result=bool)
     def acceptTranslation(self, index, final_text):
-        """Đã sửa: Trả về cờ Bool và bắn lỗi xuống Notification Bar thay vì ghi đè text"""
         subtitles = self._subtitle_model.get_all_data()
         if 0 <= index < len(subtitles):
             original = subtitles[index].get("original", "").strip()
@@ -104,12 +130,10 @@ class TranslationController(QObject):
             if not clean_text:
                 self.notify.emit("ERROR", "Lỗi: Không thể duyệt bản dịch trống!")
                 return False
-                
             if clean_text == original:
                 self.notify.emit("ERROR", "Lỗi: Bản dịch không được trùng khớp y hệt văn bản gốc!")
                 return False
 
-        # Nếu vượt qua kiểm tra
         self._subtitle_model.update_translation(index, final_text, "ACCEPTED")
         self._status = "ACCEPTED"
         self.statusChanged.emit(self._status)

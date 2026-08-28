@@ -9,9 +9,13 @@ from app.core.srt_parser import SRTParser
 from app.controllers.translation_controller import TranslationController
 from app.controllers.project_controller import ProjectController
 from app.core.hardware_detector import HardwareDetector
+from PySide6.QtQuickControls2 import QQuickStyle
 
 def main():
     app = QGuiApplication(sys.argv)
+
+    QQuickStyle.setStyle("Basic")
+    
     engine = QQmlApplicationEngine()
 
     profile = HardwareDetector.get_recommended_profile()
