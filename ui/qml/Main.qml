@@ -19,56 +19,16 @@ ApplicationWindow {
     property string globalStorySummary: ""
 
     // ==========================================
-    // S2-T3: PROJECT HEADER
+    // P2.5-T2: PROJECT HEADER
     // ==========================================
-    header: ToolBar {
-        background: Rectangle { 
-            color: Theme.bgSurface
-            Rectangle {
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 1
-                color: Theme.border
-            }
-        }
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: Theme.spaceMedium
-            spacing: Theme.spaceMedium
-
-            Text { 
-                text: "AI Subtitle Translator"
-                color: Theme.textPrimary
-                font.pixelSize: 16
-                font.bold: true 
-            }
-            
-            Text { 
-                text: " | "
-                color: Theme.border
-                font.pixelSize: 16
-            }
-            
-            Text { 
-                text: "Workspace"
-                color: Theme.textMuted
-                font.pixelSize: 14
-            }
-
-            Item { Layout.fillWidth: true } 
-
-            AppButton { text: "📁 Open SRT"; onClicked: importSrtDialog.open() }
-            AppButton { text: "📂 Open Project"; onClicked: loadProjectDialog.open() }
-            AppButton { text: "💾 Save"; onClicked: saveProjectDialog.open() }
-            AppButton { 
-                text: "📤 Export SRT"
-                isPrimary: true
-                onClicked: {
-                    if (projectController.validateBeforeExport()) {
-                        exportSrtDialog.open()
-                    }
-                }
+    header: AppHeader {
+        projectName: "Workspace"
+        onOpenSrtClicked: importSrtDialog.open()
+        onOpenProjectClicked: loadProjectDialog.open()
+        onSaveClicked: saveProjectDialog.open()
+        onExportClicked: {
+            if (projectController.validateBeforeExport()) {
+                exportSrtDialog.open()
             }
         }
     }
