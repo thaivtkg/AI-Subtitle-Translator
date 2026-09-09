@@ -7,69 +7,71 @@ ColumnLayout {
     id: inspectorRoot
     spacing: Theme.spaceMedium
 
-    // --- 1. STORY SUMMARY CARD (20%) ---
-    Rectangle {
+    // --- 1. STORY SUMMARY (Muted Surface / Editable) ---
+    ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.preferredHeight: inspectorRoot.height * 0.2
-        color: Theme.bgApp
-        radius: Theme.radius
+        Layout.preferredHeight: 20
+        spacing: Theme.spaceXs
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: Theme.spaceMedium
-            spacing: Theme.spaceXs
+        Text {
+            text: "STORY SUMMARY"
+            color: Theme.textSecondary
+            font.pixelSize: 12
+            font.bold: true
+            Layout.leftMargin: Theme.spaceXs
+        }
 
-            Text {
-                text: "STORY SUMMARY"
-                color: Theme.textSecondary
-                font.pixelSize: 12
-                font.bold: true
-            }
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            color: Theme.bgSurface
+            radius: Theme.radius
+
             ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                anchors.fill: parent
+                anchors.margins: Theme.spaceSmall
                 TextArea {
                     text: globalStorySummary
-                    placeholderText: "Nhập quy tắc dịch, bối cảnh..."
+                    placeholderText: "Nhập quy tắc dịch, bối cảnh, xưng hô..."
                     color: Theme.accentCyan
                     font.pixelSize: 14
                     wrapMode: Text.WordWrap
                     background: null
-                    topPadding: 0
-                    leftPadding: 0
-                    rightPadding: 0
+                    selectByMouse: true
                     onTextChanged: globalStorySummary = text
                 }
             }
         }
     }
 
-    // --- 2. PREVIOUS CONTEXT CARD (20%) ---
-    Rectangle {
+    // --- 2. PREVIOUS CONTEXT (Muted Surface / Read-only) ---
+    ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.preferredHeight: inspectorRoot.height * 0.2
-        color: Theme.bgApp
-        radius: Theme.radius
+        Layout.preferredHeight: 20
+        spacing: Theme.spaceXs
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: Theme.spaceMedium
-            spacing: Theme.spaceXs
+        Text {
+            text: "PREVIOUS"
+            color: Theme.textSecondary
+            font.pixelSize: 12
+            font.bold: true
+            Layout.leftMargin: Theme.spaceXs
+        }
 
-            Text {
-                text: "PREVIOUS"
-                color: Theme.textSecondary
-                font.pixelSize: 12
-                font.bold: true
-            }
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            color: Theme.bgSurface
+            radius: Theme.radius
+
             ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                anchors.fill: parent
+                anchors.margins: Theme.spaceSmall
                 Text {
                     text: translationController.contextPrev
-                    color: Theme.textSecondary
+                    color: Theme.textMuted
                     font.pixelSize: 13
                     wrapMode: Text.WordWrap
                     lineHeight: 1.3
@@ -78,34 +80,36 @@ ColumnLayout {
         }
     }
 
-    // --- 3. CURRENT HIGHLIGHT CARD (35% - HERO CARD) ---
-    Rectangle {
+    // --- 3. CURRENT HIGHLIGHT (Elevated Surface / Hero Context) ---
+    ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.preferredHeight: inspectorRoot.height * 0.35
-        color: Theme.bgSurfaceElevated
-        radius: Theme.radius
-        border.color: Theme.accentCyan
-        border.width: 1
+        Layout.preferredHeight: 35
+        spacing: Theme.spaceXs
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: Theme.spaceMedium
-            spacing: Theme.spaceXs
+        Text {
+            text: "◆ CURRENT"
+            color: Theme.accentCyan
+            font.pixelSize: 12
+            font.bold: true
+            Layout.leftMargin: Theme.spaceXs
+        }
 
-            Text {
-                text: "◆ CURRENT"
-                color: Theme.accentCyan
-                font.pixelSize: 12
-                font.bold: true
-            }
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            color: Theme.bgSurfaceElevated
+            radius: Theme.radius
+            border.color: Theme.border
+            border.width: 1
+
             ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                anchors.fill: parent
+                anchors.margins: Theme.spaceMedium
                 Text {
                     text: translationController.currentOriginal
                     color: Theme.textPrimary
-                    font.pixelSize: 13
+                    font.pixelSize: 15
                     wrapMode: Text.WordWrap
                     font.bold: true
                     lineHeight: 1.3
@@ -114,28 +118,30 @@ ColumnLayout {
         }
     }
 
-    // --- 4. NEXT CONTEXT CARD (25%) ---
-    Rectangle {
+    // --- 4. NEXT CONTEXT (Disabled text / Read-only) ---
+    ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.preferredHeight: inspectorRoot.height * 0.25
-        color: Theme.bgApp
-        radius: Theme.radius
+        Layout.preferredHeight: 25
+        spacing: Theme.spaceXs
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: Theme.spaceMedium
-            spacing: Theme.spaceXs
+        Text {
+            text: "NEXT"
+            color: Theme.textSecondary
+            font.pixelSize: 12
+            font.bold: true
+            Layout.leftMargin: Theme.spaceXs
+        }
 
-            Text {
-                text: "NEXT"
-                color: Theme.textSecondary
-                font.pixelSize: 12
-                font.bold: true
-            }
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            color: Theme.bgSurface
+            radius: Theme.radius
+
             ScrollView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                anchors.fill: parent
+                anchors.margins: Theme.spaceSmall
                 Text {
                     text: translationController.contextNext
                     color: Theme.textDisabled
