@@ -33,4 +33,10 @@ QtObject {
     // --- Radius & Animation ---
     readonly property int radius: 6
     readonly property int animDuration: 150
+
+    // --- Micro-interaction Tokens (T12) ---
+    readonly property int animHover: 120
+    readonly property int animFocus: 150
+    readonly property int animState: 150
+    readonly property int animProgress: 220
 }

@@ -50,7 +50,7 @@ Rectangle {
                     height: parent.height
                     color: Theme.success
                     radius: 1
-                    Behavior on width { NumberAnimation { duration: 150 } }
+                    Behavior on width { NumberAnimation { duration: Theme.animProgress; easing.type: Easing.OutCubic } }
                 }
             }
         }
@@ -64,10 +64,12 @@ Rectangle {
             RowLayout {
                 spacing: Theme.spaceSmall
                 Rectangle {
+                    id: engineDot
                     width: 8; height: 8; radius: 4
                     Layout.alignment: Qt.AlignVCenter
                     visible: root.engineStatus !== "Translating" && root.engineStatus !== "Loading"
                     color: root.engineStatus === "Ready" ? Theme.success : root.engineStatus === "Error" ? Theme.danger : Theme.textMuted
+                    Behavior on color { ColorAnimation { duration: Theme.animState; easing.type: Easing.OutQuad } }
                 }
                 AIActivityIndicator {
                     active: root.engineStatus === "Translating" || root.engineStatus === "Loading"

@@ -37,6 +37,7 @@ Button {
         border.color: (control.isPrimary || !control.enabled) ? "transparent" : Theme.border
         border.width: 1
 
-        Behavior on color { ColorAnimation { duration: Theme.animDuration } }
+        Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
+        Behavior on border.color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
     }
 }

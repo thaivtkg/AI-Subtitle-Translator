@@ -42,8 +42,8 @@ ColumnLayout {
             height: parent.height
             color: root.isComplete ? Theme.success : Theme.accentCyan
             radius: 2
-            Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
-            Behavior on color { ColorAnimation { duration: 250 } }
+            Behavior on width { NumberAnimation { duration: Theme.animProgress; easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: Theme.animState; easing.type: Easing.OutQuad } }
         }
     }
 }

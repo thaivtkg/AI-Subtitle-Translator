@@ -18,7 +18,9 @@ Item {
 
     EmptyWorkspace {
         anchors.fill: parent
-        visible: !workspace.hasSelection
+        visible: opacity > 0
+        opacity: !workspace.hasSelection ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: Theme.animState; easing.type: Easing.OutCubic } }
         emptyStateMode: workspace.totalCount > 0 ? "no_selection" : "no_project"
         onOpenSrtClicked: workspace.openSrtRequested()
         onOpenProjectClicked: workspace.openProjectRequested()
@@ -26,7 +28,9 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        visible: workspace.hasSelection
+        visible: opacity > 0
+        opacity: workspace.hasSelection ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: Theme.animState; easing.type: Easing.OutCubic } }
         spacing: Theme.spaceMedium
 
         RowLayout {
@@ -107,7 +111,7 @@ Item {
                 radius: Theme.radius
                 border.color: translationController.status === "ERROR" ? Theme.danger : translationInput.activeFocus ? Theme.accentCyan : Theme.border
                 border.width: translationInput.activeFocus || translationController.status === "ERROR" ? 2 : 1
-                Behavior on border.color { ColorAnimation { duration: 100 } }
+                Behavior on border.color { ColorAnimation { duration: Theme.animFocus; easing.type: Easing.OutQuad } }
                 ScrollView {
                     anchors.fill: parent
                     anchors.margins: Theme.spaceMedium
