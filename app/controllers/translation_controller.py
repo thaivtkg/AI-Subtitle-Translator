@@ -9,6 +9,7 @@ class TranslationController(QObject):
     translationUpdated = Signal(str)
     notify = Signal(str, str)
     contextUpdated = Signal() # TÍN HIỆU MỚI CHO CONTEXT
+    progressChanged = Signal()
 
     def __init__(self, subtitle_model):
         super().__init__()
@@ -21,6 +22,19 @@ class TranslationController(QObject):
         self._subtitle_model = subtitle_model
         self.worker = None
         self.hardware_profile = HardwareDetector.get_recommended_profile()
+        self._subtitle_model.modelReset.connect(self._emit_progress)
+        self._subtitle_model.dataChanged.connect(self._emit_progress)
+
+    @Property(int, notify=progressChanged)
+    def totalSubtitleCount(self):
+        return len(self._subtitle_model.get_all_data())
+
+    @Property(int, notify=progressChanged)
+    def acceptedCount(self):
+        return sum(1 for sub in self._subtitle_model.get_all_data() if str(sub.get("status", "")).upper() == "ACCEPTED")
+
+    def _emit_progress(self, *args):
+        self.progressChanged.emit()
 
     @Property(str, notify=statusChanged)
     def status(self): return self._status

@@ -30,6 +30,25 @@ ColumnLayout {
 
     Rectangle {
         Layout.fillWidth: true
+        implicitHeight: compProgress.visible ? compProgress.implicitHeight + Theme.spaceMedium : 0
+        color: Theme.bgSurface
+        visible: compProgress.visible
+        clip: true
+        CompletionProgress {
+            id: compProgress
+            anchors.fill: parent
+            anchors.leftMargin: Theme.spaceMedium
+            anchors.rightMargin: Theme.spaceMedium
+            anchors.topMargin: Theme.spaceSmall
+            anchors.bottomMargin: Theme.spaceSmall
+            acceptedCount: translationController.acceptedCount
+            totalCount: translationController.totalSubtitleCount
+        }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
+    }
+
+    Rectangle {
+        Layout.fillWidth: true
         Layout.preferredHeight: 84
         color: Theme.bgSurface
 

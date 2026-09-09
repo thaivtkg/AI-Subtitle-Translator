@@ -37,8 +37,8 @@ ApplicationWindow {
 
     footer: AppStatusBar {
         id: appStatusBar
-        totalCount: typeof translationController.totalSubtitleCount !== "undefined" ? translationController.totalSubtitleCount : subListView.count
-        acceptedCount: typeof translationController.acceptedCount !== "undefined" ? translationController.acceptedCount : 0
+        totalCount: translationController.totalSubtitleCount
+        acceptedCount: translationController.acceptedCount
         engineStatus: {
             if (translationController.status === "TRANSLATING") return "Translating"
             if (translationController.status === "ERROR") return "Error"
