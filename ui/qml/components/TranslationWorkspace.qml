@@ -80,10 +80,15 @@ Item {
                 Layout.fillWidth: true
                 Text { text: "VIETNAMESE"; color: Theme.textPrimary; font.pixelSize: 12; font.bold: true }
                 Item { Layout.fillWidth: true }
+                AIActivityIndicator {
+                    active: translationController.status === "TRANSLATING"
+                    color: Theme.accentCyan
+                    Layout.alignment: Qt.AlignVCenter
+                }
                 Text {
                     text: {
                         const s = translationController.status
-                        if (s === "TRANSLATING") return "TRANSLATING ◌"
+                        if (s === "TRANSLATING") return "Translating…"
                         if (s === "ERROR") return "ERROR ✕"
                         if (s === "ACCEPTED") return "[ ACCEPTED ]"
                         if (s === "EDITED") return "EDITED ●"
@@ -108,8 +113,8 @@ Item {
                     anchors.margins: Theme.spaceMedium
                     TextArea {
                         id: translationInput
-                        text: translationController.status === "TRANSLATING" ? "Generating translation..." : translationController.currentTranslation
-                        color: translationController.status === "TRANSLATING" ? Theme.textMuted : Theme.textPrimary
+                        text: translationController.currentTranslation || (translationController.status === "TRANSLATING" ? "Generating translation..." : "")
+                        color: translationController.status === "TRANSLATING" && translationController.currentTranslation === "" ? Theme.textMuted : Theme.textPrimary
                         font.pixelSize: 18
                         wrapMode: Text.WordWrap
                         selectByMouse: true

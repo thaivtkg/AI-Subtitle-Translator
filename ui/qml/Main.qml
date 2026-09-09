@@ -40,10 +40,9 @@ ApplicationWindow {
         totalCount: typeof translationController.totalSubtitleCount !== "undefined" ? translationController.totalSubtitleCount : subListView.count
         acceptedCount: typeof translationController.acceptedCount !== "undefined" ? translationController.acceptedCount : 0
         engineStatus: {
-            if (typeof translationController === "undefined" || typeof translationController.isModelLoaded === "undefined" || !translationController.isModelLoaded)
-                return "Not loaded"
             if (translationController.status === "TRANSLATING") return "Translating"
             if (translationController.status === "ERROR") return "Error"
+            if (typeof translationController.isModelLoaded === "undefined" || !translationController.isModelLoaded) return "Not loaded"
             return "Ready"
         }
         vramUsed: typeof translationController.vramUsed !== "undefined" ? translationController.vramUsed : -1.0

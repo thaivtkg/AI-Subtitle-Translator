@@ -66,7 +66,13 @@ Rectangle {
                 Rectangle {
                     width: 8; height: 8; radius: 4
                     Layout.alignment: Qt.AlignVCenter
-                    color: root.engineStatus === "Ready" ? Theme.success : root.engineStatus === "Translating" ? Theme.accentCyan : root.engineStatus === "Error" ? Theme.danger : Theme.textMuted
+                    visible: root.engineStatus !== "Translating" && root.engineStatus !== "Loading"
+                    color: root.engineStatus === "Ready" ? Theme.success : root.engineStatus === "Error" ? Theme.danger : Theme.textMuted
+                }
+                AIActivityIndicator {
+                    active: root.engineStatus === "Translating" || root.engineStatus === "Loading"
+                    color: Theme.accentCyan
+                    Layout.alignment: Qt.AlignVCenter
                 }
                 Text {
                     id: engineText
