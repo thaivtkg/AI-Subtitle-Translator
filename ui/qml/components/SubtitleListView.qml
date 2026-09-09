@@ -23,7 +23,7 @@ ColumnLayout {
             anchors.rightMargin: Theme.spaceMedium
             Text { text: "SUBTITLES"; color: Theme.textSecondary; font.pixelSize: 12; font.bold: true }
             Item { Layout.fillWidth: true }
-            Text { text: subListView.count + " items"; color: Theme.textMuted; font.pixelSize: 12 }
+            Text { text: subListView.filteredCount + " / " + subListView.count + " items"; color: Theme.textMuted; font.pixelSize: 12 }
         }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
     }
@@ -96,8 +96,16 @@ ColumnLayout {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
-        Component.onCompleted: { if (count > 0) translationController.loadSubtitle(0) }
+        property int filteredCount: 0
+
+        onContentHeightChanged: updateFilteredCount()
+        Component.onCompleted: {
+            if (count > 0) translationController.loadSubtitle(0)
+            updateFilteredCount()
+        }
         onCurrentIndexChanged: { if (currentIndex >= 0) translationController.loadSubtitle(currentIndex) }
+
+        function updateFilteredCount() { filteredCount = Math.round(contentHeight / 64) }
 
         delegate: Rectangle {
             id: delegateItem
@@ -107,8 +115,7 @@ ColumnLayout {
             property bool matchSearch: searchText === "" || String(originalText || "").toLowerCase().includes(searchText) || String(translationText || "").toLowerCase().includes(searchText)
             property bool matchFilter: root.currentFilter === "ALL" ||
                                        (root.currentFilter === "PENDING" && (normalizedStatus === "PENDING" || normalizedStatus === "")) ||
-                                       (root.currentFilter === "TRANSLATED" && (normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED")) ||
-                                       (root.currentFilter === "ACCEPTED" && normalizedStatus === "ACCEPTED")
+                                       normalizedStatus === root.currentFilter
             property bool isSelected: ListView.isCurrentItem
             visible: matchSearch && matchFilter
             height: visible ? 64 : 0
@@ -153,6 +160,35 @@ ColumnLayout {
         }
 
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded; width: 8 }
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            spacing: Theme.spaceMedium
+            visible: subListView.count > 0 && subListView.filteredCount === 0 && (searchInput.text !== "" || root.currentFilter !== "ALL")
+
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                text: "No subtitles found"
+                color: Theme.textPrimary
+                font.pixelSize: 18
+                font.bold: true
+            }
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                text: "Try changing your search query or status filter."
+                color: Theme.textMuted
+                font.pixelSize: 12
+                horizontalAlignment: Text.AlignHCenter
+            }
+            AppButton {
+                Layout.alignment: Qt.AlignHCenter
+                text: "Clear filters"
+                onClicked: {
+                    searchInput.text = ""
+                    statusFilterCombo.currentIndex = 0
+                }
+            }
+        }
     }
 
     Text {
