@@ -35,6 +35,21 @@ ApplicationWindow {
         }
     }
 
+    footer: AppStatusBar {
+        id: appStatusBar
+        totalCount: typeof translationController.totalSubtitleCount !== "undefined" ? translationController.totalSubtitleCount : subListView.count
+        acceptedCount: typeof translationController.acceptedCount !== "undefined" ? translationController.acceptedCount : 0
+        engineStatus: {
+            if (typeof translationController === "undefined" || typeof translationController.isModelLoaded === "undefined" || !translationController.isModelLoaded)
+                return "Not loaded"
+            if (translationController.status === "TRANSLATING") return "Translating"
+            if (translationController.status === "ERROR") return "Error"
+            return "Ready"
+        }
+        vramUsed: typeof translationController.vramUsed !== "undefined" ? translationController.vramUsed : -1.0
+        vramTotal: typeof translationController.vramTotal !== "undefined" ? translationController.vramTotal : -1.0
+    }
+
     // ==========================================
     // S2-T2: MAIN WINDOW SHELL (3-COLUMN LAYOUT)
     // ==========================================
