@@ -84,6 +84,44 @@ ColumnLayout {
                     border.width: 1
                 }
                 onCurrentTextChanged: root.currentFilter = currentText
+
+                delegate: ItemDelegate {
+                    width: statusFilterCombo.width
+                    contentItem: Text {
+                        text: modelData
+                        color: highlighted ? Theme.textPrimary : Theme.textSecondary
+                        font.pixelSize: 14
+                        font.bold: highlighted
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        color: highlighted ? Theme.bgSurfaceSoft : "transparent"
+                        radius: 2
+                    }
+                    highlighted: statusFilterCombo.highlightedIndex === index
+                }
+
+                popup: Popup {
+                    y: statusFilterCombo.height + 4
+                    width: statusFilterCombo.width
+                    padding: Theme.spaceXs
+                    implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 240)
+
+                    contentItem: ListView {
+                        clip: true
+                        implicitHeight: contentHeight
+                        model: statusFilterCombo.popup.visible ? statusFilterCombo.delegateModel : null
+                        currentIndex: statusFilterCombo.highlightedIndex
+                        ScrollIndicator.vertical: ScrollIndicator { }
+                    }
+
+                    background: Rectangle {
+                        color: Theme.bgSurfaceElevated
+                        border.color: Theme.border
+                        border.width: 1
+                        radius: Theme.radius
+                    }
+                }
             }
         }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
