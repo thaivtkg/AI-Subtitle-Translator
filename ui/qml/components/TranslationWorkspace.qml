@@ -16,9 +16,10 @@ Item {
     Text {
         anchors.centerIn: parent
         visible: !workspace.hasSelection
-        text: "Chọn một subtitle để bắt đầu dịch."
-        color: Theme.textDisabled
+        text: "Select a subtitle to start translating"
+        color: Theme.textMuted
         font.pixelSize: 16
+        horizontalAlignment: Text.AlignHCenter
     }
 
     ColumnLayout {
@@ -40,9 +41,14 @@ Item {
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: workspace.height * 0.32
+            Layout.preferredHeight: workspace.height * 0.35
             spacing: Theme.spaceSmall
-            Text { text: "ORIGINAL"; color: Theme.textSecondary; font.pixelSize: 12; font.bold: true; Layout.leftMargin: Theme.spaceXs }
+            RowLayout {
+                Layout.fillWidth: true
+                Text { text: "ORIGINAL"; color: Theme.textSecondary; font.pixelSize: 12; font.bold: true }
+                Item { Layout.fillWidth: true }
+                Text { text: langSelector.sourceLang.toUpperCase(); color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
+            }
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -54,7 +60,7 @@ Item {
                     TextArea {
                         text: translationController.currentOriginal
                         color: Theme.textSecondary
-                        font.pixelSize: 15
+                        font.pixelSize: 14
                         wrapMode: Text.WordWrap
                         readOnly: true
                         selectByMouse: true
@@ -70,30 +76,42 @@ Item {
             spacing: Theme.spaceSmall
             RowLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: Theme.spaceXs
-                Layout.rightMargin: Theme.spaceXs
-                Text { text: "TARGET TRANSLATION"; color: Theme.textPrimary; font.pixelSize: 12; font.bold: true }
+                Text { text: "VIETNAMESE"; color: Theme.textPrimary; font.pixelSize: 12; font.bold: true }
                 Item { Layout.fillWidth: true }
-                Text { text: "EDITABLE ✎"; color: Theme.textMuted; font.pixelSize: 12 }
+                Text {
+                    text: {
+                        const s = translationController.status
+                        if (s === "TRANSLATING") return "TRANSLATING ◌"
+                        if (s === "ERROR") return "ERROR ✕"
+                        if (s === "ACCEPTED") return "[ ACCEPTED ]"
+                        if (s === "EDITED") return "EDITED ●"
+                        if (s === "TRANSLATED") return "TRANSLATED ✦"
+                        return "PENDING"
+                    }
+                    color: translationController.status === "ACCEPTED" ? Theme.success : translationController.status === "ERROR" ? Theme.danger : translationController.status === "TRANSLATED" || translationController.status === "EDITED" ? Theme.accentPurple : Theme.textMuted
+                    font.pixelSize: 12
+                    font.bold: true
+                }
             }
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 color: Theme.bgSurfaceElevated
                 radius: Theme.radius
-                border.color: translationInput.activeFocus ? Theme.accentCyan : Theme.border
-                border.width: 1
-                Behavior on border.color { ColorAnimation { duration: 120 } }
+                border.color: translationController.status === "ERROR" ? Theme.danger : translationInput.activeFocus ? Theme.accentCyan : Theme.border
+                border.width: translationInput.activeFocus || translationController.status === "ERROR" ? 2 : 1
+                Behavior on border.color { ColorAnimation { duration: 100 } }
                 ScrollView {
                     anchors.fill: parent
                     anchors.margins: Theme.spaceMedium
                     TextArea {
                         id: translationInput
-                        text: translationController.currentTranslation
-                        color: Theme.textPrimary
+                        text: translationController.status === "TRANSLATING" ? "Generating translation..." : translationController.currentTranslation
+                        color: translationController.status === "TRANSLATING" ? Theme.textMuted : Theme.textPrimary
                         font.pixelSize: 18
                         wrapMode: Text.WordWrap
                         selectByMouse: true
+                        readOnly: translationController.status === "TRANSLATING"
                         background: null
                         onTextChanged: {
                             if (translationInput.focus && translationController.status !== "TRANSLATING" && translationInput.text !== translationController.currentTranslation)
@@ -102,33 +120,41 @@ Item {
                         Keys.onPressed: (event) => {
                             if (event.key === Qt.Key_Return && (event.modifiers & Qt.ControlModifier)) {
                                 event.accepted = true
-                                if (["TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0)
+                                if (translationController.status === "TRANSLATED" || translationController.status === "EDITED")
                                     acceptRequested(translationInput.text)
                             }
                         }
                     }
                 }
             }
+            Text {
+                visible: translationController.status === "ERROR"
+                text: "Translation failed. Model inference error."
+                color: Theme.danger
+                font.pixelSize: 12
+                Layout.fillWidth: true
+            }
         }
 
         RowLayout {
             Layout.alignment: Qt.AlignRight
+            Layout.topMargin: Theme.spaceSmall
             Layout.bottomMargin: Theme.spaceSmall
             spacing: Theme.spaceSmall
             AppButton {
-                text: "↻ Retry"
-                enabled: translationController.status !== "TRANSLATING"
+                text: "Retry"
+                enabled: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 onClicked: translateRequested(langSelector.sourceLang)
             }
             AppButton {
-                text: translationController.status === "TRANSLATING" ? "◌ Translating..." : "✦ Translate"
+                text: translationController.status === "TRANSLATING" ? "◌ Translating..." : "Translate"
                 isPrimary: true
                 enabled: translationController.status !== "TRANSLATING"
                 onClicked: translateRequested(langSelector.sourceLang)
             }
             AppButton {
-                text: "✓ Accept"
-                enabled: ["TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
+                text: "Accept"
+                enabled: translationController.status === "TRANSLATED" || translationController.status === "EDITED"
                 onClicked: acceptRequested(translationInput.text)
             }
         }
