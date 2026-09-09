@@ -8,6 +8,7 @@ ToolBar {
     id: root
     property string projectName: "Untitled"
     property bool isSaved: true
+    property bool hasProjectData: false
 
     signal openSrtClicked()
     signal openProjectClicked()
@@ -87,9 +88,9 @@ ToolBar {
                 spacing: Theme.spaceSmall
                 Layout.rightMargin: Theme.spaceMedium
 
-                AppButton { text: "Open SRT"; onClicked: root.openSrtClicked() }
-                AppButton { text: "Open Project"; onClicked: root.openProjectClicked() }
-                AppButton { text: "Save"; onClicked: root.saveClicked() }
+                AppButton { text: "Open SRT"; tooltip: "Ctrl + O"; onClicked: root.openSrtClicked() }
+                AppButton { text: "Open Project"; tooltip: "Ctrl + Shift + O"; onClicked: root.openProjectClicked() }
+                AppButton { text: "Save"; tooltip: "Ctrl + S"; enabled: root.projectName !== "Untitled" && !root.isSaved; onClicked: root.saveClicked() }
 
                 Rectangle {
                     Layout.preferredWidth: 1
@@ -98,7 +99,7 @@ ToolBar {
                     Layout.margins: Theme.spaceXs
                 }
 
-                AppButton { text: "Export SRT"; isPrimary: true; onClicked: root.exportClicked() }
+                AppButton { text: "Export SRT"; tooltip: "Ctrl + Shift + S"; isPrimary: true; enabled: root.projectName !== "Untitled" && root.hasProjectData; onClicked: root.exportClicked() }
             }
 
             Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }
