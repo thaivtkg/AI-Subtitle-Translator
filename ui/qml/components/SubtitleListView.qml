@@ -162,7 +162,8 @@ ColumnLayout {
     }
 
     Text {
-        anchors.centerIn: subListView
+        Layout.fillWidth: true
+        Layout.alignment: Qt.AlignCenter
         text: "📁 Mở file SRT hoặc Project\nđể bắt đầu làm việc."
         color: Theme.textDisabled
         font.pixelSize: 14

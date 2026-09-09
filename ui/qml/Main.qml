@@ -12,6 +12,7 @@ ApplicationWindow {
     height: 720
     minimumWidth: 1024
     minimumHeight: 600
+    flags: Qt.FramelessWindowHint | Qt.Window
     title: "AI Subtitle Translator - Professional Workspace"
     color: Theme.bgApp
 
