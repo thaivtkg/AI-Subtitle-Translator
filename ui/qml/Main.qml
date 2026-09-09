@@ -86,6 +86,7 @@ ApplicationWindow {
                 anchors.fill: parent
                 anchors.margins: Theme.spaceMedium
                 hasSelection: subListView.currentIndex >= 0
+                totalCount: subListView.count
 
                 onTranslateRequested: (sourceLang) => {
                     translationController.requestTranslation(subListView.currentIndex, sourceLang, "Vietnamese", globalStorySummary)
@@ -97,6 +98,8 @@ ApplicationWindow {
                         subListView.currentIndex += 1
                     }
                 }
+                onOpenSrtRequested: importSrtDialog.open()
+                onOpenProjectRequested: loadProjectDialog.open()
             }
         }
 

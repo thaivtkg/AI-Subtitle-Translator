@@ -7,19 +7,21 @@ Item {
     id: workspace
 
     property bool hasSelection: false
+    property int totalCount: 0
     signal translateRequested(string sourceLang)
     signal acceptRequested(string text)
+    signal openSrtRequested()
+    signal openProjectRequested()
 
     function setSourceLanguage(lang) { langSelector.setLanguage(lang) }
     function getSourceLanguage() { return langSelector.sourceLang }
 
-    Text {
-        anchors.centerIn: parent
+    EmptyWorkspace {
+        anchors.fill: parent
         visible: !workspace.hasSelection
-        text: "Select a subtitle to start translating"
-        color: Theme.textMuted
-        font.pixelSize: 16
-        horizontalAlignment: Text.AlignHCenter
+        emptyStateMode: workspace.totalCount > 0 ? "no_selection" : "no_project"
+        onOpenSrtClicked: workspace.openSrtRequested()
+        onOpenProjectClicked: workspace.openProjectRequested()
     }
 
     ColumnLayout {
