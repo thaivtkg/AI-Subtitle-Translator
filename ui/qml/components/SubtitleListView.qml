@@ -62,34 +62,28 @@ ColumnLayout {
                 }
             }
 
-            RowLayout {
+            ComboBox {
+                id: statusFilterCombo
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.spaceSmall
                 Layout.rightMargin: Theme.spaceSmall
                 Layout.bottomMargin: Theme.spaceSmall
-                spacing: Theme.spaceSmall
-                Repeater {
-                    model: ["ALL", "PENDING", "TRANSLATED", "ACCEPTED"]
-                    delegate: Text {
-                        text: modelData
-                        color: root.currentFilter === modelData ? Theme.textPrimary : Theme.textMuted
-                        font.pixelSize: 12
-                        font.bold: true
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            anchors.bottomMargin: -4
-                            width: parent.width
-                            height: 2
-                            color: Theme.accentCyan
-                            visible: root.currentFilter === modelData
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.currentFilter = modelData
-                        }
-                    }
+                model: ["ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ACCEPTED", "ERROR"]
+                contentItem: Text {
+                    text: statusFilterCombo.currentText === "ALL" ? "All statuses" : statusFilterCombo.currentText
+                    color: Theme.textPrimary
+                    font.pixelSize: 14
+                    font.bold: true
+                    verticalAlignment: Text.AlignVCenter
+                    leftPadding: Theme.spaceSmall
                 }
+                background: Rectangle {
+                    color: Theme.bgApp
+                    radius: Theme.radius
+                    border.color: statusFilterCombo.activeFocus ? Theme.accentCyan : Theme.border
+                    border.width: 1
+                }
+                onCurrentTextChanged: root.currentFilter = currentText
             }
         }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }

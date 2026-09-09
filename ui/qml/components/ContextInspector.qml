@@ -27,6 +27,9 @@ ColumnLayout {
             Layout.fillHeight: true
             color: Theme.bgSurface
             radius: Theme.radius
+            border.color: summaryInput.activeFocus ? Theme.accentCyan : Theme.border
+            border.width: 1
+            Behavior on border.color { ColorAnimation { duration: 100 } }
 
             ScrollView {
                 anchors.fill: parent
@@ -34,7 +37,7 @@ ColumnLayout {
                 TextArea {
                     text: globalStorySummary
                     placeholderText: "Nhập quy tắc dịch, bối cảnh, xưng hô..."
-                    color: Theme.accentCyan
+                    color: Theme.textPrimary
                     font.pixelSize: 14
                     wrapMode: Text.WordWrap
                     background: null
@@ -65,13 +68,15 @@ ColumnLayout {
             Layout.fillHeight: true
             color: Theme.bgSurface
             radius: Theme.radius
+            border.color: Theme.border
+            border.width: 1
 
             ScrollView {
                 anchors.fill: parent
                 anchors.margins: Theme.spaceSmall
                 Text {
-                    text: translationController.contextPrev
-                    color: Theme.textMuted
+                    text: translationController.contextPrev || "No previous context"
+                    color: translationController.contextPrev ? Theme.textSecondary : Theme.textDisabled
                     font.pixelSize: 13
                     wrapMode: Text.WordWrap
                     lineHeight: 1.3
@@ -100,18 +105,18 @@ ColumnLayout {
             Layout.fillHeight: true
             color: Theme.bgSurfaceElevated
             radius: Theme.radius
-            border.color: Theme.border
+            border.color: Theme.accentCyan
             border.width: 1
 
             ScrollView {
                 anchors.fill: parent
                 anchors.margins: Theme.spaceMedium
                 Text {
-                    text: translationController.currentOriginal
-                    color: Theme.textPrimary
+                    text: translationController.currentOriginal || "No subtitle selected"
+                    color: translationController.currentOriginal ? Theme.textPrimary : Theme.textDisabled
                     font.pixelSize: 15
                     wrapMode: Text.WordWrap
-                    font.bold: true
+                    font.bold: translationController.currentOriginal !== ""
                     lineHeight: 1.3
                 }
             }
@@ -138,13 +143,15 @@ ColumnLayout {
             Layout.fillHeight: true
             color: Theme.bgSurface
             radius: Theme.radius
+            border.color: Theme.border
+            border.width: 1
 
             ScrollView {
                 anchors.fill: parent
                 anchors.margins: Theme.spaceSmall
                 Text {
-                    text: translationController.contextNext
-                    color: Theme.textDisabled
+                    text: translationController.contextNext || "No next context"
+                    color: translationController.contextNext ? Theme.textSecondary : Theme.textDisabled
                     font.pixelSize: 13
                     wrapMode: Text.WordWrap
                     lineHeight: 1.3
