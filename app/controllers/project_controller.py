@@ -88,6 +88,14 @@ class ProjectController(QObject):
             "story_summary": story_summary,
             "subtitles": self._subtitle_model.get_all_data()
         }
+        for row_index, subtitle in enumerate(data["subtitles"]):
+            print(
+                f"[PROJECT_SAVE] target={row_index} "
+                f"translation_len={len(str(subtitle.get('translation', '') or ''))} "
+                f"status={subtitle.get('status', 'PENDING')} "
+                f"translation={subtitle.get('translation', '')!r}",
+                flush=True,
+            )
         
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
@@ -109,6 +117,14 @@ class ProjectController(QObject):
                 data = json.load(f)
             
             self._subtitle_model.load_data(data.get("subtitles", []))
+            for row_index, subtitle in enumerate(data.get("subtitles", [])):
+                print(
+                    f"[PROJECT_LOAD] target={row_index} "
+                    f"translation_len={len(str(subtitle.get('translation', '') or ''))} "
+                    f"status={subtitle.get('status', 'PENDING')} "
+                    f"translation={subtitle.get('translation', '')!r}",
+                    flush=True,
+                )
             self.projectLoaded.emit(data.get("story_summary", ""))
             
             # --- ĐOẠN ĐÃ SỬA: DỌN DẸP DUPLICATE EMIT ---

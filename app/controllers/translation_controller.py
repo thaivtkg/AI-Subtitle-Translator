@@ -149,6 +149,14 @@ class TranslationController(QObject):
         if sender is not None and sender is not self.worker:
             return
         clean_text = (text or "").strip()
+        print(
+            f"[TRANSLATION_CALLBACK] target={index} "
+            f"clean_len={len(clean_text)} clean_text={clean_text!r} "
+            f"active_target={self._active_translation_index} "
+            f"controller_status_before={self._status} "
+            f"current_translation_before={self._current_translation!r}",
+            flush=True,
+        )
         if not clean_text:
             message = "Lỗi: Model trả về bản dịch rỗng."
             self._subtitle_model.update_translation(index, message, "ERROR")
@@ -168,6 +176,14 @@ class TranslationController(QObject):
             self.statusChanged.emit(self._status)
             self.translationUpdated.emit(clean_text)
             self._active_translation_index = -1
+        print(
+            f"[TRANSLATION_CALLBACK_AFTER] target={index} "
+            f"controller_status={self._status} "
+            f"current_translation_len={len(self._current_translation)} "
+            f"current_translation={self._current_translation!r} "
+            f"active_target={self._active_translation_index}",
+            flush=True,
+        )
         self._set_engine_status("Ready")
 
     @Slot(int, str)

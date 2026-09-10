@@ -55,6 +55,12 @@ class TranslationWorker(QThread):
                     self.progress.emit(self.target_index, display_text)
                 
             final_clean = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
+            print(
+                f"[TRANSLATION_FINISH] target={self.target_index} "
+                f"raw_len={len(raw_text)} clean_len={len(final_clean)} "
+                f"clean_text={final_clean!r}",
+                flush=True,
+            )
             self.finished.emit(self.target_index, final_clean)
             
         except Exception as e:
