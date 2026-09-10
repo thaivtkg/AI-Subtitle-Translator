@@ -36,20 +36,26 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             Layout.topMargin: Theme.spaceSmall
             LanguageSelector {
                 id: langSelector
                 Layout.fillWidth: true
                 Layout.maximumWidth: 380
+                compact: workspace.width < 620
             }
-            Item { Layout.fillWidth: true }
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
             RowLayout {
                 spacing: Theme.spaceSmall
+                visible: workspace.width >= 620
+                Layout.minimumWidth: 0
                 Text {
                     text: "Status:"
                     color: Theme.textMuted
                     font.pixelSize: 12
-                    visible: workspace.width >= 500
                 }
                 StatusBadge { status: translationController.status }
             }

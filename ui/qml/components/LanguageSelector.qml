@@ -5,8 +5,10 @@ import "../theme"
 
 RowLayout {
     id: root
-    spacing: Theme.spaceMedium
     property alias sourceLang: sourceCombo.currentText
+    property bool compact: false
+
+    spacing: root.compact ? Theme.spaceXs : Theme.spaceMedium
 
     Text { text: "SOURCE"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
 
@@ -33,7 +35,7 @@ RowLayout {
         }
     }
 
-    Text { text: " ➔ "; color: Theme.textMuted; font.pixelSize: 16; font.bold: true }
+    Text { text: root.compact ? "→" : " ➔ "; color: Theme.textMuted; font.pixelSize: 16; font.bold: true }
 
     Text { text: "TARGET"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
 
