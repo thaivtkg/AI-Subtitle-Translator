@@ -153,10 +153,10 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignRight
             Layout.topMargin: Theme.spaceSmall
             Layout.bottomMargin: Theme.spaceSmall
             spacing: Theme.spaceXs
+            Item { Layout.fillWidth: true }
             AppButton {
                 text: "Retry"
                 enabled: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
