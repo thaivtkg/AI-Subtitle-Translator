@@ -14,7 +14,23 @@ RowLayout {
         id: sourceCombo
         model: ["English", "Japanese", "Chinese (Simplified)", "Chinese (Traditional)", "Korean", "Spanish", "French", "German", "Russian"]
         font.pixelSize: 14
-        implicitWidth: 160
+        Layout.minimumWidth: 110
+        Layout.preferredWidth: 160
+        Layout.maximumWidth: 180
+        Layout.fillWidth: true
+        contentItem: Text {
+            text: sourceCombo.currentText
+            color: Theme.textPrimary
+            font.pixelSize: 14
+            verticalAlignment: Text.AlignVCenter
+            leftPadding: Theme.spaceSmall
+            elide: Text.ElideRight
+        }
+        background: Rectangle {
+            color: Theme.bgApp
+            radius: Theme.radius
+            border.color: Theme.border
+        }
     }
 
     Text { text: " ➔ "; color: Theme.textMuted; font.pixelSize: 16; font.bold: true }
@@ -25,7 +41,23 @@ RowLayout {
         id: targetCombo
         model: ["Vietnamese"]
         font.pixelSize: 14
-        implicitWidth: 120
+        Layout.minimumWidth: 95
+        Layout.preferredWidth: 120
+        Layout.maximumWidth: 140
+        Layout.fillWidth: true
+        contentItem: Text {
+            text: targetCombo.currentText
+            color: Theme.textPrimary
+            font.pixelSize: 14
+            verticalAlignment: Text.AlignVCenter
+            leftPadding: Theme.spaceSmall
+            elide: Text.ElideRight
+        }
+        background: Rectangle {
+            color: Theme.bgApp
+            radius: Theme.radius
+            border.color: Theme.border
+        }
         enabled: false // Target luôn cố định
     }
 
