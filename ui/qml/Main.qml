@@ -7,6 +7,7 @@ import "theme"
 import "components"
 
 ApplicationWindow {
+    id: mainWindow
     visible: true
     width: 1280
     height: 720
