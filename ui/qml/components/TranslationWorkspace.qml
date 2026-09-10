@@ -8,6 +8,7 @@ Item {
 
     property bool hasSelection: false
     property int totalCount: 0
+    property bool compactActions: width < 500
     signal translateRequested(string sourceLang)
     signal acceptRequested(string text)
     signal openSrtRequested()
@@ -162,14 +163,18 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             Layout.topMargin: Theme.spaceSmall
             Layout.bottomMargin: Theme.spaceSmall
             spacing: Theme.spaceXs
-            Item { Layout.fillWidth: true }
+            Item {
+                Layout.fillWidth: true
+                visible: !workspace.compactActions
+            }
             AppButton {
                 text: "Retry"
                 Layout.minimumWidth: 72
-                Layout.preferredWidth: 80
+                Layout.preferredWidth: workspace.compactActions ? 72 : 80
                 Layout.maximumWidth: 96
                 enabled: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 onClicked: translateRequested(langSelector.sourceLang)
@@ -177,7 +182,7 @@ Item {
             AppButton {
                 text: translationController.status === "TRANSLATING" ? "◌ Translating..." : "Translate"
                 Layout.minimumWidth: 84
-                Layout.preferredWidth: 96
+                Layout.preferredWidth: workspace.compactActions ? 84 : 96
                 Layout.maximumWidth: 112
                 isPrimary: true
                 enabled: translationController.status !== "TRANSLATING"
@@ -186,7 +191,7 @@ Item {
             AppButton {
                 text: "Accept"
                 Layout.minimumWidth: 72
-                Layout.preferredWidth: 88
+                Layout.preferredWidth: workspace.compactActions ? 72 : 88
                 Layout.maximumWidth: 100
                 enabled: translationController.status === "TRANSLATED" || translationController.status === "EDITED"
                 onClicked: acceptRequested(translationInput.text)
