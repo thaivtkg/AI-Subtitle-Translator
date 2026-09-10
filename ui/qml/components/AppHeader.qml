@@ -9,6 +9,8 @@ ToolBar {
     property string projectName: "Untitled"
     property bool isSaved: true
     property bool hasProjectData: false
+    readonly property bool isCompact: width < 1280
+    readonly property bool isMinimum: width < 1100
 
     signal openSrtClicked()
     signal openProjectClicked()
@@ -43,18 +45,21 @@ ToolBar {
             RowLayout {
                 Layout.leftMargin: Theme.spaceMedium
                 Text {
-                    text: "◈ AI Subtitle Translator"
+                    text: root.isMinimum ? "AI Subtitle Translator" : "◈ AI Subtitle Translator"
                     color: Theme.textSecondary
                     font.pixelSize: 14
                     font.bold: true
                 }
             }
 
-            Item { Layout.fillWidth: true }
+            Item {
+                Layout.fillWidth: !root.isMinimum
+                Layout.minimumWidth: root.isMinimum ? Theme.spaceMedium : 0
+            }
 
             RowLayout {
                 spacing: Theme.spaceSmall
-                Layout.alignment: Qt.AlignHCenter
+                Layout.alignment: root.isMinimum ? Qt.AlignLeft : Qt.AlignHCenter
 
                 Text {
                     text: root.projectName
@@ -64,7 +69,7 @@ ToolBar {
                 }
 
                 Rectangle {
-                    implicitWidth: statusText.implicitWidth + Theme.spaceMedium
+                    implicitWidth: statusText.implicitWidth + (root.isMinimum ? Theme.spaceSmall : Theme.spaceMedium)
                     implicitHeight: 22
                     radius: 11
                     color: root.isSaved ? Theme.bgSurfaceElevated : Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.15)
@@ -74,10 +79,19 @@ ToolBar {
                     Text {
                         id: statusText
                         anchors.centerIn: parent
-                        text: root.isSaved ? "✓ Saved" : "● Unsaved"
+                        text: root.isSaved ? (root.isMinimum ? "✓" : "✓ Saved") : (root.isMinimum ? "●" : "● Unsaved")
                         color: root.isSaved ? Theme.textSecondary : Theme.warning
                         font.pixelSize: 12
                         font.bold: true
+                    }
+
+                    ToolTip.visible: chipMouse.containsMouse
+                    ToolTip.text: root.isSaved ? "Project saved" : "Unsaved changes"
+                    MouseArea {
+                        id: chipMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        acceptedButtons: Qt.NoButton
                     }
                 }
             }
@@ -89,11 +103,11 @@ ToolBar {
                 Layout.alignment: Qt.AlignRight
 
                 RowLayout {
-                    spacing: Theme.spaceSmall
-                    Layout.rightMargin: Theme.spaceMedium
+                    spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
+                    Layout.rightMargin: root.isCompact ? Theme.spaceSmall : Theme.spaceMedium
 
-                    AppButton { text: "Open SRT"; tooltip: "Ctrl + O"; onClicked: root.openSrtClicked() }
-                    AppButton { text: "Open Project"; tooltip: "Ctrl + Shift + O"; onClicked: root.openProjectClicked() }
+                    AppButton { text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Ctrl + O"; onClicked: root.openSrtClicked() }
+                    AppButton { text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Ctrl + Shift + O"; onClicked: root.openProjectClicked() }
                     AppButton { text: "Save"; tooltip: "Ctrl + S"; enabled: root.projectName !== "Untitled" && !root.isSaved; onClicked: root.saveClicked() }
 
                     Rectangle {
@@ -103,7 +117,7 @@ ToolBar {
                         Layout.margins: Theme.spaceXs
                     }
 
-                    AppButton { text: "Export SRT"; tooltip: "Ctrl + Shift + S"; isPrimary: true; enabled: root.projectName !== "Untitled" && root.hasProjectData; onClicked: root.exportClicked() }
+                    AppButton { text: root.isMinimum ? "Export" : "Export SRT"; tooltip: "Ctrl + Shift + S"; isPrimary: true; enabled: root.projectName !== "Untitled" && root.hasProjectData; onClicked: root.exportClicked() }
                 }
 
                 Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }
