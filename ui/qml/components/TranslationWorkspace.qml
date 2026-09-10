@@ -168,17 +168,26 @@ Item {
             Item { Layout.fillWidth: true }
             AppButton {
                 text: "Retry"
+                Layout.minimumWidth: 72
+                Layout.preferredWidth: 80
+                Layout.maximumWidth: 96
                 enabled: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 onClicked: translateRequested(langSelector.sourceLang)
             }
             AppButton {
                 text: translationController.status === "TRANSLATING" ? "◌ Translating..." : "Translate"
+                Layout.minimumWidth: 84
+                Layout.preferredWidth: 96
+                Layout.maximumWidth: 112
                 isPrimary: true
                 enabled: translationController.status !== "TRANSLATING"
                 onClicked: translateRequested(langSelector.sourceLang)
             }
             AppButton {
                 text: "Accept"
+                Layout.minimumWidth: 72
+                Layout.preferredWidth: 88
+                Layout.maximumWidth: 100
                 enabled: translationController.status === "TRANSLATED" || translationController.status === "EDITED"
                 onClicked: acceptRequested(translationInput.text)
             }
