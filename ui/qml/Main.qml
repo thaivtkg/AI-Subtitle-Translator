@@ -40,10 +40,7 @@ ApplicationWindow {
         totalCount: translationController.totalSubtitleCount
         acceptedCount: translationController.acceptedCount
         engineStatus: {
-            if (translationController.status === "TRANSLATING") return "Translating"
-            if (translationController.status === "ERROR") return "Error"
-            if (typeof translationController.isModelLoaded === "undefined" || !translationController.isModelLoaded) return "Not loaded"
-            return "Ready"
+            return translationController.engineStatus
         }
         vramUsed: typeof translationController.vramUsed !== "undefined" ? translationController.vramUsed : -1.0
         vramTotal: typeof translationController.vramTotal !== "undefined" ? translationController.vramTotal : -1.0

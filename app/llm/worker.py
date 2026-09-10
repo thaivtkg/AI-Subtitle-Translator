@@ -4,12 +4,13 @@ from PySide6.QtCore import QThread, Signal
 from app.llm.model_manager import ModelManager
 
 class TranslationWorker(QThread):
-    progress = Signal(str)
-    finished = Signal(str)
-    error = Signal(str)
+    progress = Signal(int, str)
+    finished = Signal(int, str)
+    error = Signal(int, str)
 
-    def __init__(self, prompt, profile):
+    def __init__(self, target_index, prompt, profile):
         super().__init__()
+        self.target_index = target_index
         self.prompt = prompt
         self.profile = profile
         self.model_path = os.path.join("models", profile.get("model_name", "qwen3-8b-q4_k_m.gguf"))
@@ -22,7 +23,7 @@ class TranslationWorker(QThread):
         try:
             # --- 1. KIỂM TRA TỒN TẠI MODEL THẬT (CHẶN HOÀN TOÀN MOCK) ---
             if not os.path.exists(self.model_path):
-                self.error.emit(f"Lỗi: Không tìm thấy file model tại '{self.model_path}'. Vui lòng đặt file GGUF vào thư mục models/.")
+                self.error.emit(self.target_index, f"Lỗi: Không tìm thấy file model tại '{self.model_path}'. Vui lòng đặt file GGUF vào thư mục models/.")
                 return
 
             # --- 2. NẠP MODEL THẬT QUA MODEL MANAGER ---
@@ -44,17 +45,17 @@ class TranslationWorker(QThread):
                 
                 # --- 3. BỘ LỌC THINK THÔNG MINH (TRÁNH NHẢY UI) ---
                 if '<think>' in raw_text and '</think>' not in raw_text:
-                    self.progress.emit("🤔 AI đang suy nghĩ văn cảnh...")
+                    self.progress.emit(self.target_index, "🤔 AI đang suy nghĩ văn cảnh...")
                     continue 
                 
                 clean_text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL)
                 display_text = clean_text.strip()
                 
                 if display_text:
-                    self.progress.emit(display_text)
+                    self.progress.emit(self.target_index, display_text)
                 
             final_clean = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
-            self.finished.emit(final_clean)
+            self.finished.emit(self.target_index, final_clean)
             
         except Exception as e:
-            self.error.emit(str(e))
+            self.error.emit(self.target_index, str(e))
