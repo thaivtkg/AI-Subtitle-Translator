@@ -110,9 +110,9 @@ ToolBar {
                     spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
                     Layout.rightMargin: root.isCompact ? Theme.spaceSmall : Theme.spaceMedium
 
-                    AppButton { text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Ctrl + O"; onClicked: root.openSrtClicked() }
-                    AppButton { text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Ctrl + Shift + O"; onClicked: root.openProjectClicked() }
-                    AppButton { text: "Save"; tooltip: "Ctrl + S"; enabled: root.hasProject && !root.isSaved; onClicked: root.saveClicked() }
+                    AppButton { text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Open SRT — Ctrl + O"; onClicked: root.openSrtClicked() }
+                    AppButton { text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Open Project — Ctrl + Shift + O"; onClicked: root.openProjectClicked() }
+                    AppButton { text: "Save"; tooltip: "Save Project — Ctrl + S"; enabled: root.hasProject && !root.isSaved; onClicked: root.saveClicked() }
 
                     Rectangle {
                         Layout.preferredWidth: 1
@@ -121,7 +121,7 @@ ToolBar {
                         Layout.margins: Theme.spaceXs
                     }
 
-                    AppButton { text: root.isMinimum ? "Export" : "Export SRT"; tooltip: "Ctrl + Shift + S"; isPrimary: true; enabled: root.hasProject && root.hasProjectData; onClicked: root.exportClicked() }
+                    AppButton { text: root.isMinimum ? "Export" : "Export SRT"; tooltip: "Export SRT — Ctrl + Shift + S"; isPrimary: true; enabled: root.hasProject && root.hasProjectData; onClicked: root.exportClicked() }
                 }
 
                 Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }
@@ -130,12 +130,16 @@ ToolBar {
                     spacing: 0
                     Button {
                         implicitWidth: 46; implicitHeight: 48
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Minimize"
                         contentItem: Text { text: "—"; color: Theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.bold: true }
                         background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
                         onClicked: Window.window.showMinimized()
                     }
                     Button {
                         implicitWidth: 46; implicitHeight: 48
+                        ToolTip.visible: hovered
+                        ToolTip.text: Window.window.visibility === Window.Maximized ? "Restore" : "Maximize"
                         contentItem: Text { text: Window.window.visibility === Window.Maximized ? "🗗" : "🗖"; color: Theme.textSecondary; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                         background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
                         onClicked: {
@@ -145,6 +149,8 @@ ToolBar {
                     }
                     Button {
                         implicitWidth: 46; implicitHeight: 48
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Close"
                         contentItem: Text { text: "✕"; color: parent.hovered ? "#FFFFFF" : Theme.textSecondary; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                         background: Rectangle { color: parent.hovered ? Theme.danger : "transparent" }
                         onClicked: Window.window.close()

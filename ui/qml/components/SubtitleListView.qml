@@ -61,7 +61,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.margins: Theme.spaceSmall
                 Layout.bottomMargin: Theme.spaceXs
-                placeholderText: "🔍 Search text..."
+                placeholderText: activeFocus ? "Search text..." : "🔍 Search text..."
                 font.pixelSize: 14
                 color: Theme.textPrimary
                 rightPadding: 30

@@ -43,6 +43,15 @@ ColumnLayout {
                     wrapMode: Text.WordWrap
                     background: null
                     selectByMouse: true
+                    Keys.onPressed: function(event) {
+                        if (event.key !== Qt.Key_Tab) return
+
+                        const nextItem = summaryInput.nextItemInFocusChain(!(event.modifiers & Qt.ShiftModifier))
+                        if (nextItem) {
+                            nextItem.forceActiveFocus(Qt.TabFocusReason)
+                            event.accepted = true
+                        }
+                    }
                     onTextChanged: {
                         globalStorySummary = text
                         if (typeof projectController !== "undefined") projectController.markDirty()
