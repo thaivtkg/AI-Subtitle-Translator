@@ -7,6 +7,7 @@ import "../theme"
 Item {
     id: root
 
+    signal dismissRequested()
     property bool dismissed: false
     property int lastValidPresetIndex: 0
     readonly property var presets: [
@@ -19,8 +20,9 @@ Item {
     readonly property int availableWidth: Screen.desktopAvailableWidth
     readonly property int availableHeight: Screen.desktopAvailableHeight
 
-    visible: !dismissed && Window.window !== null && Qt.application.arguments.indexOf("--dev-tools") >= 0
-    implicitWidth: 260
+    property bool toolVisible: false
+    visible: !dismissed && toolVisible && Window.window !== null
+    implicitWidth: 460
     implicitHeight: 42
     z: 1000
 
@@ -99,7 +101,10 @@ Item {
                 text: "×"
                 implicitWidth: 28
                 implicitHeight: 28
-                onClicked: root.dismissed = true
+                onClicked: {
+                    root.dismissed = true
+                    root.dismissRequested()
+                }
             }
         }
     }

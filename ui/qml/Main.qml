@@ -18,6 +18,8 @@ ApplicationWindow {
 
     // THÊM MỚI: Biến toàn cục hứng Story Summary (đặt ở cấp cao nhất)
     property string globalStorySummary: ""
+    // P2.5-T13-D0: manual responsive acceptance only.
+    property bool responsiveTestToolsEnabled: Qt.application.arguments.indexOf("--dev-tools") >= 0
 
     // ==========================================
     // P2.5-T2: PROJECT HEADER
@@ -179,11 +181,21 @@ ApplicationWindow {
         anchors.fill: parent
     }
 
-    // P2.5-T13-D0: manual responsive acceptance only; launch with --dev-tools.
+    Shortcut {
+        sequence: "Ctrl+Alt+R"
+        onActivated: {
+            mainWindow.responsiveTestToolsEnabled = !mainWindow.responsiveTestToolsEnabled
+            responsiveTestToolbar.dismissed = false
+        }
+    }
+
     ResponsiveTestToolbar {
+        id: responsiveTestToolbar
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         anchors.leftMargin: Theme.spaceMedium
         anchors.bottomMargin: Theme.spaceMedium
+        toolVisible: mainWindow.responsiveTestToolsEnabled
+        onDismissRequested: mainWindow.responsiveTestToolsEnabled = false
     }
 }
