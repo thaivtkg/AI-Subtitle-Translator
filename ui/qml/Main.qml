@@ -178,4 +178,12 @@ ApplicationWindow {
     FramelessResizeOverlay {
         anchors.fill: parent
     }
+
+    // P2.5-T13-D0: manual responsive acceptance only; launch with --dev-tools.
+    ResponsiveTestToolbar {
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: Theme.spaceMedium
+        anchors.bottomMargin: Theme.spaceMedium
+    }
 }
