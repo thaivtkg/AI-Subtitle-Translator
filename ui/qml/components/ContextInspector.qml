@@ -35,6 +35,7 @@ ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.spaceSmall
                 TextArea {
+                    id: summaryInput
                     text: globalStorySummary
                     placeholderText: "Nhập quy tắc dịch, bối cảnh, xưng hô..."
                     color: Theme.textPrimary
