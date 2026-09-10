@@ -8,6 +8,7 @@ Item {
     id: root
 
     property bool dismissed: false
+    property int lastValidPresetIndex: 0
     readonly property var presets: [
         { label: "1024×600", width: 1024, height: 600 },
         { label: "1280×720", width: 1280, height: 720 },
@@ -15,6 +16,8 @@ Item {
         { label: "1600×900", width: 1600, height: 900 },
         { label: "1920×1080", width: 1920, height: 1080 }
     ]
+    readonly property int availableWidth: Screen.desktopAvailableWidth
+    readonly property int availableHeight: Screen.desktopAvailableHeight
 
     visible: !dismissed && Window.window !== null && Qt.application.arguments.indexOf("--dev-tools") >= 0
     implicitWidth: 260
@@ -23,7 +26,7 @@ Item {
 
     function applyPreset(index) {
         const preset = root.presets[index]
-        if (!preset || !Window.window) return
+        if (!preset || !root.isPresetAvailable(index) || !Window.window) return
 
         if (Window.window.visibility === Window.Maximized)
             Window.window.showNormal()
@@ -31,10 +34,20 @@ Item {
         Window.window.width = preset.width
         Window.window.height = preset.height
 
-        if (Screen.width > 0 && Screen.height > 0) {
-            Window.window.x = Math.max(0, Math.round((Screen.width - preset.width) / 2))
-            Window.window.y = Math.max(0, Math.round((Screen.height - preset.height) / 2))
+        if (root.availableWidth > 0 && root.availableHeight > 0) {
+            Window.window.x = Math.max(0, Math.round((root.availableWidth - preset.width) / 2))
+            Window.window.y = Math.max(0, Math.round((root.availableHeight - preset.height) / 2))
         }
+    }
+
+    function isPresetAvailable(index) {
+        const preset = root.presets[index]
+        return !!preset && preset.width <= root.availableWidth && preset.height <= root.availableHeight
+    }
+
+    function presetLabel(index) {
+        const preset = root.presets[index]
+        return preset.label + (root.isPresetAvailable(index) ? "" : " ⚠")
     }
 
     Rectangle {
@@ -60,12 +73,26 @@ Item {
                 elide: Text.ElideRight
             }
 
+            Text {
+                text: "Screen: " + root.availableWidth + " × " + root.availableHeight
+                color: Theme.textMuted
+                font.family: "Segoe UI"
+                font.pixelSize: 11
+            }
+
             ComboBox {
                 id: presetSelector
-                model: root.presets.map(function(preset) { return preset.label })
+                model: root.presets.map(function(preset, index) { return root.presetLabel(index) })
                 Layout.preferredWidth: 105
                 Layout.minimumWidth: 105
-                onActivated: root.applyPreset(currentIndex)
+                onActivated: {
+                    if (root.isPresetAvailable(currentIndex)) {
+                        root.lastValidPresetIndex = currentIndex
+                        root.applyPreset(currentIndex)
+                    } else {
+                        currentIndex = root.lastValidPresetIndex
+                    }
+                }
             }
 
             Button {
