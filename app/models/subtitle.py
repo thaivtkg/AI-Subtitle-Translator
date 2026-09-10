@@ -55,9 +55,7 @@ class SubtitleModel(QAbstractListModel):
 
     def load_data(self, data_list):
         for sub in data_list:
-            if str(sub.get("status", "")).upper() == "TRANSLATED" and not str(sub.get("translation", "")).strip():
-                sub["translation"] = "Lỗi: Bản dịch rỗng."
-                sub["status"] = "ERROR"
+            self._normalize_translation_state(sub)
         self.beginResetModel()
         self._subtitles = data_list
         self.endResetModel()
@@ -65,17 +63,25 @@ class SubtitleModel(QAbstractListModel):
     # ---- BỔ SUNG TỪ ĐÂY ----
     def get_all_data(self):
         """Trả về toàn bộ danh sách subtitle để Context Engine xử lý"""
+        for sub in self._subtitles:
+            self._normalize_translation_state(sub)
         return self._subtitles
+
+    @staticmethod
+    def _normalize_translation_state(sub):
+        status = str(sub.get("status", "PENDING")).upper()
+        translation = str(sub.get("translation", "") or "")
+        if status in {"TRANSLATED", "EDITED", "ACCEPTED"} and not translation.strip():
+            sub["translation"] = "Lỗi: Bản dịch rỗng."
+            sub["status"] = "ERROR"
 
     def update_translation(self, row_index, translation_text, status):
         """Cập nhật bản dịch và trạng thái, sau đó báo cho QML vẽ lại"""
         if 0 <= row_index < len(self._subtitles):
-            if str(status).upper() == "TRANSLATED" and not str(translation_text or "").strip():
-                translation_text = "Lỗi: Bản dịch rỗng."
-                status = "ERROR"
             # 1. Cập nhật dữ liệu trong bộ nhớ Python
             self._subtitles[row_index]["translation"] = translation_text
             self._subtitles[row_index]["status"] = status
+            self._normalize_translation_state(self._subtitles[row_index])
             
             # 2. Tạo index và ÉP QML CẬP NHẬT CHÍNH XÁC 2 BIẾN NÀY
             q_index = self.createIndex(row_index, 0)
