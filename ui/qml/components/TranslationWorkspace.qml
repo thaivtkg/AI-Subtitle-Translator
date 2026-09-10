@@ -47,7 +47,9 @@ Item {
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: workspace.height * 0.35
+            Layout.fillHeight: true
+            Layout.preferredHeight: workspace.height * 0.45
+            Layout.minimumHeight: 160
             spacing: Theme.spaceSmall
             RowLayout {
                 Layout.fillWidth: true
@@ -79,6 +81,8 @@ Item {
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.preferredHeight: workspace.height * 0.35
+            Layout.minimumHeight: 140
             spacing: Theme.spaceSmall
             RowLayout {
                 Layout.fillWidth: true
