@@ -111,8 +111,7 @@ class TranslationController(QObject):
         if index < 0 or index >= len(self._subtitle_model.get_all_data()):
             return
         if self.worker and self.worker.isRunning():
-            self.worker.cancel()
-            self.worker.wait()
+            return
 
         self._active_translation_index = index
         self._status = "TRANSLATING"

@@ -192,7 +192,8 @@ Item {
                 Layout.minimumWidth: 72
                 Layout.preferredWidth: workspace.compactActions ? 72 : 80
                 Layout.maximumWidth: 96
-                enabled: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
+                enabled: translationController.engineStatus !== "Translating" &&
+                         ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 onClicked: translateRequested(langSelector.sourceLang)
             }
             AppButton {
@@ -201,7 +202,8 @@ Item {
                 Layout.preferredWidth: workspace.compactActions ? 84 : 96
                 Layout.maximumWidth: 112
                 isPrimary: true
-                enabled: translationController.status !== "TRANSLATING"
+                enabled: translationController.engineStatus !== "Translating" &&
+                         translationController.status !== "TRANSLATING"
                 onClicked: translateRequested(langSelector.sourceLang)
             }
             AppButton {
