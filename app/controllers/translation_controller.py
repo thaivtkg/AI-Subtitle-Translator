@@ -134,6 +134,9 @@ class TranslationController(QObject):
 
     @Slot(int, str)
     def on_progress(self, index, text):
+        sender = self.sender()
+        if sender is not None and sender is not self.worker:
+            return
         self._subtitle_model.update_translation(index, text, "TRANSLATING")
         if index == self._active_translation_index:
             self._current_translation = text
@@ -142,17 +145,36 @@ class TranslationController(QObject):
 
     @Slot(int, str)
     def on_finished(self, index, text):
-        self._subtitle_model.update_translation(index, text, "TRANSLATED")
+        sender = self.sender()
+        if sender is not None and sender is not self.worker:
+            return
+        clean_text = (text or "").strip()
+        if not clean_text:
+            message = "Lỗi: Model trả về bản dịch rỗng."
+            self._subtitle_model.update_translation(index, message, "ERROR")
+            if index == self._active_translation_index:
+                self._status = "ERROR"
+                self._current_translation = message
+                self.statusChanged.emit(self._status)
+                self.translationUpdated.emit(message)
+                self._active_translation_index = -1
+            self._set_engine_status("Error")
+            return
+
+        self._subtitle_model.update_translation(index, clean_text, "TRANSLATED")
         if index == self._active_translation_index:
-            self._current_translation = text
+            self._current_translation = clean_text
             self._status = "TRANSLATED"
             self.statusChanged.emit(self._status)
-            self.translationUpdated.emit(text)
+            self.translationUpdated.emit(clean_text)
             self._active_translation_index = -1
         self._set_engine_status("Ready")
 
     @Slot(int, str)
     def on_error(self, index, err_msg):
+        sender = self.sender()
+        if sender is not None and sender is not self.worker:
+            return
         message = f"Lỗi: {err_msg}"
         self._subtitle_model.update_translation(index, message, "ERROR")
         if index == self._active_translation_index:
