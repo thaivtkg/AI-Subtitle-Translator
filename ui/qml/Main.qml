@@ -169,5 +169,9 @@ ApplicationWindow {
                 exportSrtDialog.open()
             }
         }
-    }   
+    }
+
+    FramelessResizeOverlay {
+        anchors.fill: parent
+    }
 }
