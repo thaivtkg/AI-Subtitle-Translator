@@ -53,8 +53,8 @@ ApplicationWindow {
         anchors.fill: parent
         orientation: Qt.Horizontal
         handle: Rectangle {
-            implicitWidth: 2
-            color: SplitHandle.pressed ? Theme.accentCyan : (SplitHandle.hovered ? Theme.border : "transparent")
+            implicitWidth: 1
+            color: SplitHandle.pressed ? Theme.accentCyan : (SplitHandle.hovered ? Theme.textMuted : Theme.border)
             Behavior on color { ColorAnimation { duration: Theme.animDuration } }
         }
 
@@ -62,6 +62,7 @@ ApplicationWindow {
         Rectangle {
             SplitView.preferredWidth: 320
             SplitView.minimumWidth: 250
+            SplitView.maximumWidth: 450
             color: Theme.bgSurface
             
             SubtitleListView {
@@ -103,6 +104,7 @@ ApplicationWindow {
         Rectangle {
             SplitView.preferredWidth: 300
             SplitView.minimumWidth: 250
+            SplitView.maximumWidth: 400
             color: Theme.bgSurface
             
             ContextInspector {
