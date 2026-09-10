@@ -61,6 +61,16 @@ Item {
             }
         }
 
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            visible: workspace.width < 620
+            spacing: Theme.spaceSmall
+            Item { Layout.fillWidth: true }
+            Text { text: "Status:"; color: Theme.textMuted; font.pixelSize: 12 }
+            StatusBadge { status: translationController.status }
+        }
+
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
