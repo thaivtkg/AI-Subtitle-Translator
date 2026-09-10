@@ -1,5 +1,4 @@
 import os
-import re
 from PySide6.QtCore import QThread, Signal
 from app.llm.model_manager import ModelManager
 
@@ -18,6 +17,22 @@ class TranslationWorker(QThread):
 
     def cancel(self):
         self._is_cancelled = True
+
+    @staticmethod
+    def _visible_translation(raw_text):
+        """Return only translated text; keep model reasoning out of the UI."""
+        think_start = raw_text.find("<think>")
+        if think_start >= 0:
+            think_end = raw_text.find("</think>", think_start + len("<think>"))
+            if think_end < 0:
+                return ""
+            raw_text = raw_text[think_end + len("</think>"):]
+        else:
+            for size in range(len("<think>") - 1, 0, -1):
+                if raw_text.endswith("<think>"[:size]):
+                    return raw_text[:-size].strip()
+
+        return raw_text.strip()
 
     def run(self):
         try:
@@ -43,18 +58,13 @@ class TranslationWorker(QThread):
                 chunk = output["choices"][0]["text"]
                 raw_text += chunk
                 
-                # --- 3. BỘ LỌC THINK THÔNG MINH (TRÁNH NHẢY UI) ---
-                if '<think>' in raw_text and '</think>' not in raw_text:
-                    self.progress.emit(self.target_index, "🤔 AI đang suy nghĩ văn cảnh...")
-                    continue 
-                
-                clean_text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL)
-                display_text = clean_text.strip()
+                # --- 3. ẨN THINK, CHỈ STREAM PHẦN DỊCH ---
+                display_text = self._visible_translation(raw_text)
                 
                 if display_text:
                     self.progress.emit(self.target_index, display_text)
                 
-            final_clean = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
+            final_clean = self._visible_translation(raw_text)
             print(
                 f"[TRANSLATION_FINISH] target={self.target_index} "
                 f"raw_len={len(raw_text)} clean_len={len(final_clean)} "
