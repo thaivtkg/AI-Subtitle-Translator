@@ -8,6 +8,7 @@ ToolBar {
     id: root
     property string projectName: "Untitled"
     property bool isSaved: true
+    property bool hasProject: false
     property bool hasProjectData: false
     readonly property bool isCompact: width < 1280
     readonly property bool isMinimum: width < 1100
@@ -69,6 +70,9 @@ ToolBar {
                 }
 
                 Rectangle {
+                    visible: root.hasProject
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: root.hasProject ? implicitWidth : 0
                     implicitWidth: statusText.implicitWidth + (root.isMinimum ? Theme.spaceSmall : Theme.spaceMedium)
                     implicitHeight: 22
                     radius: 11
@@ -108,7 +112,7 @@ ToolBar {
 
                     AppButton { text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Ctrl + O"; onClicked: root.openSrtClicked() }
                     AppButton { text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Ctrl + Shift + O"; onClicked: root.openProjectClicked() }
-                    AppButton { text: "Save"; tooltip: "Ctrl + S"; enabled: root.projectName !== "Untitled" && !root.isSaved; onClicked: root.saveClicked() }
+                    AppButton { text: "Save"; tooltip: "Ctrl + S"; enabled: root.hasProject && !root.isSaved; onClicked: root.saveClicked() }
 
                     Rectangle {
                         Layout.preferredWidth: 1
@@ -117,7 +121,7 @@ ToolBar {
                         Layout.margins: Theme.spaceXs
                     }
 
-                    AppButton { text: root.isMinimum ? "Export" : "Export SRT"; tooltip: "Ctrl + Shift + S"; isPrimary: true; enabled: root.projectName !== "Untitled" && root.hasProjectData; onClicked: root.exportClicked() }
+                    AppButton { text: root.isMinimum ? "Export" : "Export SRT"; tooltip: "Ctrl + Shift + S"; isPrimary: true; enabled: root.hasProject && root.hasProjectData; onClicked: root.exportClicked() }
                 }
 
                 Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }

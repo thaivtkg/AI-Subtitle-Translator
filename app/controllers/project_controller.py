@@ -1,12 +1,13 @@
 import os
 import json
-from PySide6.QtCore import QObject, Slot, Signal, QUrl
+from PySide6.QtCore import QObject, Slot, Signal, Property, QUrl
 from app.core.srt_exporter import SRTExporter
 from app.core.srt_parser import SRTParser
 from app.core.srt_validator import SRTValidator
 
 class ProjectController(QObject):
     notify = Signal(str, str)
+    projectStateChanged = Signal()
     # Tín hiệu để gửi Story Summary từ file JSON ngược lên giao diện QML
     projectLoaded = Signal(str) 
     # TÍN HIỆU MỚI: Bắn ngôn ngữ nguồn lên UI
@@ -16,6 +17,34 @@ class ProjectController(QObject):
         super().__init__()
         self._subtitle_model = subtitle_model
         self._original_source_file = "unknown.srt"
+        self._has_project = False
+        self._is_dirty = False
+        self._loading_project = False
+        self._subtitle_model.dataChanged.connect(self._on_model_changed)
+
+    @Property(bool, notify=projectStateChanged)
+    def hasProject(self):
+        return self._has_project
+
+    @Property(bool, notify=projectStateChanged)
+    def isDirty(self):
+        return self._is_dirty
+
+    def _set_project_state(self, has_project, is_dirty):
+        if self._has_project == has_project and self._is_dirty == is_dirty:
+            return
+        self._has_project = has_project
+        self._is_dirty = is_dirty
+        self.projectStateChanged.emit()
+
+    def _on_model_changed(self, *args):
+        self.markDirty()
+
+    @Slot()
+    def markDirty(self):
+        if self._loading_project or not self._has_project:
+            return
+        self._set_project_state(True, True)
 
     @Slot(result=bool)
     def validateBeforeExport(self):
@@ -64,6 +93,7 @@ class ProjectController(QObject):
             
         # 1. Nạp dữ liệu mới vào Model
         self._subtitle_model.load_data(parsed_data)
+        self._set_project_state(True, True)
         
         # 2. Reset trạng thái giao diện để tránh kẹt dữ liệu cũ
         self.projectLoaded.emit("")          # Xóa Story Summary cũ
@@ -101,6 +131,7 @@ class ProjectController(QObject):
             with open(file_path, 'w', encoding='utf-8') as f:
                 import json
                 json.dump(data, f, ensure_ascii=False, indent=2)
+            self._set_project_state(True, False)
             self.notify.emit("SUCCESS", f"Đã lưu dự án: {os.path.basename(file_path)}")
         except Exception as e:
             self.notify.emit("ERROR", f"Lỗi lưu dự án: {str(e)}")
@@ -112,6 +143,7 @@ class ProjectController(QObject):
             self.notify.emit("ERROR", "Không tìm thấy file dự án!")
             return
             
+        self._loading_project = True
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -135,6 +167,9 @@ class ProjectController(QObject):
             self.languageLoaded.emit(source_lang) # Chỉ emit 1 lần duy nhất
             # -------------------------------------------
 
+            self._set_project_state(True, False)
             self.notify.emit("SUCCESS", f"Đã mở dự án: {os.path.basename(file_path)}")
         except Exception as e:
             self.notify.emit("ERROR", f"Lỗi mở dự án: {str(e)}")
+        finally:
+            self._loading_project = False

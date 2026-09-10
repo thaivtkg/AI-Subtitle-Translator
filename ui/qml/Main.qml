@@ -24,6 +24,8 @@ ApplicationWindow {
     // ==========================================
     header: AppHeader {
         projectName: "Workspace"
+        hasProject: projectController.hasProject
+        isSaved: projectController.hasProject && !projectController.isDirty
         hasProjectData: subListView.count > 0
         onOpenSrtClicked: importSrtDialog.open()
         onOpenProjectClicked: loadProjectDialog.open()

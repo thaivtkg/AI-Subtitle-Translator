@@ -43,7 +43,10 @@ ColumnLayout {
                     wrapMode: Text.WordWrap
                     background: null
                     selectByMouse: true
-                    onTextChanged: globalStorySummary = text
+                    onTextChanged: {
+                        globalStorySummary = text
+                        if (typeof projectController !== "undefined") projectController.markDirty()
+                    }
                 }
             }
         }

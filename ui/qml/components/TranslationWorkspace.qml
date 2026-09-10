@@ -155,8 +155,10 @@ Item {
                         readOnly: translationController.status === "TRANSLATING"
                         background: null
                         onTextChanged: {
-                            if (translationInput.focus && translationController.status !== "TRANSLATING" && translationInput.text !== translationController.currentTranslation)
+                            if (translationInput.focus && translationController.status !== "TRANSLATING" && translationInput.text !== translationController.currentTranslation) {
                                 translationController.markAsEdited()
+                                if (typeof projectController !== "undefined") projectController.markDirty()
+                            }
                         }
                         Keys.onPressed: (event) => {
                             if (event.key === Qt.Key_Return && (event.modifiers & Qt.ControlModifier)) {
