@@ -15,14 +15,15 @@ Rectangle {
     property string engineStatus: "Not loaded"
     property real vramUsed: -1.0
     property real vramTotal: -1.0
+    readonly property bool compactMode: width < 1150
 
     property real progressRatio: totalCount > 0 ? acceptedCount / totalCount : 0
     property int progressPercent: Math.round(progressRatio * 100)
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: Theme.spaceMedium
-        anchors.rightMargin: Theme.spaceMedium
+        anchors.leftMargin: root.compactMode ? Theme.spaceSmall : Theme.spaceMedium
+        anchors.rightMargin: root.compactMode ? Theme.spaceSmall : Theme.spaceMedium
         spacing: 0
 
         RowLayout {
@@ -30,7 +31,11 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Text {
                 id: progressText
-                text: root.totalCount === 0 ? "No project" : ("✓ " + root.acceptedCount + " / " + root.totalCount + " Accepted · " + root.progressPercent + "%")
+                text: root.totalCount === 0
+                      ? "No project"
+                      : root.compactMode
+                        ? ("✓ " + root.acceptedCount + " / " + root.totalCount + " · " + root.progressPercent + "%")
+                        : ("✓ " + root.acceptedCount + " / " + root.totalCount + " Accepted · " + root.progressPercent + "%")
                 color: root.totalCount > 0 && root.acceptedCount === root.totalCount ? Theme.success : root.totalCount === 0 ? Theme.textMuted : Theme.textSecondary
                 font.pixelSize: 12
                 ToolTip.visible: progressMouse.containsMouse
@@ -38,7 +43,7 @@ Rectangle {
                 MouseArea { id: progressMouse; anchors.fill: parent; hoverEnabled: true }
             }
             Rectangle {
-                visible: root.totalCount > 0
+                visible: !root.compactMode && root.totalCount > 0
                 Layout.preferredWidth: 80
                 Layout.preferredHeight: 3
                 Layout.alignment: Qt.AlignVCenter
@@ -58,7 +63,7 @@ Rectangle {
         Item { Layout.fillWidth: true }
 
         RowLayout {
-            spacing: Theme.spaceMedium
+            spacing: root.compactMode ? Theme.spaceSmall : Theme.spaceMedium
             Layout.alignment: Qt.AlignVCenter
             Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 14; color: Theme.border }
             RowLayout {
@@ -78,7 +83,7 @@ Rectangle {
                 }
                 Text {
                     id: engineText
-                    text: "AI Engine: " + root.engineStatus
+                    text: root.compactMode ? root.engineStatus : "AI Engine: " + root.engineStatus
                     color: root.engineStatus === "Error" ? Theme.danger : Theme.textSecondary
                     font.pixelSize: 12
                     ToolTip.visible: engineMouse.containsMouse
@@ -96,7 +101,9 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Text {
                 id: vramText
-                text: root.vramTotal > 0 && root.vramUsed >= 0 ? ("VRAM " + root.vramUsed.toFixed(1) + " / " + root.vramTotal.toFixed(1) + " GB") : "VRAM —"
+                text: root.vramTotal > 0 && root.vramUsed >= 0
+                      ? ("VRAM " + root.vramUsed.toFixed(1) + " / " + root.vramTotal.toFixed(1) + (root.compactMode ? "" : " GB"))
+                      : "VRAM —"
                 color: Theme.textSecondary
                 font.pixelSize: 12
                 ToolTip.visible: vramMouse.containsMouse
