@@ -184,6 +184,7 @@ ApplicationWindow {
 
     Shortcut {
         sequence: "Ctrl+Alt+R"
+        context: Qt.ApplicationShortcut
         onActivated: {
             mainWindow.responsiveTestToolsEnabled = !mainWindow.responsiveTestToolsEnabled
             responsiveTestToolbar.dismissed = false
