@@ -114,3 +114,42 @@ def test_tc_p3a2_04_item_error_is_isolated_and_batch_continues():
     assert job.state is BatchJobState.COMPLETED
     assert port.calls == [0, 1, 2]
     assert port.max_concurrent == 1
+
+
+def test_tc_p3a2_06_never_dispatches_second_inference_while_first_is_active():
+    port = ControlledTranslationPort()
+    items = {
+        1: BatchItem(target_index=1, source_hash="hash-1"),
+        0: BatchItem(target_index=0, source_hash="hash-0"),
+    }
+    job = BatchJob(job_id="tc-p3a2-06", project_id="project-1", items=items)
+    service = BatchTranslationService(port)
+
+    service.start(job)
+
+    # The first request is deliberately held without a terminal callback.
+    assert job.state is BatchJobState.RUNNING
+    assert job.items[0].state is BatchItemState.RUNNING
+    assert job.items[1].state is BatchItemState.PENDING
+    assert port.calls == [0]
+    assert port.active_count == 1
+    assert port.max_concurrent == 1
+
+    # A second dispatch would trip ControlledTranslationPort's concurrency guard.
+    assert port.current[0] == 0
+    assert port.calls == [0]
+
+    port.complete_current()
+
+    assert job.items[0].state is BatchItemState.COMPLETED
+    assert job.items[1].state is BatchItemState.RUNNING
+    assert port.calls == [0, 1]
+    assert port.active_count == 1
+    assert port.max_concurrent == 1
+
+    port.complete_current()
+
+    assert job.items[1].state is BatchItemState.COMPLETED
+    assert job.state is BatchJobState.COMPLETED
+    assert port.active_count == 0
+    assert port.max_concurrent == 1
