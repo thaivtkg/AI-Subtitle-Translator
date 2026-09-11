@@ -18,25 +18,30 @@ QQuickStyle.setStyle("Basic")
 
 
 class AppHarness:
-    def __init__(self, fixture_path, worker_factory=None):
+    def __init__(self, fixture_path, worker_factory=None, use_hardware_profile=False, profile_overrides=None):
         self.app = QGuiApplication.instance() or QGuiApplication([])
         self.engine = QQmlApplicationEngine()
         self.model = SubtitleModel()
         if fixture_path is not None:
             self.model.load_data(SRTParser.parse(str(fixture_path)))
 
-        original_profile = HardwareDetector.get_recommended_profile
-        HardwareDetector.get_recommended_profile = staticmethod(lambda: {
-            "gpu_info": {"name": "T15 test", "vram_gb": 0.0},
-            "backend_status": "T15 test profile",
-            "model_name": "missing-test-model.gguf",
-            "n_ctx": 2048,
-            "n_gpu_layers": 0,
-        })
-        try:
+        if use_hardware_profile:
             self.translation_controller = TranslationController(self.model, worker_factory=worker_factory)
-        finally:
-            HardwareDetector.get_recommended_profile = original_profile
+        else:
+            original_profile = HardwareDetector.get_recommended_profile
+            HardwareDetector.get_recommended_profile = staticmethod(lambda: {
+                "gpu_info": {"name": "T15 test", "vram_gb": 0.0},
+                "backend_status": "T15 test profile",
+                "model_name": "missing-test-model.gguf",
+                "n_ctx": 2048,
+                "n_gpu_layers": 0,
+            })
+            try:
+                self.translation_controller = TranslationController(self.model, worker_factory=worker_factory)
+            finally:
+                HardwareDetector.get_recommended_profile = original_profile
+        if profile_overrides:
+            self.translation_controller.hardware_profile.update(profile_overrides)
 
         self.project_controller = ProjectController(self.model)
         self.engine.rootContext().setContextProperty("translationController", self.translation_controller)

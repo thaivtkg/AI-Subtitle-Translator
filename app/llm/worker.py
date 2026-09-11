@@ -12,7 +12,7 @@ class TranslationWorker(QThread):
         self.target_index = target_index
         self.prompt = prompt
         self.profile = profile
-        self.model_path = os.path.join("models", profile.get("model_name", "qwen3-8b-q4_k_m.gguf"))
+        self.model_path = profile.get("model_path") or os.path.join("models", profile.get("model_name", "qwen3-8b-q4_k_m.gguf"))
         self._is_cancelled = False
 
     def cancel(self):
