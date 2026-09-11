@@ -57,6 +57,7 @@ ColumnLayout {
             spacing: 0
 
             TextField {
+                objectName: "searchInput"
                 id: searchInput
                 Layout.fillWidth: true
                 Layout.margins: Theme.spaceSmall
@@ -82,6 +83,7 @@ ColumnLayout {
             }
 
             ComboBox {
+                objectName: "statusFilterCombo"
                 id: statusFilterCombo
                 Layout.fillWidth: true
                 Layout.leftMargin: Theme.spaceSmall
@@ -147,6 +149,7 @@ ColumnLayout {
     }
 
     ListView {
+        objectName: "subtitleList"
         id: subListView
         Layout.fillWidth: true
         Layout.fillHeight: true
@@ -165,6 +168,7 @@ ColumnLayout {
         function updateFilteredCount() { filteredCount = Math.round(contentHeight / 64) }
 
         delegate: Rectangle {
+            objectName: "subtitleRow_" + index
             id: delegateItem
             width: subListView.width
             property string normalizedStatus: String(status || "PENDING").toUpperCase()

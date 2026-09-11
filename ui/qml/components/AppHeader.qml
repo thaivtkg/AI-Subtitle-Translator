@@ -110,9 +110,9 @@ ToolBar {
                     spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
                     Layout.rightMargin: root.isCompact ? Theme.spaceSmall : Theme.spaceMedium
 
-                    AppButton { text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Open SRT — Ctrl + O"; onClicked: root.openSrtClicked() }
-                    AppButton { text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Open Project — Ctrl + Shift + O"; onClicked: root.openProjectClicked() }
-                    AppButton { text: "Save"; tooltip: "Save Project — Ctrl + S"; enabled: root.hasProject && !root.isSaved; onClicked: root.saveClicked() }
+                    AppButton { objectName: "btnOpenSrt"; text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Open SRT — Ctrl + O"; onClicked: root.openSrtClicked() }
+                    AppButton { objectName: "btnOpenProject"; text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Open Project — Ctrl + Shift + O"; onClicked: root.openProjectClicked() }
+                    AppButton { objectName: "btnSave"; text: "Save"; tooltip: "Save Project — Ctrl + S"; enabled: root.hasProject && !root.isSaved; onClicked: root.saveClicked() }
 
                     Rectangle {
                         Layout.preferredWidth: 1
@@ -121,7 +121,7 @@ ToolBar {
                         Layout.margins: Theme.spaceXs
                     }
 
-                    AppButton { text: root.isMinimum ? "Export" : "Export SRT"; tooltip: "Export SRT — Ctrl + Shift + S"; isPrimary: true; enabled: root.hasProject && root.hasProjectData; onClicked: root.exportClicked() }
+                    AppButton { objectName: "btnExport"; text: root.isMinimum ? "Export" : "Export SRT"; tooltip: "Export SRT — Ctrl + Shift + S"; isPrimary: true; enabled: root.hasProject && root.hasProjectData; onClicked: root.exportClicked() }
                 }
 
                 Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }
@@ -129,6 +129,7 @@ ToolBar {
                 RowLayout {
                     spacing: 0
                     Button {
+                        objectName: "btnMinimize"
                         implicitWidth: 46; implicitHeight: 48
                         ToolTip.visible: hovered
                         ToolTip.text: "Minimize"
@@ -137,6 +138,7 @@ ToolBar {
                         onClicked: Window.window.showMinimized()
                     }
                     Button {
+                        objectName: "btnMaximize"
                         implicitWidth: 46; implicitHeight: 48
                         ToolTip.visible: hovered
                         ToolTip.text: Window.window.visibility === Window.Maximized ? "Restore" : "Maximize"
@@ -148,6 +150,7 @@ ToolBar {
                         }
                     }
                     Button {
+                        objectName: "btnClose"
                         implicitWidth: 46; implicitHeight: 48
                         ToolTip.visible: hovered
                         ToolTip.text: "Close"

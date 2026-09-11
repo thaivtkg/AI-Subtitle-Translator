@@ -13,6 +13,7 @@ RowLayout {
     Text { text: "SOURCE"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
 
     ComboBox {
+        objectName: "sourceLanguageCombo"
         id: sourceCombo
         model: ["English", "Japanese", "Chinese (Simplified)", "Chinese (Traditional)", "Korean", "Spanish", "French", "German", "Russian"]
         font.pixelSize: 14

@@ -146,6 +146,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: Theme.spaceMedium
                     TextArea {
+                        objectName: "translationInput"
                         id: translationInput
                         text: translationController.currentTranslation || (translationController.status === "TRANSLATING" ? "Generating translation..." : "")
                         color: translationController.status === "TRANSLATING" && translationController.currentTranslation === "" ? Theme.textMuted : Theme.textPrimary
@@ -190,6 +191,7 @@ Item {
                 visible: !workspace.compactActions
             }
             AppButton {
+                objectName: "btnRetry"
                 text: "Retry"
                 Layout.minimumWidth: 72
                 Layout.preferredWidth: workspace.compactActions ? 72 : 80
@@ -199,6 +201,7 @@ Item {
                 onClicked: translateRequested(langSelector.sourceLang)
             }
             AppButton {
+                objectName: "btnTranslate"
                 text: translationController.status === "TRANSLATING" ? "◌ Translating..." : "Translate"
                 Layout.minimumWidth: 84
                 Layout.preferredWidth: workspace.compactActions ? 84 : 96
@@ -209,6 +212,7 @@ Item {
                 onClicked: translateRequested(langSelector.sourceLang)
             }
             AppButton {
+                objectName: "btnAccept"
                 text: "Accept"
                 Layout.minimumWidth: 72
                 Layout.preferredWidth: workspace.compactActions ? 72 : 88

@@ -30,6 +30,7 @@ Rectangle {
             spacing: Theme.spaceSmall
             Layout.alignment: Qt.AlignVCenter
             Text {
+                objectName: "statusProgressText"
                 id: progressText
                 text: root.totalCount === 0
                       ? "No project"
@@ -82,6 +83,7 @@ Rectangle {
                     Layout.alignment: Qt.AlignVCenter
                 }
                 Text {
+                    objectName: "engineStatusText"
                     id: engineText
                     text: root.compactMode ? root.engineStatus : "AI Engine: " + root.engineStatus
                     color: root.engineStatus === "Error" ? Theme.danger : Theme.textSecondary
@@ -100,6 +102,7 @@ Rectangle {
             spacing: Theme.spaceSmall
             Layout.alignment: Qt.AlignVCenter
             Text {
+                objectName: "vramStatusText"
                 id: vramText
                 text: root.vramTotal > 0 && root.vramUsed >= 0
                       ? ("VRAM " + root.vramUsed.toFixed(1) + " / " + root.vramTotal.toFixed(1) + (root.compactMode ? "" : " GB"))
