@@ -11,12 +11,16 @@ class TranslationController(QObject):
     contextUpdated = Signal() # TÍN HIỆU MỚI CHO CONTEXT
     progressChanged = Signal()
     engineStatusChanged = Signal(str)
+    translationCompleted = Signal(int)
+    translationFailed = Signal(int, str)
 
     def __init__(self, subtitle_model, worker_factory=None):
         super().__init__()
         self._status = "PENDING"
         self._engine_status = "Not loaded"
         self._active_translation_index = -1
+        self._current_index = -1
+        self._selection_changed_during_translation = False
         self._current_translation = ""
         self._current_original = ""
         self._context_prev = "" # LƯU CONTEXT TRƯỚC
@@ -68,6 +72,7 @@ class TranslationController(QObject):
     @Slot(int)
     def loadSubtitle(self, index):
         if index < 0: 
+            self._current_index = -1
             self._current_original = ""
             self._current_translation = ""
             self._context_prev = ""
@@ -81,6 +86,12 @@ class TranslationController(QObject):
         subtitles = self._subtitle_model.get_all_data()
         if index >= len(subtitles): return
         sub = subtitles[index]
+        if (
+            self._active_translation_index >= 0
+            and index != self._active_translation_index
+        ):
+            self._selection_changed_during_translation = True
+        self._current_index = index
         
         self._current_original = sub.get("original", "")
         status = str(sub.get("status", "PENDING")).upper()
@@ -115,6 +126,7 @@ class TranslationController(QObject):
             return
 
         self._active_translation_index = index
+        self._selection_changed_during_translation = False
         self._status = "TRANSLATING"
         self._set_engine_status("Translating")
         self.statusChanged.emit(self._status)
@@ -141,7 +153,9 @@ class TranslationController(QObject):
         if sender is not None and sender is not self.worker:
             return
         self._subtitle_model.update_translation(index, text, "TRANSLATING")
-        if index == self._active_translation_index:
+        if index == self._active_translation_index and (
+            self._current_index < 0 or index == self._current_index
+        ):
             self._current_translation = text
             self._status = "TRANSLATING"
             self.translationUpdated.emit(text)
@@ -164,21 +178,30 @@ class TranslationController(QObject):
             message = "Lỗi: Model trả về bản dịch rỗng."
             self._subtitle_model.update_translation(index, message, "ERROR")
             if index == self._active_translation_index:
-                self._status = "ERROR"
-                self._current_translation = message
-                self.statusChanged.emit(self._status)
-                self.translationUpdated.emit(message)
                 self._active_translation_index = -1
+                if (
+                    not self._selection_changed_during_translation
+                    or index == self._current_index
+                ):
+                    self._status = "ERROR"
+                    self._current_translation = message
+                    self.statusChanged.emit(self._status)
+                    self.translationUpdated.emit(message)
             self._set_engine_status("Error")
+            self.translationFailed.emit(index, message)
             return
 
         self._subtitle_model.update_translation(index, clean_text, "TRANSLATED")
         if index == self._active_translation_index:
-            self._current_translation = clean_text
-            self._status = "TRANSLATED"
-            self.statusChanged.emit(self._status)
-            self.translationUpdated.emit(clean_text)
             self._active_translation_index = -1
+            if (
+                not self._selection_changed_during_translation
+                or index == self._current_index
+            ):
+                self._status = "TRANSLATED"
+                self._current_translation = clean_text
+                self.statusChanged.emit(self._status)
+                self.translationUpdated.emit(clean_text)
         print(
             f"[TRANSLATION_CALLBACK_AFTER] target={index} "
             f"controller_status={self._status} "
@@ -188,6 +211,7 @@ class TranslationController(QObject):
             flush=True,
         )
         self._set_engine_status("Ready")
+        self.translationCompleted.emit(index)
 
     @Slot(int, str)
     def on_error(self, index, err_msg):
@@ -197,12 +221,17 @@ class TranslationController(QObject):
         message = f"Lỗi: {err_msg}"
         self._subtitle_model.update_translation(index, message, "ERROR")
         if index == self._active_translation_index:
-            self._status = "ERROR"
-            self._current_translation = message
-            self.statusChanged.emit(self._status)
-            self.translationUpdated.emit(self._current_translation)
             self._active_translation_index = -1
+            if (
+                not self._selection_changed_during_translation
+                or index == self._current_index
+            ):
+                self._status = "ERROR"
+                self._current_translation = message
+                self.statusChanged.emit(self._status)
+                self.translationUpdated.emit(self._current_translation)
         self._set_engine_status("Error")
+        self.translationFailed.emit(index, message)
 
     @Slot(int, str, result=bool)
     def acceptTranslation(self, index, final_text):
