@@ -108,3 +108,53 @@ def test_tc_p3a3_05_retry_failure_does_not_loop_and_continues_snapshot():
     assert port.calls == [1, 3]
     assert port.active_count == 0
     assert port.max_concurrent == 1
+
+
+def test_tc_p3a3_06_mixed_retry_results_finalize_job_after_snapshot():
+    port = ControlledTranslationPort()
+    job = BatchJob(
+        job_id="retry-mixed-test",
+        project_id="project-1",
+        state=BatchJobState.COMPLETED,
+        items={
+            index: BatchItem(
+                target_index=index,
+                source_hash=f"hash-{index}",
+                state=state,
+                error_msg=f"old error {index}" if state is BatchItemState.FAILED else None,
+            )
+            for index, state in {
+                0: BatchItemState.COMPLETED,
+                1: BatchItemState.FAILED,
+                2: BatchItemState.FAILED,
+                3: BatchItemState.COMPLETED,
+                4: BatchItemState.FAILED,
+            }.items()
+        },
+    )
+    service = BatchTranslationService(port)
+
+    service.retry_failed(job)
+    assert port.calls == [1]
+
+    port.complete_current()
+    assert port.calls == [1, 2]
+    assert job.items[1].state is BatchItemState.COMPLETED
+    assert job.items[2].state is BatchItemState.RUNNING
+
+    port.fail_current("retry error 2")
+    assert port.calls == [1, 2, 4]
+    assert job.items[2].state is BatchItemState.FAILED
+    assert job.items[2].error_msg == "retry error 2"
+    assert job.items[4].state is BatchItemState.RUNNING
+    assert job.state is BatchJobState.RUNNING
+
+    port.complete_current()
+
+    assert job.items[4].state is BatchItemState.COMPLETED
+    assert job.items[0].state is BatchItemState.COMPLETED
+    assert job.items[3].state is BatchItemState.COMPLETED
+    assert job.state is BatchJobState.COMPLETED
+    assert port.calls == [1, 2, 4]
+    assert port.active_count == 0
+    assert port.max_concurrent == 1
