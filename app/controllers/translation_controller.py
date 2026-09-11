@@ -154,7 +154,7 @@ class TranslationController(QObject):
         clean_text = (text or "").strip()
         print(
             f"[TRANSLATION_CALLBACK] target={index} "
-            f"clean_len={len(clean_text)} clean_text={clean_text!r} "
+            f"clean_len={len(clean_text)} clean_text={clean_text!a} "
             f"active_target={self._active_translation_index} "
             f"controller_status_before={self._status} "
             f"current_translation_before={self._current_translation!r}",
@@ -183,7 +183,7 @@ class TranslationController(QObject):
             f"[TRANSLATION_CALLBACK_AFTER] target={index} "
             f"controller_status={self._status} "
             f"current_translation_len={len(self._current_translation)} "
-            f"current_translation={self._current_translation!r} "
+            f"current_translation={self._current_translation!a} "
             f"active_target={self._active_translation_index}",
             flush=True,
         )

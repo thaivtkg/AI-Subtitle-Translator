@@ -68,7 +68,7 @@ class TranslationWorker(QThread):
             print(
                 f"[TRANSLATION_FINISH] target={self.target_index} "
                 f"raw_len={len(raw_text)} clean_len={len(final_clean)} "
-                f"clean_text={final_clean!r}",
+                f"clean_text={final_clean!a}",
                 flush=True,
             )
             self.finished.emit(self.target_index, final_clean)

@@ -123,7 +123,7 @@ class ProjectController(QObject):
                 f"[PROJECT_SAVE] target={row_index} "
                 f"translation_len={len(str(subtitle.get('translation', '') or ''))} "
                 f"status={subtitle.get('status', 'PENDING')} "
-                f"translation={subtitle.get('translation', '')!r}",
+                f"translation={subtitle.get('translation', '')!a}",
                 flush=True,
             )
         
@@ -154,7 +154,7 @@ class ProjectController(QObject):
                     f"[PROJECT_LOAD] target={row_index} "
                     f"translation_len={len(str(subtitle.get('translation', '') or ''))} "
                     f"status={subtitle.get('status', 'PENDING')} "
-                    f"translation={subtitle.get('translation', '')!r}",
+                    f"translation={subtitle.get('translation', '')!a}",
                     flush=True,
                 )
             self.projectLoaded.emit(data.get("story_summary", ""))

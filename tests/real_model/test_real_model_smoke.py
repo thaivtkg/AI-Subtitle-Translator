@@ -62,6 +62,12 @@ def test_t15_r01_real_model_smoke():
         harness.project_controller.importSrt(QUrl.fromLocalFile(str(FIXTURE)).toString())
         harness.app.processEvents()
         driver.click("subtitleRow_0")
+        driver.wait_until(
+            lambda: controller.currentOriginal == "Where are you going?"
+            and bool(driver.find("btnTranslate").property("visible"))
+            and bool(driver.find("btnTranslate").property("enabled")),
+            timeout_ms=2_000,
+        )
         driver.click("btnTranslate")
 
         driver.wait_until(lambda: _normalize(controller.engineStatus) == "TRANSLATING", timeout_ms=10_000)

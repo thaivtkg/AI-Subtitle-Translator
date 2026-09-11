@@ -96,7 +96,7 @@ class SubtitleModel(QAbstractListModel):
                 f"[MODEL_AFTER] target={row_index} "
                 f"translation_len={len(str(after.get('translation', '') or ''))} "
                 f"status={after.get('status', 'PENDING')} "
-                f"translation={after.get('translation', '')!r}",
+                f"translation={after.get('translation', '')!a}",
                 flush=True,
             )
             
