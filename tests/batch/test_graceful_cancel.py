@@ -101,7 +101,7 @@ def test_tc_p3a4_06_preserve_existing_terminal_states():
         job_id="cancel-terminal-test",
         project_id="project-1",
         items={
-            0: BatchItem(0, "hash-0", BatchItemState.COMPLETED),
+            0: BatchItem(0, "hash-0", BatchItemState.PENDING),
             1: BatchItem(1, "hash-1", BatchItemState.FAILED, "old error"),
             2: BatchItem(2, "hash-2", BatchItemState.SKIPPED),
             3: BatchItem(3, "hash-3", BatchItemState.PENDING),
