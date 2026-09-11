@@ -14,10 +14,12 @@ from app.models.subtitle import SubtitleModel
 from .user_driver import UserDriver
 
 
+QQuickStyle.setStyle("Basic")
+
+
 class AppHarness:
     def __init__(self, fixture_path, worker_factory=None):
         self.app = QGuiApplication.instance() or QGuiApplication([])
-        QQuickStyle.setStyle("Basic")
         self.engine = QQmlApplicationEngine()
         self.model = SubtitleModel()
         if fixture_path is not None:

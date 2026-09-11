@@ -65,6 +65,7 @@ def test_tc15_03_search(harness):
 def test_tc15_04_status_filter(harness):
     combo = harness.driver.find("statusFilterCombo")
     harness.driver.click("statusFilterCombo")
+    harness.driver.key(Qt.Key_Home)
     harness.driver.key(Qt.Key_Down)
     harness.driver.key(Qt.Key_Return)
     assert combo.property("currentText") == "PENDING"
