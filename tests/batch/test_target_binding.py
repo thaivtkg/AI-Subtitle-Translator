@@ -1,4 +1,5 @@
 from PySide6.QtCore import QCoreApplication
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtTest import QTest
 
 from app.batch.batch_item import BatchItem
@@ -23,7 +24,7 @@ def _wait_until(predicate, timeout_ms=3000):
 
 
 def test_tc_p3a2_05_target_binding_survives_selection_change():
-    app = QCoreApplication.instance() or QCoreApplication([])
+    app = QGuiApplication.instance() or QGuiApplication([])
     model = SubtitleModel()
     model.load_data([
         {"index": 1, "original": "Alpha", "translation": "", "status": "PENDING"},
