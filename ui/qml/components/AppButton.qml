@@ -28,12 +28,12 @@ Button {
         implicitWidth: 100
         implicitHeight: 36
         radius: Theme.radius
-        
+
         color: !control.enabled ? Theme.bgSurfaceSoft :
                control.pressed ? (control.isPrimary ? Qt.darker(Theme.accentCyan, 1.2) : Theme.bgSurfaceSoft) :
                control.hovered ? (control.isPrimary ? Qt.lighter(Theme.accentCyan, 1.1) : Theme.bgSurfaceElevated) :
                (control.isPrimary ? Theme.accentCyan : "transparent")
-               
+
         border.color: (control.isPrimary || !control.enabled) ? "transparent" : Theme.border
         border.width: 1
 

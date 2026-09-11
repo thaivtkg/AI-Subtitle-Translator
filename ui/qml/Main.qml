@@ -69,11 +69,11 @@ ApplicationWindow {
             SplitView.minimumWidth: 250
             SplitView.maximumWidth: 450
             color: Theme.bgSurface
-            
+
             SubtitleListView {
                 id: subListView // ĐÃ FIX: Khai báo ID cho danh sách
                 anchors.fill: parent
-                model: subtitleModel 
+                model: subtitleModel
             }
         }
 
@@ -82,7 +82,7 @@ ApplicationWindow {
             SplitView.fillWidth: true
             SplitView.minimumWidth: 400
             color: Theme.bgApp
-            
+
             TranslationWorkspace {
                 id: transWorkspace
                 anchors.fill: parent
@@ -93,7 +93,7 @@ ApplicationWindow {
                 onTranslateRequested: (sourceLang) => {
                     translationController.requestTranslation(subListView.currentIndex, sourceLang, "Vietnamese", globalStorySummary)
                 }
-                
+
                 onAcceptRequested: (text) => {
                     let isSuccess = translationController.acceptTranslation(subListView.currentIndex, text)
                     if (isSuccess && subListView.currentIndex < subListView.count - 1) {
@@ -111,7 +111,7 @@ ApplicationWindow {
             SplitView.minimumWidth: 250
             SplitView.maximumWidth: 400
             color: Theme.bgSurface
-            
+
             ContextInspector {
                 anchors.fill: parent
                 anchors.margins: Theme.spaceMedium
@@ -127,17 +127,17 @@ ApplicationWindow {
     }
     FileDialog { id: importSrtDialog; title: "Chọn file SRT gốc"; nameFilters: ["Subtitle files (*.srt)"]; onAccepted: projectController.importSrt(selectedFile) }
     FileDialog { id: loadProjectDialog; title: "Mở file dự án"; nameFilters: ["AI Subtitle Project (*.aisrt)"]; onAccepted: projectController.loadProject(selectedFile) }
-    
-    FileDialog { 
-        id: saveProjectDialog; 
-        title: "Lưu dự án"; 
-        fileMode: FileDialog.SaveFile; 
-        nameFilters: ["AI Subtitle Project (*.aisrt)"]; 
-        defaultSuffix: "aisrt"; 
+
+    FileDialog {
+        id: saveProjectDialog;
+        title: "Lưu dự án";
+        fileMode: FileDialog.SaveFile;
+        nameFilters: ["AI Subtitle Project (*.aisrt)"];
+        defaultSuffix: "aisrt";
         // ĐÃ FIX: Xóa onAccepted bị lặp
         onAccepted: projectController.saveProject(selectedFile, globalStorySummary, transWorkspace.getSourceLanguage(), "Vietnamese")
     }
-    
+
     FileDialog { id: exportSrtDialog; title: "Xuất file SRT đã dịch"; fileMode: FileDialog.SaveFile; nameFilters: ["Subtitle files (*.srt)"]; defaultSuffix: "srt"; onAccepted: projectController.exportSrt(selectedFile) }
 
     Connections {
@@ -158,17 +158,17 @@ ApplicationWindow {
         sequence: "Ctrl+O"
         onActivated: importSrtDialog.open()
     }
-    
+
     Shortcut {
         sequence: "Ctrl+Shift+O"
         onActivated: loadProjectDialog.open()
     }
-    
+
     Shortcut {
         sequence: "Ctrl+S"
         onActivated: saveProjectDialog.open()
     }
-    
+
     Shortcut {
         sequence: "Ctrl+Shift+S"
         onActivated: {
