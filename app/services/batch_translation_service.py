@@ -5,6 +5,7 @@ from app.batch.cancel_policy import (
     ensure_item_cancel_transition,
     ensure_job_cancel_transition,
 )
+from app.batch.pause_policy import ensure_job_pause_transition
 from app.batch.retry_policy import (
     ensure_item_retry_transition,
     ensure_job_retry_transition,
@@ -69,6 +70,39 @@ class BatchTranslationService:
             return
 
         self._cancel_requested = True
+
+    def request_pause(self, job: BatchJob) -> None:
+        if self._job is None:
+            raise RuntimeError("No active batch job")
+        if self._job is not job:
+            raise RuntimeError("Cannot pause a different batch job")
+        if self._cancel_requested:
+            raise RuntimeError("Cannot pause while cancel is requested")
+        if job.state is not BatchJobState.RUNNING:
+            raise RuntimeError(
+                f"Pause requires RUNNING job, got {job.state.name}"
+            )
+
+        ensure_job_pause_transition(
+            job.state,
+            BatchJobState.PAUSING,
+        )
+        job.state = BatchJobState.PAUSING
+
+    def resume(self, job: BatchJob) -> None:
+        if self._job is None:
+            raise RuntimeError("No active batch job")
+        if self._job is not job:
+            raise RuntimeError("Cannot resume a different batch job")
+        if self._active_index is not None:
+            raise RuntimeError("Cannot resume while inference is active")
+
+        ensure_job_pause_transition(
+            job.state,
+            BatchJobState.RUNNING,
+        )
+        job.state = BatchJobState.RUNNING
+        self._dispatch_next()
 
     def _next_pending_item(self) -> BatchItem | None:
         assert self._job is not None
@@ -139,6 +173,8 @@ class BatchTranslationService:
         self._active_index = None
         if self._cancel_requested:
             self._finish_cancel()
+        elif self._job.state is BatchJobState.PAUSING:
+            self._finish_pause()
         else:
             self._dispatch_next()
 
@@ -158,8 +194,20 @@ class BatchTranslationService:
         self._active_index = None
         if self._cancel_requested:
             self._finish_cancel()
+        elif self._job.state is BatchJobState.PAUSING:
+            self._finish_pause()
         else:
             self._dispatch_next()
+
+    def _finish_pause(self) -> None:
+        assert self._job is not None
+        assert self._active_index is None
+
+        ensure_job_pause_transition(
+            self._job.state,
+            BatchJobState.PAUSED,
+        )
+        self._job.state = BatchJobState.PAUSED
 
     def _finish_cancel(self) -> None:
         assert self._job is not None
