@@ -1,6 +1,10 @@
 from app.batch.batch_item import BatchItem
 from app.batch.batch_job import BatchJob
 from app.batch.batch_state import BatchItemState, BatchJobState
+from app.batch.cancel_policy import (
+    ensure_item_cancel_transition,
+    ensure_job_cancel_transition,
+)
 from app.batch.retry_policy import (
     ensure_item_retry_transition,
     ensure_job_retry_transition,
@@ -18,6 +22,7 @@ class BatchTranslationService:
         self._active_index: int | None = None
         self._retry_targets: tuple[int, ...] | None = None
         self._retry_cursor = 0
+        self._cancel_requested = False
 
     def start(self, job: BatchJob) -> None:
         if self._job is not None:
@@ -28,6 +33,7 @@ class BatchTranslationService:
         self._job = job
         self._retry_targets = None
         self._retry_cursor = 0
+        self._cancel_requested = False
         self._dispatch_next()
 
     def retry_failed(self, job: BatchJob) -> None:
@@ -47,7 +53,22 @@ class BatchTranslationService:
         self._job = job
         self._retry_targets = retry_targets
         self._retry_cursor = 0
+        self._cancel_requested = False
         self._dispatch_next()
+
+    def request_cancel(self, job: BatchJob) -> None:
+        if self._job is None:
+            raise RuntimeError("No active batch job")
+        if self._job is not job:
+            raise RuntimeError("Cannot cancel a different batch job")
+        if self._job.state is not BatchJobState.RUNNING:
+            raise RuntimeError(
+                f"Cancel requires RUNNING job, got {self._job.state.name}"
+            )
+        if self._cancel_requested:
+            return
+
+        self._cancel_requested = True
 
     def _next_pending_item(self) -> BatchItem | None:
         assert self._job is not None
@@ -100,6 +121,7 @@ class BatchTranslationService:
             self._job = None
             self._retry_targets = None
             self._retry_cursor = 0
+            self._cancel_requested = False
             raise
 
     def _handle_success(self, target_index: int) -> None:
@@ -115,7 +137,10 @@ class BatchTranslationService:
         ensure_item_transition(item.state, BatchItemState.COMPLETED)
         item.state = BatchItemState.COMPLETED
         self._active_index = None
-        self._dispatch_next()
+        if self._cancel_requested:
+            self._finish_cancel()
+        else:
+            self._dispatch_next()
 
     def _handle_error(self, target_index: int, message: str) -> None:
         if self._job is None:
@@ -131,7 +156,32 @@ class BatchTranslationService:
         item.state = BatchItemState.FAILED
         item.error_msg = message
         self._active_index = None
-        self._dispatch_next()
+        if self._cancel_requested:
+            self._finish_cancel()
+        else:
+            self._dispatch_next()
+
+    def _finish_cancel(self) -> None:
+        assert self._job is not None
+
+        for item in self._job.items.values():
+            if item.state is BatchItemState.PENDING:
+                ensure_item_cancel_transition(
+                    item.state,
+                    BatchItemState.CANCELLED,
+                )
+                item.state = BatchItemState.CANCELLED
+
+        ensure_job_cancel_transition(
+            self._job.state,
+            BatchJobState.CANCELLED,
+        )
+        self._job.state = BatchJobState.CANCELLED
+        self._job = None
+        self._active_index = None
+        self._retry_targets = None
+        self._retry_cursor = 0
+        self._cancel_requested = False
 
     def _finish_job(self) -> None:
         assert self._job is not None
@@ -141,3 +191,4 @@ class BatchTranslationService:
         self._active_index = None
         self._retry_targets = None
         self._retry_cursor = 0
+        self._cancel_requested = False
