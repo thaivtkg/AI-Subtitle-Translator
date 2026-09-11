@@ -26,6 +26,12 @@ class ControlledTranslationPort:
         self.active_count -= 1
         on_success(target_index)
 
+    def fail_current(self, message):
+        target_index, _, on_error = self.current
+        self.current = None
+        self.active_count -= 1
+        on_error(target_index, message)
+
 
 def test_tc_p3a2_03_executes_items_sequentially():
     port = ControlledTranslationPort()
@@ -65,5 +71,46 @@ def test_tc_p3a2_03_executes_items_sequentially():
 
     assert job.state is BatchJobState.COMPLETED
     assert all(item.state is BatchItemState.COMPLETED for item in job.items.values())
+    assert port.calls == [0, 1, 2]
+    assert port.max_concurrent == 1
+
+
+def test_tc_p3a2_04_item_error_is_isolated_and_batch_continues():
+    port = ControlledTranslationPort()
+    items = {
+        2: BatchItem(target_index=2, source_hash="hash-2"),
+        0: BatchItem(target_index=0, source_hash="hash-0"),
+        1: BatchItem(target_index=1, source_hash="hash-1"),
+    }
+    job = BatchJob(job_id="tc-p3a2-04", project_id="project-1", items=items)
+    service = BatchTranslationService(port)
+
+    service.start(job)
+    assert port.calls == [0]
+    assert job.items[0].state is BatchItemState.RUNNING
+
+    port.complete_current()
+
+    assert job.items[0].state is BatchItemState.COMPLETED
+    assert job.items[1].state is BatchItemState.RUNNING
+    assert job.state is BatchJobState.RUNNING
+    assert port.calls == [0, 1]
+
+    port.fail_current("deterministic translation failure")
+
+    assert job.items[1].state is BatchItemState.FAILED
+    assert job.items[1].error_msg == "deterministic translation failure"
+    assert job.items[2].state is BatchItemState.RUNNING
+    assert job.items[1].state is BatchItemState.FAILED
+    assert job.state is BatchJobState.RUNNING
+    assert port.calls == [0, 1, 2]
+    assert port.max_concurrent == 1
+
+    port.complete_current()
+
+    assert job.items[0].state is BatchItemState.COMPLETED
+    assert job.items[1].state is BatchItemState.FAILED
+    assert job.items[2].state is BatchItemState.COMPLETED
+    assert job.state is BatchJobState.COMPLETED
     assert port.calls == [0, 1, 2]
     assert port.max_concurrent == 1
