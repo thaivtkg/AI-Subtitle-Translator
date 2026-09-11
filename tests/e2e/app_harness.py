@@ -15,7 +15,7 @@ from .user_driver import UserDriver
 
 
 class AppHarness:
-    def __init__(self, fixture_path):
+    def __init__(self, fixture_path, worker_factory=None):
         self.app = QGuiApplication.instance() or QGuiApplication([])
         QQuickStyle.setStyle("Basic")
         self.engine = QQmlApplicationEngine()
@@ -31,7 +31,7 @@ class AppHarness:
             "n_gpu_layers": 0,
         })
         try:
-            self.translation_controller = TranslationController(self.model)
+            self.translation_controller = TranslationController(self.model, worker_factory=worker_factory)
         finally:
             HardwareDetector.get_recommended_profile = original_profile
 

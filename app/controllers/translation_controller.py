@@ -12,7 +12,7 @@ class TranslationController(QObject):
     progressChanged = Signal()
     engineStatusChanged = Signal(str)
 
-    def __init__(self, subtitle_model):
+    def __init__(self, subtitle_model, worker_factory=None):
         super().__init__()
         self._status = "PENDING"
         self._engine_status = "Not loaded"
@@ -23,6 +23,7 @@ class TranslationController(QObject):
         self._context_next = "" # LƯU CONTEXT SAU
         
         self._subtitle_model = subtitle_model
+        self._worker_factory = worker_factory or TranslationWorker
         self.worker = None
         self.hardware_profile = HardwareDetector.get_recommended_profile()
         self._subtitle_model.modelReset.connect(self._emit_progress)
@@ -125,7 +126,10 @@ class TranslationController(QObject):
         prev_ctx, current, next_ctx = ContextEngine.get_context(subtitles, index)
         prompt = PromptBuilder.build(story_summary, source_lang, target_lang, prev_ctx, current, next_ctx)
 
-        self.worker = TranslationWorker(index, prompt, self.hardware_profile)
+        if hasattr(self._worker_factory, "create_worker"):
+            self.worker = self._worker_factory.create_worker(index, prompt, self.hardware_profile)
+        else:
+            self.worker = self._worker_factory(index, prompt, self.hardware_profile)
         self.worker.progress.connect(self.on_progress)
         self.worker.finished.connect(self.on_finished)
         self.worker.error.connect(self.on_error)
