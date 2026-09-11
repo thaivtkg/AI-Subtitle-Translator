@@ -42,7 +42,8 @@ class TranslationWorker(QThread):
                 return
 
             # --- 2. NẠP MODEL THẬT QUA MODEL MANAGER ---
-            manager = ModelManager.get_instance()
+            backend_type = "llama_cpp" if self.model_path.lower().endswith(".gguf") else "ollama"
+            manager = ModelManager.get_instance(backend_type)
             n_ctx = self.profile.get("n_ctx", 4096)
             n_gpu_layers = self.profile.get("n_gpu_layers", -1)
             
@@ -55,7 +56,7 @@ class TranslationWorker(QThread):
             for output in stream:
                 if self._is_cancelled: 
                     return
-                chunk = output["choices"][0]["text"]
+                chunk = output["choices"][0]["text"] if isinstance(output, dict) else output
                 raw_text += chunk
                 
                 # --- 3. ẨN THINK, CHỈ STREAM PHẦN DỊCH ---

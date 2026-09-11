@@ -157,7 +157,7 @@ class TranslationController(QObject):
             f"clean_len={len(clean_text)} clean_text={clean_text!a} "
             f"active_target={self._active_translation_index} "
             f"controller_status_before={self._status} "
-            f"current_translation_before={self._current_translation!r}",
+            f"current_translation_before={self._current_translation!a}",
             flush=True,
         )
         if not clean_text:
