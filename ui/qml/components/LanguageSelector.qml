@@ -5,56 +5,63 @@ import "../theme"
 
 RowLayout {
     id: root
-    spacing: Theme.spaceMedium
     property alias sourceLang: sourceCombo.currentText
+    property bool compact: false
 
-    Text { text: "SOURCE"; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall; font.bold: true }
+    spacing: root.compact ? Theme.spaceXs : Theme.spaceMedium
+
+    Text { text: "SOURCE"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
 
     ComboBox {
+        objectName: "sourceLanguageCombo"
         id: sourceCombo
         model: ["English", "Japanese", "Chinese (Simplified)", "Chinese (Traditional)", "Korean", "Spanish", "French", "German", "Russian"]
-        font.family: Theme.fontUI
-        font.pixelSize: Theme.fontSizeBody
-        implicitWidth: 160
-        
-        background: Rectangle {
-            color: Theme.bgSurfaceElevated
-            border.color: Theme.border
-            radius: Theme.radius
-        }
+        font.pixelSize: 14
+        Layout.minimumWidth: 110
+        Layout.preferredWidth: 160
+        Layout.maximumWidth: 180
+        Layout.fillWidth: true
         contentItem: Text {
             text: sourceCombo.currentText
             color: Theme.textPrimary
-            font: sourceCombo.font
+            font.pixelSize: 14
             verticalAlignment: Text.AlignVCenter
             leftPadding: Theme.spaceSmall
+            elide: Text.ElideRight
+        }
+        background: Rectangle {
+            color: Theme.bgApp
+            radius: Theme.radius
+            border.color: Theme.border
         }
     }
 
-    Text { text: " ➔ "; color: Theme.textMuted; font.pixelSize: 16; font.bold: true }
+    Text { text: root.compact ? "→" : " ➔ "; color: Theme.textMuted; font.pixelSize: 16; font.bold: true }
 
-    Text { text: "TARGET"; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontSizeSmall; font.bold: true }
+    Text { text: "TARGET"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
 
     ComboBox {
         id: targetCombo
         model: ["Vietnamese"]
-        font.family: Theme.fontUI
-        font.pixelSize: Theme.fontSizeBody
-        implicitWidth: 120
-        enabled: false
-        
-        background: Rectangle {
-            color: Theme.bgSurfaceSoft
-            border.color: Theme.border
-            radius: Theme.radius
-        }
+        font.pixelSize: 14
+        Layout.minimumWidth: 95
+        Layout.preferredWidth: 120
+        Layout.maximumWidth: 140
+        Layout.fillWidth: true
         contentItem: Text {
             text: targetCombo.currentText
-            color: Theme.textSecondary
-            font: targetCombo.font
+            color: Theme.textPrimary
+            font.pixelSize: 14
             verticalAlignment: Text.AlignVCenter
             leftPadding: Theme.spaceSmall
+            elide: Text.ElideRight
         }
+        background: Rectangle {
+            color: Theme.bgApp
+            radius: Theme.radius
+            border.color: Theme.border
+        }
+        enabled: false // Target luôn cố định
     }
 
     function setLanguage(lang) {

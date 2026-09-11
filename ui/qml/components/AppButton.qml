@@ -5,35 +5,39 @@ import "../theme"
 Button {
     id: control
     property bool isPrimary: false
+    property string tooltip: ""
 
-    // Thêm không gian thở cho nút (Padding)
-    leftPadding: Theme.spaceMedium
-    rightPadding: Theme.spaceMedium
+    implicitWidth: Math.max(80, contentItem.implicitWidth + Theme.spaceLarge)
+    implicitHeight: 32
+
+    ToolTip.visible: hovered && tooltip !== ""
+    ToolTip.text: tooltip
+    ToolTip.delay: 400
+    ToolTip.timeout: 3000
 
     contentItem: Text {
         text: control.text
-        font.family: Theme.fontUI
-        font.pixelSize: Theme.fontSizeBody
+        font.pixelSize: 14
         font.bold: control.isPrimary
-        color: !control.enabled ? Theme.textDisabled : (control.isPrimary ? "#FFFFFF" : Theme.textPrimary)
+        color: !control.enabled ? Theme.textDisabled : (control.isPrimary ? Theme.bgApp : Theme.textPrimary)
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }
 
     background: Rectangle {
-        // Tự động giãn chiều rộng theo chữ, tối thiểu 100px
-        implicitWidth: Math.max(100, control.contentItem.implicitWidth + control.leftPadding + control.rightPadding)
-        implicitHeight: 32
+        implicitWidth: 100
+        implicitHeight: 36
         radius: Theme.radius
 
         color: !control.enabled ? Theme.bgSurfaceSoft :
-               control.pressed ? (control.isPrimary ? Qt.darker(Theme.accentSecondary, 1.2) : Theme.bgSurfaceElevated) :
-               control.hovered ? (control.isPrimary ? Qt.lighter(Theme.accentSecondary, 1.1) : Theme.bgSurfaceSoft) :
-               (control.isPrimary ? Theme.accentSecondary : "transparent")
+               control.pressed ? (control.isPrimary ? Qt.darker(Theme.accentCyan, 1.2) : Theme.bgSurfaceSoft) :
+               control.hovered ? (control.isPrimary ? Qt.lighter(Theme.accentCyan, 1.1) : Theme.bgSurfaceElevated) :
+               (control.isPrimary ? Theme.accentCyan : "transparent")
 
         border.color: (control.isPrimary || !control.enabled) ? "transparent" : Theme.border
         border.width: 1
 
-        Behavior on color { ColorAnimation { duration: Theme.animDuration } }
+        Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
+        Behavior on border.color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
     }
 }

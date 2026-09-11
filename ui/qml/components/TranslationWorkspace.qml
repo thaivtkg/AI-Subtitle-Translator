@@ -5,76 +5,96 @@ import "../theme"
 
 Item {
     id: workspace
-    
+
     property bool hasSelection: false
+    property int totalCount: 0
+    property bool compactActions: width < 500
     signal translateRequested(string sourceLang)
     signal acceptRequested(string text)
+    signal openSrtRequested()
+    signal openProjectRequested()
 
     function setSourceLanguage(lang) { langSelector.setLanguage(lang) }
     function getSourceLanguage() { return langSelector.sourceLang }
 
-    // ==========================================
-    // 1. TRẠNG THÁI TRỐNG
-    // ==========================================
     EmptyWorkspace {
         anchors.fill: parent
-        visible: !workspace.hasSelection
+        visible: opacity > 0
+        opacity: !workspace.hasSelection ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: Theme.animState; easing.type: Easing.OutCubic } }
+        emptyStateMode: workspace.totalCount > 0 ? "no_selection" : "no_project"
+        onOpenSrtClicked: workspace.openSrtRequested()
+        onOpenProjectClicked: workspace.openProjectRequested()
     }
 
-    // ==========================================
-    // 2. KHỐI EDITOR CHÍNH
-    // ==========================================
     ColumnLayout {
         anchors.fill: parent
-        visible: workspace.hasSelection
-        spacing: Theme.space16
+        visible: opacity > 0
+        opacity: workspace.hasSelection ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: Theme.animState; easing.type: Easing.OutCubic } }
+        spacing: Theme.spaceMedium
 
-        // --- TOOLBAR ---
         RowLayout {
             Layout.fillWidth: true
-            Layout.topMargin: Theme.space8
-            
-            LanguageSelector { id: langSelector }
-            
-            Item { Layout.fillWidth: true } 
-            
+            Layout.minimumWidth: 0
+            Layout.topMargin: Theme.spaceSmall
+            LanguageSelector {
+                id: langSelector
+                Layout.fillWidth: true
+                Layout.maximumWidth: 380
+                compact: workspace.width < 620
+            }
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
             RowLayout {
-                spacing: Theme.space8
-                Text { text: "Status:"; color: Theme.textMuted; font.family: Theme.fontUI; font.pixelSize: Theme.fontCaption }
+                spacing: Theme.spaceSmall
+                visible: workspace.width >= 620
+                Layout.minimumWidth: 0
+                Text {
+                    text: "Status:"
+                    color: Theme.textMuted
+                    font.pixelSize: 12
+                }
                 StatusBadge { status: translationController.status }
             }
         }
 
-        // --- BẢN GỐC (ORIGINAL) ---
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            visible: workspace.width < 620
+            spacing: Theme.spaceSmall
+            Item { Layout.fillWidth: true }
+            Text { text: "Status:"; color: Theme.textMuted; font.pixelSize: 12 }
+            StatusBadge { status: translationController.status }
+        }
+
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: workspace.height * 0.35
-            spacing: Theme.space8
-
-            Text { 
-                text: "ORIGINAL"
-                color: Theme.textSecondary
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontCaption
-                font.bold: true 
-                Layout.leftMargin: Theme.space4
+            Layout.fillHeight: true
+            Layout.preferredHeight: workspace.height * 0.45
+            Layout.minimumHeight: 160
+            spacing: Theme.spaceSmall
+            RowLayout {
+                Layout.fillWidth: true
+                Text { text: "ORIGINAL"; color: Theme.textSecondary; font.pixelSize: 12; font.bold: true }
+                Item { Layout.fillWidth: true }
+                Text { text: langSelector.sourceLang.toUpperCase(); color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
             }
-
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: Theme.bgSurface // Nền chìm
-                radius: 6
-                border.width: 0 // Xóa viền hoàn toàn cho cảm giác read-only
-
+                color: Theme.bgSurface
+                radius: Theme.radius
                 ScrollView {
                     anchors.fill: parent
-                    anchors.margins: Theme.space12
+                    anchors.margins: Theme.spaceMedium
                     TextArea {
                         text: translationController.currentOriginal
                         color: Theme.textSecondary
-                        font.family: Theme.fontUI
-                        font.pixelSize: Theme.fontBody + 1 // To hơn body thường một chút
+                        font.pixelSize: 14
                         wrapMode: Text.WordWrap
                         readOnly: true
                         selectByMouse: true
@@ -84,130 +104,120 @@ Item {
             }
         }
 
-        // --- BẢN DỊCH (VIETNAMESE) ---
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: Theme.space8
-
+            Layout.preferredHeight: workspace.height * 0.35
+            Layout.minimumHeight: 140
+            spacing: Theme.spaceSmall
             RowLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: Theme.space4
-                Layout.rightMargin: Theme.space4
-                
-                Text { 
-                    text: "VIETNAMESE"
-                    color: Theme.textPrimary
-                    font.family: Theme.fontUI
-                    font.pixelSize: Theme.fontCaption
-                    font.bold: true 
-                }
+                Text { text: "VIETNAMESE"; color: Theme.textPrimary; font.pixelSize: 12; font.bold: true }
                 Item { Layout.fillWidth: true }
-                Text { 
-                    text: "EDITABLE ✎"
-                    color: Theme.textMuted
-                    font.family: Theme.fontUI
-                    font.pixelSize: Theme.fontCaption 
+                AIActivityIndicator {
+                    active: translationController.status === "TRANSLATING"
+                    color: Theme.accentCyan
+                    Layout.alignment: Qt.AlignVCenter
+                }
+                Text {
+                    text: {
+                        const s = translationController.status
+                        if (s === "TRANSLATING") return "Translating…"
+                        if (s === "ERROR") return "ERROR ✕"
+                        if (s === "ACCEPTED") return "[ ACCEPTED ]"
+                        if (s === "EDITED") return "EDITED ●"
+                        if (s === "TRANSLATED") return "TRANSLATED ✦"
+                        return "PENDING"
+                    }
+                    color: translationController.status === "ACCEPTED" ? Theme.success : translationController.status === "ERROR" ? Theme.danger : translationController.status === "TRANSLATED" || translationController.status === "EDITED" ? Theme.accentPurple : Theme.textMuted
+                    font.pixelSize: 12
+                    font.bold: true
                 }
             }
-
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: Theme.bgSurfaceElevated // Nền nổi bật
-                radius: 6
-                // Chỉ hiện viền Accent khi người dùng đang click vào để gõ
-                border.color: translationInput.activeFocus ? Theme.accentSecondary : Theme.border
-                border.width: 1
-                Behavior on border.color { ColorAnimation { duration: 150 } }
-
+                color: Theme.bgSurfaceElevated
+                radius: Theme.radius
+                border.color: translationController.status === "ERROR" ? Theme.danger : translationInput.activeFocus ? Theme.accentCyan : Theme.border
+                border.width: translationInput.activeFocus || translationController.status === "ERROR" ? 2 : 1
+                Behavior on border.color { ColorAnimation { duration: Theme.animFocus; easing.type: Easing.OutQuad } }
                 ScrollView {
                     anchors.fill: parent
-                    anchors.margins: Theme.space12
+                    anchors.margins: Theme.spaceMedium
                     TextArea {
+                        objectName: "translationInput"
                         id: translationInput
-                        text: translationController.currentTranslation
-                        color: Theme.textPrimary
-                        font.family: Theme.fontUI
-                        font.pixelSize: Theme.fontBody + 3 // Hero text (Rất to và rõ)
+                        text: translationController.currentTranslation || (translationController.status === "TRANSLATING" ? "Generating translation..." : "")
+                        color: translationController.status === "TRANSLATING" && translationController.currentTranslation === "" ? Theme.textMuted : Theme.textPrimary
+                        font.pixelSize: 18
                         wrapMode: Text.WordWrap
                         selectByMouse: true
+                        readOnly: translationController.status === "TRANSLATING"
                         background: null
-
                         onTextChanged: {
-                            if (translationInput.focus && 
-                                translationController.status !== "TRANSLATING" &&
-                                translationInput.text !== translationController.currentTranslation) {
+                            if (translationInput.focus && translationController.status !== "TRANSLATING" && translationInput.text !== translationController.currentTranslation) {
                                 translationController.markAsEdited()
-                                hasUnsavedChanges = true 
+                                if (typeof projectController !== "undefined") projectController.markDirty()
                             }
                         }
-                        
                         Keys.onPressed: (event) => {
                             if (event.key === Qt.Key_Return && (event.modifiers & Qt.ControlModifier)) {
                                 event.accepted = true
-                                if (translationController.status === "TRANSLATED" || 
-                                    translationController.status === "EDITED" || 
-                                    translationController.status === "ACCEPTED") {
+                                if (translationController.status === "TRANSLATED" || translationController.status === "EDITED")
                                     acceptRequested(translationInput.text)
-                                    hasUnsavedChanges = true
-                                }
                             }
                         }
                     }
                 }
             }
+            Text {
+                visible: translationController.status === "ERROR"
+                text: "Translation failed. Model inference error."
+                color: Theme.danger
+                font.pixelSize: 12
+                Layout.fillWidth: true
+            }
         }
 
-        // --- ACTION BAR ---
         RowLayout {
-            Layout.alignment: Qt.AlignRight
-            Layout.bottomMargin: Theme.space8
-            spacing: Theme.space12
-
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            Layout.topMargin: Theme.spaceSmall
+            Layout.bottomMargin: Theme.spaceSmall
+            spacing: Theme.spaceXs
+            Item {
+                Layout.fillWidth: true
+                visible: !workspace.compactActions
+            }
             AppButton {
-                text: "↻ Retry"
-                enabled: translationController.status !== "TRANSLATING"
+                objectName: "btnRetry"
+                text: "Retry"
+                Layout.minimumWidth: 72
+                Layout.preferredWidth: workspace.compactActions ? 72 : 80
+                Layout.maximumWidth: 96
+                enabled: translationController.engineStatus !== "Translating" &&
+                         ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 onClicked: translateRequested(langSelector.sourceLang)
             }
-            
-            Button {
-                id: translateBtn
-                text: translationController.status === "TRANSLATING" ? "◌ Translating..." : "✦ Translate"
-                enabled: translationController.status !== "TRANSLATING"
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontLabel
-                font.bold: true
-                
-                contentItem: Text {
-                    text: translateBtn.text; font: translateBtn.font
-                    color: !translateBtn.enabled ? Theme.textDisabled : Theme.bgApp
-                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    implicitWidth: 120; implicitHeight: 32; radius: 4
-                    color: !translateBtn.enabled ? Theme.bgSurfaceSoft : Theme.accentSecondary
-                }
+            AppButton {
+                objectName: "btnTranslate"
+                text: translationController.status === "TRANSLATING" ? "◌ Translating..." : "Translate"
+                Layout.minimumWidth: 84
+                Layout.preferredWidth: workspace.compactActions ? 84 : 96
+                Layout.maximumWidth: 112
+                isPrimary: true
+                enabled: translationController.engineStatus !== "Translating" &&
+                         translationController.status !== "TRANSLATING"
                 onClicked: translateRequested(langSelector.sourceLang)
             }
-
-            Button {
-                id: acceptBtn
-                text: "✓ Accept"
-                enabled: translationController.status === "TRANSLATED" || translationController.status === "EDITED" || translationController.status === "ACCEPTED"
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontLabel
-                font.bold: true
-                
-                contentItem: Text {
-                    text: acceptBtn.text; font: acceptBtn.font
-                    color: !acceptBtn.enabled ? Theme.textDisabled : Theme.bgApp
-                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    implicitWidth: 100; implicitHeight: 32; radius: 4
-                    color: !acceptBtn.enabled ? Theme.bgSurfaceSoft : Theme.accentPrimary
-                }
+            AppButton {
+                objectName: "btnAccept"
+                text: "Accept"
+                Layout.minimumWidth: 72
+                Layout.preferredWidth: workspace.compactActions ? 72 : 88
+                Layout.maximumWidth: 100
+                enabled: translationController.status === "TRANSLATED" || translationController.status === "EDITED"
                 onClicked: acceptRequested(translationInput.text)
             }
         }

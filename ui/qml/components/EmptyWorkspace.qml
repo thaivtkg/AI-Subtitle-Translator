@@ -3,56 +3,33 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "../theme"
 
-Rectangle {
-    color: "transparent"
-    
+Item {
+    id: root
+    property string emptyStateMode: "no_project"
+    signal openSrtClicked()
+    signal openProjectClicked()
+
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: Theme.spaceLarge
-        
+        width: Math.min(parent.width * 0.7, 400)
+        spacing: Theme.spaceMedium
+
+        Text { Layout.alignment: Qt.AlignHCenter; text: root.emptyStateMode === "no_project" ? "📂" : "🎯"; font.pixelSize: 36 }
         Text {
-            text: "◈"
-            color: Theme.accentSecondary
-            font.pixelSize: 48
             Layout.alignment: Qt.AlignHCenter
+            text: root.emptyStateMode === "no_project" ? "No project loaded" : "Select a subtitle"
+            color: Theme.textPrimary; font.pixelSize: 18; font.bold: true; horizontalAlignment: Text.AlignHCenter
         }
-        
-        ColumnLayout {
-            spacing: Theme.spaceSmall
-            Layout.alignment: Qt.AlignHCenter
-            
-            Text {
-                text: "Start translating subtitles"
-                color: Theme.textPrimary
-                font.family: Theme.fontUI
-                font.pixelSize: 24
-                font.bold: true
-                Layout.alignment: Qt.AlignHCenter
-            }
-            
-            Text {
-                text: "Import an SRT or existing project to get started."
-                color: Theme.textSecondary
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontSizeBody
-                Layout.alignment: Qt.AlignHCenter
-            }
+        Text {
+            Layout.fillWidth: true; Layout.alignment: Qt.AlignHCenter
+            text: root.emptyStateMode === "no_project" ? "Open an SRT file or existing project workspace to start translating subtitles with AI." : "Choose a subtitle item from the navigator on the left to view, edit, or translate it."
+            color: Theme.textMuted; font.pixelSize: 14; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
         }
-        
         RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: Theme.spaceMedium
-            Layout.topMargin: Theme.spaceMedium
-            
-            AppButton { 
-                text: "Open SRT"
-                onClicked: importSrtDialog.open()
-            }
-            AppButton { 
-                text: "Open Project"
-                isPrimary: true
-                onClicked: loadProjectDialog.open()
-            }
+            visible: root.emptyStateMode === "no_project"
+            Layout.alignment: Qt.AlignHCenter; Layout.topMargin: Theme.spaceSmall; spacing: Theme.spaceSmall
+            AppButton { text: "Open SRT"; isPrimary: true; onClicked: root.openSrtClicked() }
+            AppButton { text: "Open Project"; onClicked: root.openProjectClicked() }
         }
     }
 }

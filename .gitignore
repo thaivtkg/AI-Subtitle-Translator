@@ -45,6 +45,10 @@ models/*.safetensors
 
 # Logs và IDE
 *.log
+artifacts/t15/
 .vscode/
 .idea/
 .DS_Store
+.pytest-tmp/
+.pytest-tmp-*/
+artifacts/t15-real/

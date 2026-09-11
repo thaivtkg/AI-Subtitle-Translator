@@ -50,21 +50,21 @@ def build_test_prompt(item: dict) -> tuple[str, str]:
         f"3. Maintain the concise format of subtitles.\n\n"
         f"Story Summary: {item['story']}"
     )
-    
+
     user_prompt = (
         f"Previous context: {item['prev']}\n"
         f"Current subtitle to translate: {item['current']}\n"
         f"Next context: {item['next']}\n\n"
         f"Vietnamese translation:"
     )
-    
+
     return sys_prompt, user_prompt
 
 def run_benchmark(models=["translategemma:12b", "qwen2.5:7b"]):
     backend = OllamaBackend()
 
     print(f"{'='*60}\n🚀 RUNNING SUBTITLE TRANSLATION BENCHMARK\n{'='*60}")
-    
+
     for model_name in models:
         print(f"\n[MODEL]: {model_name}")
         if not backend.load_model(model_name):
@@ -72,7 +72,7 @@ def run_benchmark(models=["translategemma:12b", "qwen2.5:7b"]):
             continue
 
         total_time = 0.0
-        
+
         for idx, item in enumerate(TEST_DATASET, 1):
             sys_prompt, user_prompt = build_test_prompt(item)
 

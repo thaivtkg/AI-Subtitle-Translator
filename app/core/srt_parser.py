@@ -9,7 +9,7 @@ class SRTParser:
             with open(file_path, 'r', encoding='utf-8-sig') as f:
                 content = f.read()
         except Exception as e:
-            print(f"Error reading file: {e}")
+            print(f"Error reading file: {e!a}")
             return []
 
         blocks = re.split(r'\n\s*\n', content.strip())

@@ -54,6 +54,8 @@ class SubtitleModel(QAbstractListModel):
         }
 
     def load_data(self, data_list):
+        for sub in data_list:
+            self._normalize_translation_state(sub)
         self.beginResetModel()
         self._subtitles = data_list
         self.endResetModel()
@@ -61,14 +63,42 @@ class SubtitleModel(QAbstractListModel):
     # ---- BỔ SUNG TỪ ĐÂY ----
     def get_all_data(self):
         """Trả về toàn bộ danh sách subtitle để Context Engine xử lý"""
+        for sub in self._subtitles:
+            self._normalize_translation_state(sub)
         return self._subtitles
+
+    @staticmethod
+    def _normalize_translation_state(sub):
+        status = str(sub.get("status", "PENDING")).upper()
+        translation = str(sub.get("translation", "") or "")
+        if status in {"TRANSLATED", "EDITED", "ACCEPTED"} and not translation.strip():
+            sub["translation"] = "Lỗi: Bản dịch rỗng."
+            sub["status"] = "ERROR"
 
     def update_translation(self, row_index, translation_text, status):
         """Cập nhật bản dịch và trạng thái, sau đó báo cho QML vẽ lại"""
         if 0 <= row_index < len(self._subtitles):
+            before = self._subtitles[row_index]
+            print(
+                f"[MODEL_COMMIT] target={row_index} "
+                f"translation_before_len={len(str(before.get('translation', '') or ''))} "
+                f"status_before={before.get('status', 'PENDING')} "
+                f"translation_len={len(str(translation_text or ''))} "
+                f"requested_status={status}",
+                flush=True,
+            )
             # 1. Cập nhật dữ liệu trong bộ nhớ Python
             self._subtitles[row_index]["translation"] = translation_text
             self._subtitles[row_index]["status"] = status
+            self._normalize_translation_state(self._subtitles[row_index])
+            after = self._subtitles[row_index]
+            print(
+                f"[MODEL_AFTER] target={row_index} "
+                f"translation_len={len(str(after.get('translation', '') or ''))} "
+                f"status={after.get('status', 'PENDING')} "
+                f"translation={after.get('translation', '')!a}",
+                flush=True,
+            )
             
             # 2. Tạo index và ÉP QML CẬP NHẬT CHÍNH XÁC 2 BIẾN NÀY
             q_index = self.createIndex(row_index, 0)

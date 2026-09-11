@@ -5,107 +5,113 @@ import "../theme"
 
 Rectangle {
     id: root
-    Layout.fillWidth: true
-    height: 28
-    color: Theme.bgSurface // Nền đồng nhất với Header
-    
-    // Viền trên phân cách với Workspace
-    Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.border }
+    implicitHeight: 32
+    color: Theme.bgApp
 
-    // --- CÁC BIẾN NHẬN DỮ LIỆU TỪ MAIN ---
-    property int totalItems: 0
-    property int acceptedItems: 0
-    property string aiState: "Ready"
-    
-    property real vramUsage: 3.5 // GB (Mock data để test thanh cảnh báo)
-    property real vramTotal: 4.0 // GB (RTX 3050)
+    Rectangle { width: parent.width; height: 1; color: Theme.border; anchors.top: parent.top }
+
+    property int acceptedCount: 0
+    property int totalCount: 0
+    property string engineStatus: "Not loaded"
+    property real vramUsed: -1.0
+    property real vramTotal: -1.0
+    readonly property bool compactMode: width < 1150
+
+    property real progressRatio: totalCount > 0 ? acceptedCount / totalCount : 0
+    property int progressPercent: Math.round(progressRatio * 100)
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spaceSmall
-        anchors.leftMargin: Theme.spaceMedium
-        anchors.rightMargin: Theme.spaceMedium
-        spacing: Theme.spaceLarge
+        anchors.leftMargin: root.compactMode ? Theme.spaceSmall : Theme.spaceMedium
+        anchors.rightMargin: root.compactMode ? Theme.spaceSmall : Theme.spaceMedium
+        spacing: 0
 
-        // --- 1. TIẾN TRÌNH DỊCH THUẬT (PROGRESS BAR) ---
         RowLayout {
             spacing: Theme.spaceSmall
-            Text { text: "✓"; color: Theme.textMuted; font.pixelSize: Theme.fontSizeBadge }
+            Layout.alignment: Qt.AlignVCenter
             Text {
-                text: acceptedItems + " / " + totalItems + " Accepted"
-                color: Theme.textSecondary
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontSizeSmall
+                objectName: "statusProgressText"
+                id: progressText
+                text: root.totalCount === 0
+                      ? "No project"
+                      : root.compactMode
+                        ? ("✓ " + root.acceptedCount + " / " + root.totalCount + " · " + root.progressPercent + "%")
+                        : ("✓ " + root.acceptedCount + " / " + root.totalCount + " Accepted · " + root.progressPercent + "%")
+                color: root.totalCount > 0 && root.acceptedCount === root.totalCount ? Theme.success : root.totalCount === 0 ? Theme.textMuted : Theme.textSecondary
+                font.pixelSize: 12
+                ToolTip.visible: progressMouse.containsMouse
+                ToolTip.text: root.totalCount === 0 ? "No project loaded" : root.acceptedCount + " of " + root.totalCount + " subtitles accepted."
+                MouseArea { id: progressMouse; anchors.fill: parent; hoverEnabled: true }
             }
-            // Vạch phần trăm
             Rectangle {
-                width: 100; height: 4; radius: 2; color: Theme.bgApp
+                visible: !root.compactMode && root.totalCount > 0
+                Layout.preferredWidth: 80
+                Layout.preferredHeight: 3
+                Layout.alignment: Qt.AlignVCenter
+                color: Theme.bgSurfaceElevated
+                radius: 1
+                clip: true
                 Rectangle {
-                    height: parent.height; radius: 2
-                    width: totalItems > 0 ? parent.width * (acceptedItems / totalItems) : 0
-                    color: Theme.accentPrimary
-                    Behavior on width { NumberAnimation { duration: 300 } }
+                    width: parent.width * root.progressRatio
+                    height: parent.height
+                    color: Theme.success
+                    radius: 1
+                    Behavior on width { NumberAnimation { duration: Theme.animProgress; easing.type: Easing.OutCubic } }
                 }
-            }
-            Text {
-                text: totalItems > 0 ? Math.round((acceptedItems/totalItems)*100) + "%" : "0%"
-                color: Theme.textMuted
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontSizeSmall
             }
         }
 
-        Item { Layout.fillWidth: true } // Đẩy các phần tử còn lại sang phải
+        Item { Layout.fillWidth: true }
 
-        // --- 2. TRẠNG THÁI AI ENGINE ---
         RowLayout {
-            spacing: Theme.spaceXs
-            Text {
-                text: "AI Engine:"
-                color: Theme.textMuted
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontSizeSmall
+            spacing: root.compactMode ? Theme.spaceSmall : Theme.spaceMedium
+            Layout.alignment: Qt.AlignVCenter
+            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 14; color: Theme.border }
+            RowLayout {
+                spacing: Theme.spaceSmall
+                Rectangle {
+                    id: engineDot
+                    width: 8; height: 8; radius: 4
+                    Layout.alignment: Qt.AlignVCenter
+                    visible: root.engineStatus !== "Translating" && root.engineStatus !== "Loading"
+                    color: root.engineStatus === "Ready" ? Theme.success : root.engineStatus === "Error" ? Theme.danger : Theme.textMuted
+                    Behavior on color { ColorAnimation { duration: Theme.animState; easing.type: Easing.OutQuad } }
+                }
+                AIActivityIndicator {
+                    active: root.engineStatus === "Translating" || root.engineStatus === "Loading"
+                    color: Theme.accentCyan
+                    Layout.alignment: Qt.AlignVCenter
+                }
+                Text {
+                    objectName: "engineStatusText"
+                    id: engineText
+                    text: root.compactMode ? root.engineStatus : "AI Engine: " + root.engineStatus
+                    color: root.engineStatus === "Error" ? Theme.danger : Theme.textSecondary
+                    font.pixelSize: 12
+                    ToolTip.visible: engineMouse.containsMouse
+                    ToolTip.text: "Current status of the AI inference engine."
+                    MouseArea { id: engineMouse; anchors.fill: parent; hoverEnabled: true }
+                }
             }
-            Text {
-                text: root.aiState
-                color: root.aiState === "Translating..." ? Theme.accentSecondary : Theme.textSecondary
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontSizeSmall
-                font.bold: root.aiState === "Translating..."
-            }
+            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 14; color: Theme.border }
         }
 
-        Rectangle { width: 1; height: 14; color: Theme.border } // Dấu gạch đứng phân cách
+        Item { Layout.fillWidth: true }
 
-        // --- 3. VẠCH CẢNH BÁO VRAM (RTX 3050) ---
         RowLayout {
             spacing: Theme.spaceSmall
+            Layout.alignment: Qt.AlignVCenter
             Text {
-                text: "VRAM:"
-                color: Theme.textMuted
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontSizeSmall
-            }
-            Text {
-                text: vramUsage.toFixed(1) + " / " + vramTotal.toFixed(1) + " GB"
+                objectName: "vramStatusText"
+                id: vramText
+                text: root.vramTotal > 0 && root.vramUsed >= 0
+                      ? ("VRAM " + root.vramUsed.toFixed(1) + " / " + root.vramTotal.toFixed(1) + (root.compactMode ? "" : " GB"))
+                      : "VRAM —"
                 color: Theme.textSecondary
-                font.family: Theme.fontUI
-                font.pixelSize: Theme.fontSizeSmall
-            }
-            // Vạch VRAM đổi màu động
-            Rectangle {
-                width: 80; height: 6; radius: 3; color: Theme.bgApp
-                Rectangle {
-                    height: parent.height; radius: 3
-                    width: parent.width * (vramUsage / vramTotal)
-                    
-                    // Logic màu: >85% Đỏ (Danger), >70% Vàng (Warning), còn lại Xanh (Primary)
-                    color: (vramUsage / vramTotal) > 0.85 ? Theme.danger : 
-                          ((vramUsage / vramTotal) > 0.70 ? Theme.warning : Theme.accentPrimary)
-                    
-                    Behavior on width { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
-                    Behavior on color { ColorAnimation { duration: 500 } }
-                }
+                font.pixelSize: 12
+                ToolTip.visible: vramMouse.containsMouse
+                ToolTip.text: root.vramTotal > 0 && root.vramUsed >= 0 ? "Used: " + root.vramUsed.toFixed(1) + " GB\nTotal: " + root.vramTotal.toFixed(1) + " GB" : "VRAM statistics unavailable"
+                MouseArea { id: vramMouse; anchors.fill: parent; hoverEnabled: true }
             }
         }
     }

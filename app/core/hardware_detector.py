@@ -12,7 +12,7 @@ class HardwareDetector:
             print(f"[DEBUG] llama.cpp system info: {info}")
             return "CUDA :" in info or "CUDA =" in info or "CUBLAS" in info
         except Exception as e:
-            print(f"[Hardware Warning] Không thể kiểm tra CUDA Backend: {e}")
+            print(f"[Hardware Warning] Không thể kiểm tra CUDA Backend: {e!a}")
             return False
 
     @staticmethod
