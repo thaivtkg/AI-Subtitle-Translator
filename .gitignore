@@ -49,3 +49,4 @@ artifacts/t15/
 .vscode/
 .idea/
 .DS_Store
+.pytest-tmp/
