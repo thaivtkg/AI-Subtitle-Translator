@@ -110,6 +110,7 @@ def test_tc_p3a7_04_pause_resume_button_mapping(model):
     assert controller.canPause is False
     assert controller.canResume is False
 
+    service.job.items[1].state = BatchItemState.COMPLETED
     service.job.state = BatchJobState.PAUSED
     service.jobChanged.emit()
     assert controller.canResume is True
@@ -190,6 +191,7 @@ def test_tc_p3a7_10_action_calls_are_forwarded_to_service(model):
     job = service.job
 
     controller.pauseBatch()
+    service.job.items[1].state = BatchItemState.COMPLETED
     service.job.state = BatchJobState.PAUSED
     service.jobChanged.emit()
     controller.resumeBatch()
