@@ -1,5 +1,6 @@
 import pytest
-from PySide6.QtCore import QCoreApplication, QObject, Signal
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QGuiApplication
 
 from app.batch.batch_state import BatchItemState, BatchJobState
 from app.controllers.batch_controller import BatchController
@@ -47,7 +48,7 @@ class FakeBatchService(QObject):
 
 @pytest.fixture
 def model():
-    app = QCoreApplication.instance() or QCoreApplication([])
+    app = QGuiApplication.instance() or QGuiApplication([])
     subtitle_model = SubtitleModel()
     subtitle_model.load_data([
         {"index": 10, "original": "ten", "status": "TRANSLATED", "translation": "10"},
@@ -55,7 +56,7 @@ def model():
         {"index": 30, "original": "thirty", "status": "PENDING", "translation": ""},
         {"index": 40, "original": "forty", "status": "ERROR", "translation": "bad"},
     ])
-    assert app is QCoreApplication.instance()
+    assert app is QGuiApplication.instance()
     return subtitle_model
 
 

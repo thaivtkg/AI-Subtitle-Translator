@@ -24,6 +24,13 @@ class TranslationPipelineAdapter(TranslationExecutionPort):
             self._story_summary,
         )
 
+    def configure(self, source_lang, target_lang, story_summary):
+        if self._pending is not None:
+            raise RuntimeError("Cannot reconfigure while a translation is active")
+        self._source_lang = source_lang
+        self._target_lang = target_lang
+        self._story_summary = story_summary
+
     def _on_completed(self, target_index):
         pending = self._pending
         if pending is None:

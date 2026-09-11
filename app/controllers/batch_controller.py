@@ -22,6 +22,8 @@ class BatchController(QObject):
         job_changed = getattr(service, "jobChanged", None)
         if job_changed is not None:
             job_changed.connect(self._refresh)
+        subtitle_model.modelReset.connect(self._refresh)
+        subtitle_model.dataChanged.connect(self._refresh)
 
     @Property(str, notify=stateChanged)
     def state(self):
@@ -134,6 +136,9 @@ class BatchController(QObject):
         self._config = (source_lang, target_lang, story_summary)
         self._job = BatchJob.create(self._project_id, items)
         self._cancel_pending = False
+        configure = getattr(self._service, "configure", None)
+        if configure is not None:
+            configure(source_lang, target_lang, story_summary)
         self._service.start(self._job)
         self._refresh()
 
