@@ -11,7 +11,7 @@ class SRTExporter:
                     f.write(f"{sub['start_time']} --> {sub['end_time']}\n")
                     
                     # Ưu tiên bản dịch nếu đã ACCEPTED
-                    if sub.get('status') == 'accepted' and sub.get('translation'):
+                    if str(sub.get('status', '')).upper() == 'ACCEPTED' and sub.get('translation'):
                         text = sub['translation']
                     else:
                         text = sub['original']

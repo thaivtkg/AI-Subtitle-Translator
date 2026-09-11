@@ -20,7 +20,8 @@ class AppHarness:
         QQuickStyle.setStyle("Basic")
         self.engine = QQmlApplicationEngine()
         self.model = SubtitleModel()
-        self.model.load_data(SRTParser.parse(str(fixture_path)))
+        if fixture_path is not None:
+            self.model.load_data(SRTParser.parse(str(fixture_path)))
 
         original_profile = HardwareDetector.get_recommended_profile
         HardwareDetector.get_recommended_profile = staticmethod(lambda: {
