@@ -19,7 +19,7 @@ class TestPromptBuilder(unittest.TestCase):
         self.assertIn("<|im_start|>assistant", prompt)
         
         # 2. Xác thực nội dung được tiêm đúng chỗ
-        self.assertIn("STORY SUMMARY:", prompt)
+        self.assertIn("STORY SUMMARY (CRITICAL CONTEXT):", prompt)
         self.assertIn("Main character is a hero.", prompt)
         self.assertIn("--- PREVIOUS SUBTITLES ---", prompt)
         self.assertIn("I am here.", prompt)
