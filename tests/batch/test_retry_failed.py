@@ -81,3 +81,30 @@ def test_tc_p3a3_04_retry_clears_error_only_when_item_is_dispatched():
     assert job.items[3].error_msg is None
 
     port.complete_current()
+
+
+def test_tc_p3a3_05_retry_failure_does_not_loop_and_continues_snapshot():
+    port = ControlledTranslationPort()
+    job = completed_job_with_failed_items()
+    service = BatchTranslationService(port)
+
+    service.retry_failed(job)
+    assert port.calls == [1]
+
+    port.fail_current("retry failed")
+
+    assert job.items[1].state is BatchItemState.FAILED
+    assert job.items[1].error_msg == "retry failed"
+    assert port.calls == [1, 3]
+    assert job.items[3].state is BatchItemState.RUNNING
+    assert port.active_count == 1
+    assert port.max_concurrent == 1
+
+    port.complete_current()
+
+    assert job.items[3].state is BatchItemState.COMPLETED
+    assert job.items[1].state is BatchItemState.FAILED
+    assert job.state is BatchJobState.COMPLETED
+    assert port.calls == [1, 3]
+    assert port.active_count == 0
+    assert port.max_concurrent == 1
