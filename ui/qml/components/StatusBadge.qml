@@ -35,7 +35,7 @@ Rectangle {
         text: badge.status === "PENDING" ? "○ PENDING" :
               badge.status === "TRANSLATING" ? "◉ TRANSLATING" :
               badge.status === "ACCEPTED" ? "✓ ACCEPTED" : badge.status
-              
+
         font.family: Theme.fontUI
         font.pixelSize: Theme.fontSizeBadge
         font.bold: true

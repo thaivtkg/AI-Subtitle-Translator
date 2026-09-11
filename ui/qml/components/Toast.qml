@@ -7,21 +7,21 @@ Rectangle {
     id: root
     // Rộng linh hoạt nhưng có giới hạn tối đa 400px
     width: Math.min(Math.max(messageText.implicitWidth + 70, 250), 400)
-    
+
     // CAO LINH HOẠT: Tự động đẩy chiều cao nếu chữ rớt dòng
     height: Math.max(48, messageText.implicitHeight + Theme.spaceLarge)
     radius: Theme.radius
-    
+
     color: Theme.bgSurfaceElevated
     border.color: type === "SUCCESS" ? Theme.accentPrimary : (type === "ERROR" ? Theme.danger : Theme.accentSecondary)
     border.width: 1
 
     property string message: ""
-    property string type: "INFO" 
+    property string type: "INFO"
 
     y: -height - 20
     anchors.horizontalCenter: parent ? parent.horizontalCenter : undefined
-    z: 999 
+    z: 999
 
     RowLayout {
         anchors.fill: parent
@@ -29,7 +29,7 @@ Rectangle {
         anchors.leftMargin: Theme.spaceMedium
         anchors.rightMargin: Theme.spaceMedium
         spacing: Theme.spaceMedium
-        
+
         Text {
             text: root.type === "SUCCESS" ? "✓" : (root.type === "ERROR" ? "✕" : "ℹ")
             color: root.border.color
@@ -38,7 +38,7 @@ Rectangle {
             font.bold: true
             Layout.alignment: Qt.AlignVCenter
         }
-        
+
         Text {
             id: messageText
             Layout.fillWidth: true
@@ -54,7 +54,7 @@ Rectangle {
 
     Timer {
         id: hideTimer
-        interval: 3000 
+        interval: 3000
         onTriggered: hide()
     }
 
