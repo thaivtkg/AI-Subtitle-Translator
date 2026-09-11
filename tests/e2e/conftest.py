@@ -1,10 +1,16 @@
 from pathlib import Path
 import re
+import tempfile
 
 import pytest
 
 
 _final_reports = {}
+
+
+def pytest_configure(config):
+    repo_root = Path(__file__).parents[2]
+    config.option.basetemp = tempfile.mkdtemp(prefix=".pytest-tmp-", dir=repo_root)
 
 
 @pytest.hookimpl(hookwrapper=True)
