@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QCoreApplication, QEvent, QUrl
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -59,6 +59,25 @@ class AppHarness:
         self.driver = UserDriver(self.window)
 
     def close(self):
+        worker = getattr(self.translation_controller, "worker", None)
+        if worker is not None:
+            if worker.isRunning():
+                worker.requestInterruption()
+            assert worker.wait(5000), "Worker did not stop during harness teardown"
+            assert not worker.isRunning()
+
         if self.window is not None:
             self.window.close()
+            self.window.deleteLater()
+
+        if self.engine is not None:
+            self.engine.deleteLater()
+
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
         self.app.processEvents()
+        self.window = None
+        self.engine = None
+        self.driver = None
+        self.translation_controller = None
+        self.project_controller = None
+        self.model = None
