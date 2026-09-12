@@ -11,18 +11,18 @@ Rectangle {
 
     // Nền mờ (Opacity 15%)
     color: {
-        if (status === "ACCEPTED") return Qt.rgba(Theme.accentPrimary.r, Theme.accentPrimary.g, Theme.accentPrimary.b, 0.15)
-        if (status === "TRANSLATING") return Qt.rgba(Theme.accentSecondary.r, Theme.accentSecondary.g, Theme.accentSecondary.b, 0.15)
-        if (status === "TRANSLATED" || status === "EDITED") return Qt.rgba(Theme.accentMuted.r, Theme.accentMuted.g, Theme.accentMuted.b, 0.15)
+        if (status === "ACCEPTED") return Qt.rgba(Theme.success.r, Theme.success.g, Theme.success.b, 0.15)
+        if (status === "TRANSLATING") return Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.15)
+        if (status === "TRANSLATED" || status === "EDITED") return Qt.rgba(Theme.accentPurple.r, Theme.accentPurple.g, Theme.accentPurple.b, 0.15)
         if (status === "ERROR") return Qt.rgba(Theme.danger.r, Theme.danger.g, Theme.danger.b, 0.15)
         return "transparent"
     }
 
     // Viền chìm
     border.color: {
-        if (status === "ACCEPTED") return Qt.rgba(Theme.accentPrimary.r, Theme.accentPrimary.g, Theme.accentPrimary.b, 0.5)
-        if (status === "TRANSLATING") return Theme.accentSecondary
-        if (status === "TRANSLATED" || status === "EDITED") return Theme.accentMuted
+        if (status === "ACCEPTED") return Theme.success
+        if (status === "TRANSLATING") return Theme.accentCyan
+        if (status === "TRANSLATED" || status === "EDITED") return Theme.accentPurple
         if (status === "ERROR") return Theme.danger
         return Theme.border
     }
@@ -36,8 +36,7 @@ Rectangle {
               badge.status === "TRANSLATING" ? "◉ TRANSLATING" :
               badge.status === "ACCEPTED" ? "✓ ACCEPTED" : badge.status
 
-        font.family: Theme.fontUI
-        font.pixelSize: Theme.fontSizeBadge
+        font.pixelSize: 10
         font.bold: true
         color: badge.status === "PENDING" ? Theme.textMuted : badge.border.color
     }

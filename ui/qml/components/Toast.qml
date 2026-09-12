@@ -13,7 +13,7 @@ Rectangle {
     radius: Theme.radius
 
     color: Theme.bgSurfaceElevated
-    border.color: type === "SUCCESS" ? Theme.accentPrimary : (type === "ERROR" ? Theme.danger : Theme.accentSecondary)
+    border.color: type === "SUCCESS" ? Theme.success : (type === "ERROR" ? Theme.danger : Theme.accentCyan)
     border.width: 1
 
     property string message: ""
@@ -33,7 +33,6 @@ Rectangle {
         Text {
             text: root.type === "SUCCESS" ? "✓" : (root.type === "ERROR" ? "✕" : "ℹ")
             color: root.border.color
-            font.family: Theme.fontUI
             font.pixelSize: 18 // Phóng to icon một chút
             font.bold: true
             Layout.alignment: Qt.AlignVCenter
@@ -45,8 +44,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             text: root.message
             color: Theme.textPrimary
-            font.family: Theme.fontUI
-            font.pixelSize: Theme.fontSizeBody
+            font.pixelSize: 14
             wrapMode: Text.WordWrap
             lineHeight: 1.2 // Giãn dòng nhẹ cho dễ đọc
         }
