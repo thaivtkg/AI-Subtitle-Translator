@@ -1,4 +1,5 @@
 from pathlib import Path
+from uuid import uuid4
 
 from PySide6.QtCore import QCoreApplication, QEvent, QUrl
 from PySide6.QtGui import QGuiApplication
@@ -6,6 +7,8 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 
 from app.controllers.project_controller import ProjectController
+from app.controllers.batch_controller import BatchController
+from app.controllers.batch_runtime_bridge import BatchRuntimeBridge
 from app.controllers.translation_controller import TranslationController
 from app.core.hardware_detector import HardwareDetector
 from app.core.srt_parser import SRTParser
@@ -44,9 +47,16 @@ class AppHarness:
             self.translation_controller.hardware_profile.update(profile_overrides)
 
         self.project_controller = ProjectController(self.model)
+        self.batch_runtime = BatchRuntimeBridge(self.translation_controller)
+        self.batch_controller = BatchController(
+            self.model,
+            self.batch_runtime,
+            project_id=str(uuid4()),
+        )
         self.engine.rootContext().setContextProperty("translationController", self.translation_controller)
         self.engine.rootContext().setContextProperty("projectController", self.project_controller)
         self.engine.rootContext().setContextProperty("subtitleModel", self.model)
+        self.engine.rootContext().setContextProperty("batchController", self.batch_controller)
 
         qml_file = Path(__file__).parents[2] / "ui" / "qml" / "Main.qml"
         self.engine.load(QUrl.fromLocalFile(str(qml_file)))
@@ -80,4 +90,6 @@ class AppHarness:
         self.driver = None
         self.translation_controller = None
         self.project_controller = None
+        self.batch_controller = None
+        self.batch_runtime = None
         self.model = None
