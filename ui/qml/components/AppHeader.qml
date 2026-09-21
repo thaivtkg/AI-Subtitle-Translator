@@ -10,6 +10,7 @@ ToolBar {
     property bool isSaved: true
     property bool hasProject: false
     property bool hasProjectData: false
+    property bool projectMutationLocked: false
     readonly property bool isCompact: width < 1280
     readonly property bool isMinimum: width < 1100
 
@@ -110,8 +111,8 @@ ToolBar {
                     spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
                     Layout.rightMargin: root.isCompact ? Theme.spaceSmall : Theme.spaceMedium
 
-                    AppButton { objectName: "btnOpenSrt"; text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Open SRT — Ctrl + O"; onClicked: root.openSrtClicked() }
-                    AppButton { objectName: "btnOpenProject"; text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Open Project — Ctrl + Shift + O"; onClicked: root.openProjectClicked() }
+                    AppButton { objectName: "btnOpenSrt"; text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Open SRT — Ctrl + O"; enabled: !root.projectMutationLocked; onClicked: root.openSrtClicked() }
+                    AppButton { objectName: "btnOpenProject"; text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Open Project — Ctrl + Shift + O"; enabled: !root.projectMutationLocked; onClicked: root.openProjectClicked() }
                     AppButton { objectName: "btnSave"; text: "Save"; tooltip: "Save Project — Ctrl + S"; enabled: root.hasProject && !root.isSaved; onClicked: root.saveClicked() }
 
                     Rectangle {

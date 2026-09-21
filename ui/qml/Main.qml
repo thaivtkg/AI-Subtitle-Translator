@@ -30,8 +30,13 @@ ApplicationWindow {
         hasProject: projectController.hasProject
         isSaved: projectController.hasProject && !projectController.isDirty
         hasProjectData: subListView.count > 0
-        onOpenSrtClicked: importSrtDialog.open()
-        onOpenProjectClicked: loadProjectDialog.open()
+        projectMutationLocked: batchController.executionLocked
+        onOpenSrtClicked: {
+            if (!batchController.executionLocked) importSrtDialog.open()
+        }
+        onOpenProjectClicked: {
+            if (!batchController.executionLocked) loadProjectDialog.open()
+        }
         onSaveClicked: saveProjectDialog.open()
         onExportClicked: {
             if (projectController.validateBeforeExport()) {
@@ -54,8 +59,21 @@ ApplicationWindow {
     // ==========================================
     // S2-T2: MAIN WINDOW SHELL (3-COLUMN LAYOUT)
     // ==========================================
-    SplitView {
+    ColumnLayout {
         anchors.fill: parent
+        spacing: 0
+
+        BatchControlBar {
+            id: batchControlBar
+            Layout.fillWidth: true
+            sourceLanguage: transWorkspace.getSourceLanguage()
+            targetLanguage: "Vietnamese"
+            storySummary: mainWindow.globalStorySummary
+        }
+
+        SplitView {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
         orientation: Qt.Horizontal
         handle: Rectangle {
             implicitWidth: 1
@@ -89,6 +107,7 @@ ApplicationWindow {
                 anchors.margins: Theme.spaceMedium
                 hasSelection: subListView.currentIndex >= 0
                 totalCount: subListView.count
+                executionLocked: batchController.executionLocked
 
                 onTranslateRequested: (sourceLang) => {
                     translationController.requestTranslation(subListView.currentIndex, sourceLang, "Vietnamese", globalStorySummary)
@@ -100,8 +119,12 @@ ApplicationWindow {
                         subListView.currentIndex += 1
                     }
                 }
-                onOpenSrtRequested: importSrtDialog.open()
-                onOpenProjectRequested: loadProjectDialog.open()
+                onOpenSrtRequested: {
+                    if (!batchController.executionLocked) importSrtDialog.open()
+                }
+                onOpenProjectRequested: {
+                    if (!batchController.executionLocked) loadProjectDialog.open()
+                }
             }
         }
 
@@ -117,6 +140,7 @@ ApplicationWindow {
                 anchors.margins: Theme.spaceMedium
             }
         }
+    }
     }
 
     // ==========================================
@@ -155,13 +179,21 @@ ApplicationWindow {
     // S2-T16: GLOBAL KEYBOARD SHORTCUTS
     // ==========================================
     Shortcut {
+        objectName: "shortcutOpenSrt"
         sequence: "Ctrl+O"
-        onActivated: importSrtDialog.open()
+        enabled: !batchController.executionLocked
+        onActivated: {
+            if (!batchController.executionLocked) importSrtDialog.open()
+        }
     }
 
     Shortcut {
+        objectName: "shortcutOpenProject"
         sequence: "Ctrl+Shift+O"
-        onActivated: loadProjectDialog.open()
+        enabled: !batchController.executionLocked
+        onActivated: {
+            if (!batchController.executionLocked) loadProjectDialog.open()
+        }
     }
 
     Shortcut {

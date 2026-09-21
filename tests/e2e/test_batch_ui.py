@@ -109,6 +109,9 @@ def test_tc_p3a7_q08_retry_failed():
     factory = DeterministicWorkerFactory("error")
     harness = AppHarness(FIXTURE, worker_factory=factory)
     try:
+        harness.model.load_data([
+            {"index": 1, "original": "retry me", "translation": "", "status": "PENDING"},
+        ])
         harness.driver.click("btnBatchStart")
         wait_for(harness, lambda: harness.batch_controller.state == "COMPLETED")
         assert harness.driver.is_enabled("btnBatchRetryFailed")

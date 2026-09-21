@@ -7,6 +7,7 @@ Item {
     id: workspace
 
     property bool hasSelection: false
+    property bool executionLocked: false
     property int totalCount: 0
     property bool compactActions: width < 500
     signal translateRequested(string sourceLang)
@@ -43,6 +44,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 380
                 compact: workspace.width < 620
+                enabled: !workspace.executionLocked
             }
             Item {
                 Layout.fillWidth: true
@@ -153,10 +155,10 @@ Item {
                         font.pixelSize: 18
                         wrapMode: Text.WordWrap
                         selectByMouse: true
-                        readOnly: translationController.status === "TRANSLATING"
+                        readOnly: translationController.status === "TRANSLATING" || workspace.executionLocked
                         background: null
                         onTextChanged: {
-                            if (translationInput.focus && translationController.status !== "TRANSLATING" && translationInput.text !== translationController.currentTranslation) {
+                            if (!workspace.executionLocked && translationInput.focus && translationController.status !== "TRANSLATING" && translationInput.text !== translationController.currentTranslation) {
                                 translationController.markAsEdited()
                                 if (typeof projectController !== "undefined") projectController.markDirty()
                             }
@@ -164,7 +166,7 @@ Item {
                         Keys.onPressed: (event) => {
                             if (event.key === Qt.Key_Return && (event.modifiers & Qt.ControlModifier)) {
                                 event.accepted = true
-                                if (translationController.status === "TRANSLATED" || translationController.status === "EDITED")
+                                if (!workspace.executionLocked && (translationController.status === "TRANSLATED" || translationController.status === "EDITED"))
                                     acceptRequested(translationInput.text)
                             }
                         }
@@ -196,7 +198,7 @@ Item {
                 Layout.minimumWidth: 72
                 Layout.preferredWidth: workspace.compactActions ? 72 : 80
                 Layout.maximumWidth: 96
-                enabled: translationController.engineStatus !== "Translating" &&
+                enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
                          ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 onClicked: translateRequested(langSelector.sourceLang)
             }
@@ -207,7 +209,7 @@ Item {
                 Layout.preferredWidth: workspace.compactActions ? 84 : 96
                 Layout.maximumWidth: 112
                 isPrimary: true
-                enabled: translationController.engineStatus !== "Translating" &&
+                enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
                          translationController.status !== "TRANSLATING"
                 onClicked: translateRequested(langSelector.sourceLang)
             }
@@ -217,7 +219,7 @@ Item {
                 Layout.minimumWidth: 72
                 Layout.preferredWidth: workspace.compactActions ? 72 : 88
                 Layout.maximumWidth: 100
-                enabled: translationController.status === "TRANSLATED" || translationController.status === "EDITED"
+                enabled: !workspace.executionLocked && (translationController.status === "TRANSLATED" || translationController.status === "EDITED")
                 onClicked: acceptRequested(translationInput.text)
             }
         }
