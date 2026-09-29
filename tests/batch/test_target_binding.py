@@ -6,6 +6,7 @@ from app.batch.batch_item import BatchItem
 from app.batch.batch_job import BatchJob
 from app.batch.batch_state import BatchItemState, BatchJobState
 from app.controllers.translation_controller import TranslationController
+from app.core.hardware_detector import HardwareDetector
 from app.models.subtitle import SubtitleModel
 from app.services.batch_translation_service import BatchTranslationService
 from app.services.translation_pipeline_adapter import TranslationPipelineAdapter
@@ -23,7 +24,7 @@ def _wait_until(predicate, timeout_ms=3000):
     raise AssertionError(f"Timed out after {timeout_ms}ms")
 
 
-def test_tc_p3a2_05_target_binding_survives_selection_change():
+def test_tc_p3a2_05_target_binding_survives_selection_change(monkeypatch):
     app = QGuiApplication.instance() or QGuiApplication([])
     model = SubtitleModel()
     model.load_data([
@@ -31,10 +32,18 @@ def test_tc_p3a2_05_target_binding_survives_selection_change():
         {"index": 2, "original": "Bravo", "translation": "", "status": "PENDING"},
         {"index": 3, "original": "Charlie", "translation": "", "status": "PENDING"},
     ])
-    controller = TranslationController(
-        model,
-        worker_factory=DeterministicWorkerFactory("slow"),
+    monkeypatch.setattr(
+        HardwareDetector,
+        "get_recommended_profile",
+        staticmethod(lambda: {
+            "gpu_info": {"name": "T15 test", "vram_gb": 0.0},
+            "backend_status": "T15 test profile",
+            "model_name": "missing-test-model.gguf",
+            "n_ctx": 2048,
+            "n_gpu_layers": 0,
+        }),
     )
+    controller = TranslationController(model, worker_factory=DeterministicWorkerFactory("slow"))
     adapter = TranslationPipelineAdapter(controller)
     service = BatchTranslationService(adapter)
     job = BatchJob.create(
@@ -68,4 +77,6 @@ def test_tc_p3a2_05_target_binding_survives_selection_change():
     assert controller.currentOriginal == "Charlie"
     assert controller.currentTranslation == ""
     assert controller.status == "PENDING"
+    controller.worker.deleteLater()
+    app.processEvents()
     assert app is QCoreApplication.instance()

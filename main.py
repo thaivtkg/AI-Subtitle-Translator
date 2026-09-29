@@ -1,5 +1,6 @@
 import sys
 import os
+from uuid import uuid4
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QUrl
@@ -8,6 +9,8 @@ from app.models.subtitle import SubtitleModel
 from app.core.srt_parser import SRTParser
 from app.controllers.translation_controller import TranslationController
 from app.controllers.project_controller import ProjectController
+from app.controllers.batch_controller import BatchController
+from app.controllers.batch_runtime_bridge import BatchRuntimeBridge
 from app.core.hardware_detector import HardwareDetector
 from PySide6.QtQuickControls2 import QQuickStyle
 
@@ -36,6 +39,14 @@ def main():
     
     translation_controller = TranslationController(subtitle_model)
     engine.rootContext().setContextProperty("translationController", translation_controller)
+
+    batch_runtime = BatchRuntimeBridge(translation_controller)
+    batch_controller = BatchController(
+        subtitle_model,
+        batch_runtime,
+        project_id=f"runtime-{uuid4()}",
+    )
+    engine.rootContext().setContextProperty("batchController", batch_controller)
     
     project_controller = ProjectController(subtitle_model)
     engine.rootContext().setContextProperty("projectController", project_controller)
