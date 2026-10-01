@@ -5,6 +5,7 @@ from app.core.srt_exporter import SRTExporter
 from app.core.srt_parser import SRTParser
 from app.core.srt_validator import SRTValidator
 from app.core.glossary import Glossary
+from app.core.entity_dictionary import EntityDictionary
 
 class ProjectController(QObject):
     notify = Signal(str, str)
@@ -22,6 +23,7 @@ class ProjectController(QObject):
         self._is_dirty = False
         self._loading_project = False
         self.glossary = Glossary()
+        self.entity_dictionary = EntityDictionary()
         self._subtitle_model.dataChanged.connect(self._on_model_changed)
 
     @Property(bool, notify=projectStateChanged)
@@ -119,7 +121,10 @@ class ProjectController(QObject):
             },
             "story_summary": story_summary,
             "subtitles": self._subtitle_model.get_all_data(),
-            "intelligence": {"glossary": self.glossary.to_payload()},
+            "intelligence": {
+                "glossary": self.glossary.to_payload(),
+                "entities": self.entity_dictionary.to_payload(),
+            },
         }
         for row_index, subtitle in enumerate(data["subtitles"]):
             print(
@@ -152,9 +157,11 @@ class ProjectController(QObject):
                 data = json.load(f)
 
             loaded_glossary = self._load_glossary(data)
-            
+            loaded_entities = self._load_entities(data)
+
             self._subtitle_model.load_data(data.get("subtitles", []))
             self.glossary = loaded_glossary
+            self.entity_dictionary = loaded_entities
             for row_index, subtitle in enumerate(data.get("subtitles", [])):
                 print(
                     f"[PROJECT_LOAD] target={row_index} "
@@ -190,3 +197,14 @@ class ProjectController(QObject):
         if "glossary" not in intelligence:
             return Glossary()
         return Glossary.from_payload(intelligence["glossary"])
+
+    @staticmethod
+    def _load_entities(data):
+        if "intelligence" not in data:
+            return EntityDictionary()
+        intelligence = data["intelligence"]
+        if not isinstance(intelligence, dict):
+            raise ValueError("Invalid intelligence data")
+        if "entities" not in intelligence:
+            return EntityDictionary()
+        return EntityDictionary.from_payload(intelligence["entities"])
