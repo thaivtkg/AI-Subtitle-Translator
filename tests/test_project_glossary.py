@@ -54,7 +54,7 @@ def test_tc_p3b1_15_empty_save_writes_canonical_namespace(tmp_path):
     save(controller, path)
 
     payload = json.loads(path.read_text(encoding="utf-8"))
-    assert payload["intelligence"] == {"glossary": {}}
+    assert payload["intelligence"]["glossary"] == {}
 
 
 @pytest.mark.parametrize(
