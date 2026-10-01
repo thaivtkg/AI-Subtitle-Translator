@@ -50,6 +50,13 @@ def main():
     
     project_controller = ProjectController(subtitle_model)
     engine.rootContext().setContextProperty("projectController", project_controller)
+
+    # Gắn (bind) dữ liệu ngữ cảnh vào luồng dịch thuật
+    translation_controller.bind_intelligence(
+        glossary=project_controller.glossary,
+        entities=project_controller.entity_dictionary,
+        translation_memory=project_controller.translation_memory,
+    )
     
     engine.rootContext().setContextProperty("subtitleModel", subtitle_model)
 
