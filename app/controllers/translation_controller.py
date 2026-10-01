@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, Slot, Signal, Property
+from PySide6.QtCore import QObject, Slot, Signal, Property, QTimer
 from app.llm.worker import TranslationWorker
 from app.core.context_engine import ContextEngine
 from app.core.prompt_builder import PromptBuilder
@@ -30,8 +30,21 @@ class TranslationController(QObject):
         self._worker_factory = worker_factory or TranslationWorker
         self.worker = None
         self.hardware_profile = HardwareDetector.get_recommended_profile()
+        self._glossary = None
+        self._entities = None
+        self._translation_memory = None
         self._subtitle_model.modelReset.connect(self._emit_progress)
         self._subtitle_model.dataChanged.connect(self._emit_progress)
+
+    def bind_intelligence(self, glossary=None, entities=None, translation_memory=None):
+        """Kết nối các thành phần trí tuệ: glossary, entities, translation_memory."""
+        self._glossary = glossary
+        self._entities = entities
+        self._translation_memory = translation_memory
+
+    @property
+    def _worker(self):
+        return self.worker
 
     @Property(int, notify=progressChanged)
     def totalSubtitleCount(self):
@@ -136,7 +149,43 @@ class TranslationController(QObject):
 
         subtitles = self._subtitle_model.get_all_data()
         prev_ctx, current, next_ctx = ContextEngine.get_context(subtitles, index)
-        prompt = PromptBuilder.build(story_summary, source_lang, target_lang, prev_ctx, current, next_ctx)
+
+        # TM short-circuit: 100% exact match
+        if self._translation_memory:
+            hit = self._translation_memory.lookup(current)
+            if hit:
+                self._subtitle_model.update_translation(index, hit.target_text, "TRANSLATED")
+                self._status = "TRANSLATED"
+                self._current_translation = hit.target_text
+                self._set_engine_status("Ready")
+
+                def _emit_tm_hit(idx=index, text=hit.target_text):
+                    self.translationUpdated.emit(text)
+                    self.statusChanged.emit("TRANSLATED")
+                    self.translationCompleted.emit(idx)
+
+                QTimer.singleShot(0, _emit_tm_hit)
+                return
+
+        # Thu thập các matches từ Glossary và Entity Dictionary
+        enriched_glossary_hits = []
+        if self._glossary:
+            for hit in self._glossary.match(current):
+                entry = self._glossary.get(hit.source_term)
+                forbidden = entry.forbidden_alternatives if entry else ()
+                enriched_glossary_hits.append((hit, forbidden))
+
+        entity_hits = self._entities.match(current) if self._entities else ()
+        prompt = PromptBuilder.build(
+            story_summary,
+            source_lang,
+            target_lang,
+            prev_ctx,
+            current,
+            next_ctx,
+            glossary_hits=tuple(enriched_glossary_hits),
+            entity_hits=tuple(entity_hits),
+        )
 
         if hasattr(self._worker_factory, "create_worker"):
             self.worker = self._worker_factory.create_worker(index, prompt, self.hardware_profile)

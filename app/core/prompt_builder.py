@@ -1,7 +1,8 @@
 class PromptBuilder:
     @staticmethod
-    def build(story_summary: str, source_lang: str, target_lang: str, 
-              prev_context: list, current_sub: str, next_context: list) -> str:
+    def build(story_summary: str, source_lang: str, target_lang: str,
+              prev_context: list, current_sub: str, next_context: list,
+              glossary_hits: tuple = (), entity_hits: tuple = ()) -> str:
         
         # 1. Nâng cấp vai trò thành Chuyên gia Bản địa hóa
         system_prompt = (
@@ -18,6 +19,40 @@ class PromptBuilder:
             "- Translate ONLY the current subtitle.\n"
             "- Do NOT translate character names or proper nouns.\n"
         )
+
+        # --- THÊM KHỐI TÍCH HỢP NGỮ CẢNH (CONTEXT INTEGRATION) VÀO ĐÂY ---
+        if glossary_hits or entity_hits:
+            system_prompt += "\nPROJECT-SPECIFIC TRANSLATION RULES (MANDATORY):\n"
+            system_prompt += "You must strictly follow these rules for the matching terms and entities in this subtitle:\n"
+
+            if glossary_hits:
+                system_prompt += "\n[GLOSSARY]\n"
+                sorted_glossary_hits = sorted(
+                    glossary_hits,
+                    key=lambda item: getattr(item[0] if isinstance(item, (tuple, list)) else item, "start", 0)
+                )
+                for item in sorted_glossary_hits:
+                    if isinstance(item, (tuple, list)) and len(item) == 2:
+                        hit, forbidden = item
+                    else:
+                        hit, forbidden = item, ()
+                    rule = f'- "{hit.source_term}" MUST be translated as "{hit.preferred_translation}".'
+                    if forbidden:
+                        # Nối danh sách các từ cấm
+                        forbidden_str = '", "'.join(forbidden)
+                        rule += f' (ABSOLUTELY FORBIDDEN: "{forbidden_str}")'
+                    system_prompt += rule + "\n"
+
+            if entity_hits:
+                system_prompt += "\n[ENTITIES]\n"
+                sorted_entity_hits = sorted(
+                    entity_hits,
+                    key=lambda hit: getattr(hit, "start", 0)
+                )
+                for hit in sorted_entity_hits:
+                    rule = f'- "{hit.matched_form}" ({hit.entity_type}, canonical name: "{hit.entity_name}") MUST be translated as "{hit.canonical_translation}".'
+                    system_prompt += rule + "\n"
+        # ----------------------------------------------------------------
 
         # 2. BỘ LUẬT "THÉP" DÀNH RIÊNG CHO TIẾNG VIỆT
         if target_lang.lower() == "vietnamese":
