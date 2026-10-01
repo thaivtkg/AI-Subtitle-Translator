@@ -1,5 +1,4 @@
 import json
-
 import pytest
 from PySide6.QtCore import QUrl
 
@@ -28,49 +27,55 @@ def save(controller, path):
 
 
 # ---------------------------------------------------------------------------
-# TC-P3B2-18  .aisrt round-trip
+# TC-P3B3-11  .aisrt round-trip
 # ---------------------------------------------------------------------------
-def test_tc_p3b2_18_aisrt_roundtrip_preserves_entities(tmp_path):
+def test_tc_p3b3_11_aisrt_roundtrip_preserves_translation_memory(tmp_path):
     path = tmp_path / "project.aisrt"
     controller, model = make_controller()
     model.load_data([
-        {"index": 1, "original": "Tony", "translation": "Tony", "status": "ACCEPTED"}
+        {"index": 1, "original": "Good morning.", "translation": "Chào buổi sáng.", "status": "ACCEPTED"}
     ])
-    controller.entity_dictionary.add(
-        "  Tony Stark  ", "CHARACTER", "  Tony Stark  ", ["  Iron Man  ", "Stark"]
-    )
+    controller.translation_memory.add("  Good morning.  ", "  Chào buổi sáng.  ")
     save(controller, path)
 
     loaded, loaded_model = make_controller()
     loaded.loadProject(file_url(path))
-    assert loaded.entity_dictionary.to_payload() == {
-        "  Tony Stark  ": {
-            "entity_type": "CHARACTER",
-            "canonical_translation": "  Tony Stark  ",
-            "aliases": ["  Iron Man  ", "Stark"],
+    assert loaded.translation_memory.to_payload() == {
+        "  Good morning.  ": {
+            "target_text": "  Chào buổi sáng.  ",
         }
     }
     assert loaded_model.get_all_data() == model.get_all_data()
 
 
 # ---------------------------------------------------------------------------
-# TC-P3B2-19  Canonical empty save
+# TC-P3B3-12  Canonical empty save
 # ---------------------------------------------------------------------------
-def test_tc_p3b2_19_empty_save_writes_canonical_namespace(tmp_path):
+def test_tc_p3b3_12_empty_save_writes_canonical_namespace(tmp_path):
     path = tmp_path / "empty.aisrt"
     controller, _ = make_controller()
     save(controller, path)
     payload = json.loads(path.read_text(encoding="utf-8"))
-    assert payload["intelligence"]["entities"] == {}
+    assert payload["intelligence"] == {
+        "glossary": {},
+        "entities": {},
+        "translation_memory": {},
+    }
 
 
 # ---------------------------------------------------------------------------
-# TC-P3B2-20  Legacy load
+# TC-P3B3-13  Legacy load
 # ---------------------------------------------------------------------------
-@pytest.mark.parametrize("intelligence", [None, {}, {"glossary": {}}])
-def test_tc_p3b2_20_legacy_missing_entities_loads_empty_without_rewrite(
-    tmp_path, intelligence
-):
+@pytest.mark.parametrize(
+    "intelligence",
+    [
+        None,
+        {},
+        {"glossary": {}},
+        {"glossary": {}, "entities": {}},
+    ],
+)
+def test_tc_p3b3_13_legacy_missing_tm_loads_empty_without_rewrite(tmp_path, intelligence):
     path = tmp_path / "legacy.aisrt"
     payload = {
         "metadata": {"source_file": "source.srt"},
@@ -85,17 +90,17 @@ def test_tc_p3b2_20_legacy_missing_entities_loads_empty_without_rewrite(
     before = path.read_bytes()
 
     controller, _ = make_controller()
-    controller.entity_dictionary.add("Old", "OTHER", "Cũ", [])
+    controller.translation_memory.add("Old", "Cũ")
 
     controller.loadProject(file_url(path))
-    assert controller.entity_dictionary.to_payload() == {}
+    assert controller.translation_memory.to_payload() == {}
     assert path.read_bytes() == before
 
 
 # ---------------------------------------------------------------------------
-# TC-P3B2-21  Atomic invalid load
+# TC-P3B3-14  Atomic invalid load
 # ---------------------------------------------------------------------------
-def test_tc_p3b2_21_invalid_entity_load_is_atomic(tmp_path):
+def test_tc_p3b3_14_invalid_tm_load_is_atomic(tmp_path):
     path = tmp_path / "invalid.aisrt"
     payload = {
         "metadata": {"source_file": "new.srt"},
@@ -113,11 +118,10 @@ def test_tc_p3b2_21_invalid_entity_load_is_atomic(tmp_path):
                     "canonical_translation": "OK",
                     "aliases": [],
                 },
-                "BadEntity": {
-                    "entity_type": "INVALID_TYPE",
-                    "canonical_translation": "Bad",
-                    "aliases": [],
-                },
+            },
+            "translation_memory": {
+                "ValidSource": {"target_text": "Hợp lệ"},
+                "InvalidSource": {"invalid_key": "Không có target_text"},
             },
         },
     }
@@ -129,10 +133,12 @@ def test_tc_p3b2_21_invalid_entity_load_is_atomic(tmp_path):
     ])
     controller.glossary.add("Old", "Cũ", [])
     controller.entity_dictionary.add("Prior", "LOCATION", "Trước", [])
+    controller.translation_memory.add("PriorSource", "Bản dịch cũ")
 
     before_model = model.get_all_data().copy()
     before_glossary = controller.glossary.to_payload()
     before_entities = controller.entity_dictionary.to_payload()
+    before_tm = controller.translation_memory.to_payload()
 
     controller.loadProject(file_url(path))
 
@@ -140,12 +146,13 @@ def test_tc_p3b2_21_invalid_entity_load_is_atomic(tmp_path):
     assert model.get_all_data() == before_model
     assert controller.glossary.to_payload() == before_glossary
     assert controller.entity_dictionary.to_payload() == before_entities
+    assert controller.translation_memory.to_payload() == before_tm
 
 
 # ---------------------------------------------------------------------------
-# TC-P3B2-22  Checkpoint isolation
+# TC-P3B3-15  Checkpoint isolation
 # ---------------------------------------------------------------------------
-def test_tc_p3b2_22_checkpoint_has_no_entity_data(tmp_path):
+def test_tc_p3b3_15_checkpoint_has_no_translation_memory_data(tmp_path):
     job = BatchJob(
         job_id="job",
         project_id="project",
@@ -153,7 +160,7 @@ def test_tc_p3b2_22_checkpoint_has_no_entity_data(tmp_path):
         items={
             0: BatchItem(
                 target_index=0,
-                source_hash=compute_source_hash("Tony"),
+                source_hash=compute_source_hash("Hello"),
                 state=BatchItemState.PENDING,
             )
         },
@@ -163,43 +170,50 @@ def test_tc_p3b2_22_checkpoint_has_no_entity_data(tmp_path):
     payload = json.loads(path.read_text(encoding="utf-8"))
     raw = json.dumps(payload, ensure_ascii=False)
     assert "intelligence" not in payload
-    assert "entities" not in raw
-    assert "entity" not in raw
+    assert "translation_memory" not in raw
 
 
 # ---------------------------------------------------------------------------
-# TC-P3B2-23  Glossary coexistence
+# TC-P3B3-16  Three-way intelligence coexistence
 # ---------------------------------------------------------------------------
-def test_tc_p3b2_23_glossary_and_entities_coexist_independently(tmp_path):
-    path = tmp_path / "coexist.aisrt"
+def test_tc_p3b3_16_glossary_entities_tm_coexist_independently(tmp_path):
+    path = tmp_path / "coexist_all.aisrt"
     controller, model = make_controller()
     model.load_data([
-        {"index": 1, "original": "King Tony", "translation": "", "status": "PENDING"}
+        {"index": 1, "original": "Captain Stark is here.", "translation": "", "status": "PENDING"}
     ])
-    controller.glossary.add("King", "Vua", ["Monarch"])
-    controller.entity_dictionary.add("Tony Stark", "CHARACTER", "Tony Stark", ["Iron Man"])
+    controller.glossary.add("Captain", "Đại úy", ["Thuyền trưởng"])
+    controller.entity_dictionary.add("Stark", "CHARACTER", "Stark", ["Tony"])
+    controller.translation_memory.add("Captain Stark is here.", "Đại úy Stark đang ở đây.")
     save(controller, path)
 
-    # Verify both namespaces in saved file
+    # Verify all three namespaces in saved file
     raw = json.loads(path.read_text(encoding="utf-8"))
     assert "glossary" in raw["intelligence"]
     assert "entities" in raw["intelligence"]
-    assert "King" in raw["intelligence"]["glossary"]
-    assert "Tony Stark" in raw["intelligence"]["entities"]
+    assert "translation_memory" in raw["intelligence"]
+    assert "Captain" in raw["intelligence"]["glossary"]
+    assert "Stark" in raw["intelligence"]["entities"]
+    assert "Captain Stark is here." in raw["intelligence"]["translation_memory"]
 
     # Load and verify independence
     loaded, _ = make_controller()
     loaded.loadProject(file_url(path))
     assert loaded.glossary.to_payload() == {
-        "King": {
-            "preferred_translation": "Vua",
-            "forbidden_alternatives": ["Monarch"],
+        "Captain": {
+            "preferred_translation": "Đại úy",
+            "forbidden_alternatives": ["Thuyền trưởng"],
         }
     }
     assert loaded.entity_dictionary.to_payload() == {
-        "Tony Stark": {
+        "Stark": {
             "entity_type": "CHARACTER",
-            "canonical_translation": "Tony Stark",
-            "aliases": ["Iron Man"],
+            "canonical_translation": "Stark",
+            "aliases": ["Tony"],
+        }
+    }
+    assert loaded.translation_memory.to_payload() == {
+        "Captain Stark is here.": {
+            "target_text": "Đại úy Stark đang ở đây.",
         }
     }
