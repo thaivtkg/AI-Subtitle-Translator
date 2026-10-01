@@ -4,6 +4,7 @@ from PySide6.QtCore import QObject, Slot, Signal, Property, QUrl
 from app.core.srt_exporter import SRTExporter
 from app.core.srt_parser import SRTParser
 from app.core.srt_validator import SRTValidator
+from app.core.glossary import Glossary
 
 class ProjectController(QObject):
     notify = Signal(str, str)
@@ -20,6 +21,7 @@ class ProjectController(QObject):
         self._has_project = False
         self._is_dirty = False
         self._loading_project = False
+        self.glossary = Glossary()
         self._subtitle_model.dataChanged.connect(self._on_model_changed)
 
     @Property(bool, notify=projectStateChanged)
@@ -116,7 +118,8 @@ class ProjectController(QObject):
                 "version": "1.0"
             },
             "story_summary": story_summary,
-            "subtitles": self._subtitle_model.get_all_data()
+            "subtitles": self._subtitle_model.get_all_data(),
+            "intelligence": {"glossary": self.glossary.to_payload()},
         }
         for row_index, subtitle in enumerate(data["subtitles"]):
             print(
@@ -147,8 +150,11 @@ class ProjectController(QObject):
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+
+            loaded_glossary = self._load_glossary(data)
             
             self._subtitle_model.load_data(data.get("subtitles", []))
+            self.glossary = loaded_glossary
             for row_index, subtitle in enumerate(data.get("subtitles", [])):
                 print(
                     f"[PROJECT_LOAD] target={row_index} "
@@ -173,3 +179,14 @@ class ProjectController(QObject):
             self.notify.emit("ERROR", f"Lỗi mở dự án: {str(e)}")
         finally:
             self._loading_project = False
+
+    @staticmethod
+    def _load_glossary(data):
+        if "intelligence" not in data:
+            return Glossary()
+        intelligence = data["intelligence"]
+        if not isinstance(intelligence, dict):
+            raise ValueError("Invalid intelligence data")
+        if "glossary" not in intelligence:
+            return Glossary()
+        return Glossary.from_payload(intelligence["glossary"])
