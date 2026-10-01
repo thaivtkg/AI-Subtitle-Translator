@@ -6,6 +6,7 @@ from app.core.srt_parser import SRTParser
 from app.core.srt_validator import SRTValidator
 from app.core.glossary import Glossary
 from app.core.entity_dictionary import EntityDictionary
+from app.core.translation_memory import TranslationMemory
 
 class ProjectController(QObject):
     notify = Signal(str, str)
@@ -24,6 +25,7 @@ class ProjectController(QObject):
         self._loading_project = False
         self.glossary = Glossary()
         self.entity_dictionary = EntityDictionary()
+        self.translation_memory = TranslationMemory()
         self._subtitle_model.dataChanged.connect(self._on_model_changed)
 
     @Property(bool, notify=projectStateChanged)
@@ -124,6 +126,7 @@ class ProjectController(QObject):
             "intelligence": {
                 "glossary": self.glossary.to_payload(),
                 "entities": self.entity_dictionary.to_payload(),
+                "translation_memory": self.translation_memory.to_payload(),
             },
         }
         for row_index, subtitle in enumerate(data["subtitles"]):
@@ -158,10 +161,12 @@ class ProjectController(QObject):
 
             loaded_glossary = self._load_glossary(data)
             loaded_entities = self._load_entities(data)
+            loaded_tm = self._load_translation_memory(data)
 
             self._subtitle_model.load_data(data.get("subtitles", []))
             self.glossary = loaded_glossary
             self.entity_dictionary = loaded_entities
+            self.translation_memory = loaded_tm
             for row_index, subtitle in enumerate(data.get("subtitles", [])):
                 print(
                     f"[PROJECT_LOAD] target={row_index} "
@@ -208,3 +213,14 @@ class ProjectController(QObject):
         if "entities" not in intelligence:
             return EntityDictionary()
         return EntityDictionary.from_payload(intelligence["entities"])
+
+    @staticmethod
+    def _load_translation_memory(data):
+        if "intelligence" not in data:
+            return TranslationMemory()
+        intelligence = data["intelligence"]
+        if not isinstance(intelligence, dict):
+            raise ValueError("Invalid intelligence data")
+        if "translation_memory" not in intelligence:
+            return TranslationMemory()
+        return TranslationMemory.from_payload(intelligence["translation_memory"])
