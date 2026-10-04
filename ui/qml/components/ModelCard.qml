@@ -9,14 +9,14 @@ Rectangle {
     property var modelData: null
     property var controller: null
 
-    // Thuộc tính tường minh hỗ trợ cả binding trực tiếp hoặc fallback từ modelData
+    // Thuộc tính nhận từ ListView delegate hoặc fallback từ modelData
     property string modelId: modelData ? (modelData.model_id || "") : ""
     property string displayName: modelData ? (modelData.display_name || "") : ""
     property string sizeText: modelData ? (modelData.size_gb_formatted || modelData.size_formatted || "") : ""
     property string description: modelData ? (modelData.description || "") : ""
     property string recommendationBadge: modelData ? (modelData.recommendation || modelData.badge || "") : ""
     property string recommendationReason: modelData ? (modelData.recommendation_reason || modelData.reason || "") : ""
-    property string status: modelData ? (modelData.status || "") : "NOT_DOWNLOADED"
+    property string status: modelData ? (modelData.status || "NOT_DOWNLOADED") : "NOT_DOWNLOADED"
     property int downloadPercent: modelData ? (modelData.download_percent !== undefined ? modelData.download_percent : (modelData.progress_percent || 0)) : 0
     property string downloadSpeed: modelData ? (modelData.download_speed || modelData.speed || "") : ""
     property string downloadEta: modelData ? (modelData.download_eta || modelData.eta || "") : ""
@@ -46,7 +46,7 @@ Rectangle {
         anchors.margins: Theme.spaceMedium
         spacing: Theme.spaceSmall
 
-        // Hàng 1: Tiêu đề, Badge khuyên dùng, Kích thước file
+        // Hàng 1: Tiêu đề, Dung lượng, Badge khuyên dùng, Spacer, Nút bấm thao tác
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spaceSmall
@@ -56,8 +56,14 @@ Rectangle {
                 color: Theme.textPrimary
                 font.pixelSize: 15
                 font.bold: true
-                Layout.fillWidth: true
                 elide: Text.ElideRight
+            }
+
+            Text {
+                text: root.sizeText
+                color: Theme.textMuted
+                font.pixelSize: 13
+                font.bold: true
             }
 
             // Recommendation Badge
@@ -105,12 +111,60 @@ Rectangle {
                 }
             }
 
-            // Kích thước dung lượng
-            Text {
-                text: root.sizeText
-                color: Theme.textMuted
-                font.pixelSize: 13
-                font.bold: true
+            // Spacer đẩy các nút sang phải
+            Item { Layout.fillWidth: true }
+
+            // Tag trạng thái: Active hoặc Downloaded
+            Rectangle {
+                implicitWidth: statusLabel.implicitWidth + Theme.spaceMedium
+                implicitHeight: 24
+                radius: 4
+                visible: (root.isActive || root.isDownloaded) && !root.isDownloading
+                color: root.isActive ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.2) : Theme.bgSurfaceSoft
+                border.color: root.isActive ? Theme.accentCyan : Theme.border
+                border.width: 1
+
+                Text {
+                    id: statusLabel
+                    anchors.centerIn: parent
+                    text: root.isActive ? "⚡ ĐANG SỬ DỤNG" : "✓ ĐÃ TẢI VỀ"
+                    color: root.isActive ? Theme.accentCyan : Theme.textSecondary
+                    font.pixelSize: 11
+                    font.bold: true
+                }
+            }
+
+            // Nút: Tải về
+            AppButton {
+                text: "Tải model"
+                isPrimary: root.recommendationBadge === "RECOMMENDED"
+                visible: root.canDownload
+                onClicked: root.downloadClicked(root.modelId)
+            }
+
+            // Nút: Hủy tải
+            AppButton {
+                text: "Hủy tải"
+                visible: root.isDownloading
+                onClicked: root.cancelClicked(root.modelId)
+            }
+
+            // Nút: Chọn sử dụng
+            AppButton {
+                text: "Sử dụng"
+                isPrimary: true
+                visible: root.canSelect
+                onClicked: {
+                    root.useClicked(root.modelId)
+                    root.selectClicked(root.modelId)
+                }
+            }
+
+            // Nút: Xóa file
+            AppButton {
+                text: "Xóa"
+                visible: root.canDelete
+                onClicked: root.deleteClicked(root.modelId)
             }
         }
 
@@ -122,6 +176,8 @@ Rectangle {
             font.pixelSize: 13
             wrapMode: Text.WordWrap
             lineHeight: 1.2
+            maximumLineCount: 2
+            elide: Text.ElideRight
         }
 
         // Hàng 3: Tiến trình tải nếu đang downloading
@@ -159,68 +215,6 @@ Rectangle {
                     color: Theme.accentCyan
                     radius: 3
                 }
-            }
-        }
-
-        // Hàng 4: Trạng thái và Nút bấm thao tác
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.topMargin: Theme.spaceXs
-            spacing: Theme.spaceSmall
-
-            // Tag trạng thái: Active hoặc Downloaded
-            Rectangle {
-                implicitWidth: statusLabel.implicitWidth + Theme.spaceMedium
-                implicitHeight: 24
-                radius: 4
-                visible: (root.isActive || root.isDownloaded) && !root.isDownloading
-                color: root.isActive ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.2) : Theme.bgSurfaceSoft
-                border.color: root.isActive ? Theme.accentCyan : Theme.border
-                border.width: 1
-
-                Text {
-                    id: statusLabel
-                    anchors.centerIn: parent
-                    text: root.isActive ? "⚡ ĐANG SỬ DỤNG" : "✓ ĐÃ TẢI VỀ"
-                    color: root.isActive ? Theme.accentCyan : Theme.textSecondary
-                    font.pixelSize: 11
-                    font.bold: true
-                }
-            }
-
-            Item { Layout.fillWidth: true }
-
-            // Nút: Tải về
-            AppButton {
-                text: "Tải model"
-                isPrimary: root.recommendationBadge === "RECOMMENDED"
-                visible: root.canDownload
-                onClicked: root.downloadClicked(root.modelId)
-            }
-
-            // Nút: Hủy tải
-            AppButton {
-                text: "Hủy tải"
-                visible: root.isDownloading
-                onClicked: root.cancelClicked(root.modelId)
-            }
-
-            // Nút: Chọn sử dụng
-            AppButton {
-                text: "Sử dụng"
-                isPrimary: true
-                visible: root.canSelect
-                onClicked: {
-                    root.useClicked(root.modelId)
-                    root.selectClicked(root.modelId)
-                }
-            }
-
-            // Nút: Xóa file
-            AppButton {
-                text: "Xóa"
-                visible: root.canDelete
-                onClicked: root.deleteClicked(root.modelId)
             }
         }
     }

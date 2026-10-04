@@ -163,24 +163,40 @@ Dialog {
                         modelData: modelData
                         controller: root.controller
 
-                        onDownloadClicked: function(modelId) {
-                            if (root.controller) root.controller.startDownload(modelId)
+                        modelId: modelData.model_id || ""
+                        displayName: modelData.display_name || ""
+                        sizeText: modelData.size_gb_formatted || modelData.size_formatted || ""
+                        description: modelData.description || ""
+                        recommendationBadge: modelData.recommendation || modelData.badge || ""
+                        recommendationReason: modelData.recommendation_reason || modelData.reason || ""
+                        status: modelData.status || "NOT_DOWNLOADED"
+                        downloadPercent: modelData.download_percent !== undefined ? modelData.download_percent : (modelData.progress_percent || 0)
+                        downloadSpeed: modelData.download_speed || modelData.speed || ""
+                        downloadEta: modelData.download_eta || modelData.eta || ""
+
+                        onDownloadClicked: function(mId) {
+                            var id = mId || modelData.model_id
+                            if (root.controller) root.controller.startDownload(id)
                         }
 
-                        onCancelClicked: function(modelId) {
-                            if (root.controller) root.controller.cancelDownload(modelId)
+                        onCancelClicked: function(mId) {
+                            var id = mId || modelData.model_id
+                            if (root.controller) root.controller.cancelDownload(id)
                         }
 
-                        onUseClicked: function(modelId) {
-                            if (root.controller) root.controller.selectActiveModel(modelId)
+                        onUseClicked: function(mId) {
+                            var id = mId || modelData.model_id
+                            if (root.controller) root.controller.selectActiveModel(id)
                         }
 
-                        onSelectClicked: function(modelId) {
-                            if (root.controller) root.controller.selectActiveModel(modelId)
+                        onSelectClicked: function(mId) {
+                            var id = mId || modelData.model_id
+                            if (root.controller) root.controller.selectActiveModel(id)
                         }
 
-                        onDeleteClicked: function(modelId) {
-                            if (root.controller) root.controller.deleteModelFile(modelId)
+                        onDeleteClicked: function(mId) {
+                            var id = mId || modelData.model_id
+                            if (root.controller) root.controller.deleteModelFile(id)
                         }
                     }
                 }
