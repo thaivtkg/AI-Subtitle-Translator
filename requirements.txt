@@ -1,2 +1,10 @@
+# --- Core GUI Framework ---
 PySide6>=6.6.0
-llama-cpp-python>=0.2.89
+
+# --- LLM Inference Engine ---
+# Lưu ý: Để chạy được trên GPU NVIDIA, người dùng cần cài đặt với CUDA (xem README.md)
+llama-cpp-python>=0.2.56
+
+# --- Testing & Development (Tùy chọn) ---
+pytest>=8.0.0
+pytest-qt>=4.4.0
