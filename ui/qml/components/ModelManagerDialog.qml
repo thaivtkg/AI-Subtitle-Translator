@@ -149,7 +149,7 @@ Dialog {
                 model: root.controller ? root.controller.models : []
 
                 delegate: ModelCard {
-                    width: modelListView.width - Theme.spaceLarge * 2
+                    width: modelListView.width - (modelListView.leftMargin + modelListView.rightMargin)
                     modelData: modelData
                     controller: root.controller
 
