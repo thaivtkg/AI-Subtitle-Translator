@@ -9,16 +9,36 @@ Rectangle {
     property var modelData: null
     property var controller: null
 
+    // Thuộc tính tường minh hỗ trợ cả binding trực tiếp hoặc fallback từ modelData
+    property string modelId: modelData ? (modelData.model_id || "") : ""
+    property string displayName: modelData ? (modelData.display_name || "") : ""
+    property string sizeText: modelData ? (modelData.size_gb_formatted || modelData.size_formatted || "") : ""
+    property string description: modelData ? (modelData.description || "") : ""
+    property string recommendationBadge: modelData ? (modelData.recommendation || modelData.badge || "") : ""
+    property string recommendationReason: modelData ? (modelData.recommendation_reason || modelData.reason || "") : ""
+    property string status: modelData ? (modelData.status || "") : "NOT_DOWNLOADED"
+    property int downloadPercent: modelData ? (modelData.download_percent !== undefined ? modelData.download_percent : (modelData.progress_percent || 0)) : 0
+    property string downloadSpeed: modelData ? (modelData.download_speed || modelData.speed || "") : ""
+    property string downloadEta: modelData ? (modelData.download_eta || modelData.eta || "") : ""
+
+    readonly property bool isDownloaded: status === "DOWNLOADED" || status === "ACTIVE" || (modelData && modelData.is_downloaded)
+    readonly property bool isDownloading: status === "DOWNLOADING" || (modelData && modelData.is_downloading)
+    readonly property bool isActive: status === "ACTIVE" || (modelData && modelData.is_active)
+    readonly property bool canDownload: (status === "NOT_DOWNLOADED" || (!isDownloaded && !isDownloading)) && (modelData ? modelData.can_download : true)
+    readonly property bool canSelect: isDownloaded && !isActive && (modelData ? modelData.can_select : true)
+    readonly property bool canDelete: isDownloaded && !isActive && (modelData ? modelData.can_delete : true)
+
     signal downloadClicked(string modelId)
     signal cancelClicked(string modelId)
+    signal useClicked(string modelId)
     signal selectClicked(string modelId)
     signal deleteClicked(string modelId)
 
     implicitHeight: mainLayout.implicitHeight + Theme.spaceLarge
-    color: modelData && modelData.is_active ? Theme.bgSurfaceSoft : Theme.bgSurfaceElevated
+    color: root.isActive ? Theme.bgSurfaceSoft : Theme.bgSurfaceElevated
     radius: Theme.radius
-    border.color: modelData && modelData.is_active ? Theme.accentCyan : (modelData && modelData.badge === "RECOMMENDED" ? Theme.border : Qt.rgba(Theme.border.r, Theme.border.g, Theme.border.b, 0.5))
-    border.width: modelData && modelData.is_active ? 2 : 1
+    border.color: root.isActive ? Theme.accentCyan : (root.recommendationBadge === "RECOMMENDED" ? Theme.border : Qt.rgba(Theme.border.r, Theme.border.g, Theme.border.b, 0.5))
+    border.width: root.isActive ? 2 : 1
 
     ColumnLayout {
         id: mainLayout
@@ -32,7 +52,7 @@ Rectangle {
             spacing: Theme.spaceSmall
 
             Text {
-                text: root.modelData ? root.modelData.display_name : ""
+                text: root.displayName
                 color: Theme.textPrimary
                 font.pixelSize: 15
                 font.bold: true
@@ -46,17 +66,15 @@ Rectangle {
                 implicitWidth: badgeText.implicitWidth + Theme.spaceMedium
                 implicitHeight: 22
                 radius: 11
-                visible: root.modelData && root.modelData.badge !== ""
+                visible: root.recommendationBadge !== ""
                 color: {
-                    if (!root.modelData) return Theme.bgSurfaceSoft
-                    if (root.modelData.badge === "RECOMMENDED") return Qt.rgba(Theme.success.r, Theme.success.g, Theme.success.b, 0.15)
-                    if (root.modelData.badge === "COMPATIBLE") return Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.15)
+                    if (root.recommendationBadge === "RECOMMENDED") return Qt.rgba(Theme.success.r, Theme.success.g, Theme.success.b, 0.15)
+                    if (root.recommendationBadge === "COMPATIBLE") return Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.15)
                     return Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.15)
                 }
                 border.color: {
-                    if (!root.modelData) return Theme.border
-                    if (root.modelData.badge === "RECOMMENDED") return Theme.success
-                    if (root.modelData.badge === "COMPATIBLE") return Theme.accentCyan
+                    if (root.recommendationBadge === "RECOMMENDED") return Theme.success
+                    if (root.recommendationBadge === "COMPATIBLE") return Theme.accentCyan
                     return Theme.warning
                 }
                 border.width: 1
@@ -65,15 +83,13 @@ Rectangle {
                     id: badgeText
                     anchors.centerIn: parent
                     text: {
-                        if (!root.modelData) return ""
-                        if (root.modelData.badge === "RECOMMENDED") return "★ KHUYÊN DÙNG"
-                        if (root.modelData.badge === "COMPATIBLE") return "✓ TƯƠNG THÍCH"
+                        if (root.recommendationBadge === "RECOMMENDED") return "★ KHUYÊN DÙNG"
+                        if (root.recommendationBadge === "COMPATIBLE") return "✓ TƯƠNG THÍCH"
                         return "⚠ CHƯA TỐI ƯU"
                     }
                     color: {
-                        if (!root.modelData) return Theme.textMuted
-                        if (root.modelData.badge === "RECOMMENDED") return Theme.success
-                        if (root.modelData.badge === "COMPATIBLE") return Theme.accentCyan
+                        if (root.recommendationBadge === "RECOMMENDED") return Theme.success
+                        if (root.recommendationBadge === "COMPATIBLE") return Theme.accentCyan
                         return Theme.warning
                     }
                     font.pixelSize: 11
@@ -81,7 +97,7 @@ Rectangle {
                 }
 
                 ToolTip.visible: badgeMouse.containsMouse
-                ToolTip.text: root.modelData ? root.modelData.reason : ""
+                ToolTip.text: root.recommendationReason
                 MouseArea {
                     id: badgeMouse
                     anchors.fill: parent
@@ -91,7 +107,7 @@ Rectangle {
 
             // Kích thước dung lượng
             Text {
-                text: root.modelData ? root.modelData.size_formatted : ""
+                text: root.sizeText
                 color: Theme.textMuted
                 font.pixelSize: 13
                 font.bold: true
@@ -101,7 +117,7 @@ Rectangle {
         // Hàng 2: Mô tả chi tiết
         Text {
             Layout.fillWidth: true
-            text: root.modelData ? root.modelData.description : ""
+            text: root.description
             color: Theme.textSecondary
             font.pixelSize: 13
             wrapMode: Text.WordWrap
@@ -111,20 +127,20 @@ Rectangle {
         // Hàng 3: Tiến trình tải nếu đang downloading
         ColumnLayout {
             Layout.fillWidth: true
-            visible: root.modelData && root.modelData.is_downloading
+            visible: root.isDownloading
             spacing: Theme.spaceXs
 
             RowLayout {
                 Layout.fillWidth: true
                 Text {
-                    text: root.modelData ? ("Đang tải: " + root.modelData.progress_percent + "%") : ""
+                    text: "Đang tải: " + root.downloadPercent + "%"
                     color: Theme.accentCyan
                     font.pixelSize: 12
                     font.bold: true
                 }
                 Item { Layout.fillWidth: true }
                 Text {
-                    text: root.modelData ? (root.modelData.speed + " · ETA: " + root.modelData.eta) : ""
+                    text: root.downloadSpeed + (root.downloadEta !== "" ? (" · ETA: " + root.downloadEta) : "")
                     color: Theme.textMuted
                     font.pixelSize: 12
                 }
@@ -138,7 +154,7 @@ Rectangle {
                 clip: true
 
                 Rectangle {
-                    width: parent.width * (root.modelData ? (root.modelData.progress_percent / 100.0) : 0)
+                    width: Math.max(0, Math.min(parent.width, parent.width * (root.downloadPercent / 100.0)))
                     height: parent.height
                     color: Theme.accentCyan
                     radius: 3
@@ -157,16 +173,16 @@ Rectangle {
                 implicitWidth: statusLabel.implicitWidth + Theme.spaceMedium
                 implicitHeight: 24
                 radius: 4
-                visible: root.modelData && (root.modelData.is_active || root.modelData.is_downloaded) && !root.modelData.is_downloading
-                color: root.modelData && root.modelData.is_active ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.2) : Theme.bgSurfaceSoft
-                border.color: root.modelData && root.modelData.is_active ? Theme.accentCyan : Theme.border
+                visible: (root.isActive || root.isDownloaded) && !root.isDownloading
+                color: root.isActive ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.2) : Theme.bgSurfaceSoft
+                border.color: root.isActive ? Theme.accentCyan : Theme.border
                 border.width: 1
 
                 Text {
                     id: statusLabel
                     anchors.centerIn: parent
-                    text: root.modelData && root.modelData.is_active ? "⚡ ĐANG SỬ DỤNG" : "✓ ĐÃ TẢI VỀ"
-                    color: root.modelData && root.modelData.is_active ? Theme.accentCyan : Theme.textSecondary
+                    text: root.isActive ? "⚡ ĐANG SỬ DỤNG" : "✓ ĐÃ TẢI VỀ"
+                    color: root.isActive ? Theme.accentCyan : Theme.textSecondary
                     font.pixelSize: 11
                     font.bold: true
                 }
@@ -177,29 +193,34 @@ Rectangle {
             // Nút: Tải về
             AppButton {
                 text: "Tải model"
-                visible: root.modelData && root.modelData.can_download
-                onClicked: if (root.modelData) root.downloadClicked(root.modelData.model_id)
+                isPrimary: root.recommendationBadge === "RECOMMENDED"
+                visible: root.canDownload
+                onClicked: root.downloadClicked(root.modelId)
             }
 
             // Nút: Hủy tải
             AppButton {
                 text: "Hủy tải"
-                visible: root.modelData && root.modelData.is_downloading
-                onClicked: if (root.modelData) root.cancelClicked(root.modelData.model_id)
+                visible: root.isDownloading
+                onClicked: root.cancelClicked(root.modelId)
             }
 
             // Nút: Chọn sử dụng
             AppButton {
                 text: "Sử dụng"
-                visible: root.modelData && root.modelData.can_select
-                onClicked: if (root.modelData) root.selectClicked(root.modelData.model_id)
+                isPrimary: true
+                visible: root.canSelect
+                onClicked: {
+                    root.useClicked(root.modelId)
+                    root.selectClicked(root.modelId)
+                }
             }
 
             // Nút: Xóa file
             AppButton {
                 text: "Xóa"
-                visible: root.modelData && root.modelData.can_delete
-                onClicked: if (root.modelData) root.deleteClicked(root.modelData.model_id)
+                visible: root.canDelete
+                onClicked: root.deleteClicked(root.modelId)
             }
         }
     }

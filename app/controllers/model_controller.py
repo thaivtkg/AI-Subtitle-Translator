@@ -144,20 +144,36 @@ class ModelController(QObject):
 
             download_info = self._download_states.get(model_id, (0, "", ""))
 
+            if is_active:
+                status = "ACTIVE"
+            elif is_downloading:
+                status = "DOWNLOADING"
+            elif is_downloaded:
+                status = "DOWNLOADED"
+            else:
+                status = "NOT_DOWNLOADED"
+
             result.append({
                 "model_id": meta.model_id,
                 "display_name": meta.display_name,
                 "filename": meta.filename,
+                "size_gb_formatted": meta.size_gb_formatted,
                 "size_formatted": meta.size_gb_formatted,
                 "description": meta.description,
+                "recommendation": badge,
                 "badge": badge,
+                "recommendation_reason": reason,
                 "reason": reason,
+                "status": status,
                 "is_downloaded": is_downloaded,
                 "is_downloading": is_downloading,
                 "is_active": is_active,
                 "progress_percent": download_info[0],
+                "download_percent": download_info[0],
                 "speed": download_info[1],
+                "download_speed": download_info[1],
                 "eta": download_info[2],
+                "download_eta": download_info[2],
                 "can_select": is_downloaded and not is_active and not is_locked,
                 "can_download": not is_downloaded and not is_downloading and bool(meta.download_url),
                 "can_delete": is_downloaded and not is_active and not is_locked,

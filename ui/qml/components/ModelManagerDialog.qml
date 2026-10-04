@@ -25,6 +25,13 @@ Dialog {
         border.width: 1
     }
 
+    Connections {
+        target: root.controller
+        function onDownloadProgress(modelId, percent, speed, eta) {
+            // Danh sách tự cập nhật qua modelListChanged signal từ controller
+        }
+    }
+
     contentItem: ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -130,45 +137,61 @@ Dialog {
         // ==========================================
         // MODEL LIST
         // ==========================================
-        ScrollView {
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-            ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-            ListView {
-                id: modelListView
-                width: parent.width
-                spacing: Theme.spaceMedium
-                topMargin: Theme.spaceMedium
-                bottomMargin: Theme.spaceMedium
-                leftMargin: Theme.spaceLarge
-                rightMargin: Theme.spaceLarge
+            ScrollView {
+                anchors.fill: parent
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-                model: root.controller ? root.controller.models : []
+                ListView {
+                    id: modelListView
+                    width: parent.width
+                    spacing: Theme.spaceMedium
+                    topMargin: Theme.spaceMedium
+                    bottomMargin: Theme.spaceMedium
+                    leftMargin: Theme.spaceLarge
+                    rightMargin: Theme.spaceLarge
 
-                delegate: ModelCard {
-                    width: modelListView.width - (modelListView.leftMargin + modelListView.rightMargin)
-                    modelData: modelData
-                    controller: root.controller
+                    model: root.controller ? root.controller.models : []
 
-                    onDownloadClicked: function(modelId) {
-                        if (root.controller) root.controller.startDownload(modelId)
-                    }
+                    delegate: ModelCard {
+                        width: modelListView.width - (modelListView.leftMargin + modelListView.rightMargin)
+                        modelData: modelData
+                        controller: root.controller
 
-                    onCancelClicked: function(modelId) {
-                        if (root.controller) root.controller.cancelDownload(modelId)
-                    }
+                        onDownloadClicked: function(modelId) {
+                            if (root.controller) root.controller.startDownload(modelId)
+                        }
 
-                    onSelectClicked: function(modelId) {
-                        if (root.controller) root.controller.selectActiveModel(modelId)
-                    }
+                        onCancelClicked: function(modelId) {
+                            if (root.controller) root.controller.cancelDownload(modelId)
+                        }
 
-                    onDeleteClicked: function(modelId) {
-                        if (root.controller) root.controller.deleteModelFile(modelId)
+                        onUseClicked: function(modelId) {
+                            if (root.controller) root.controller.selectActiveModel(modelId)
+                        }
+
+                        onSelectClicked: function(modelId) {
+                            if (root.controller) root.controller.selectActiveModel(modelId)
+                        }
+
+                        onDeleteClicked: function(modelId) {
+                            if (root.controller) root.controller.deleteModelFile(modelId)
+                        }
                     }
                 }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: !root.controller || !root.controller.models || root.controller.models.length === 0
+                text: "Không có mô hình nào trong danh mục."
+                color: Theme.textMuted
+                font.pixelSize: 14
             }
         }
     }
