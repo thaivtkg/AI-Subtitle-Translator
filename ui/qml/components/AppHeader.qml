@@ -18,6 +18,7 @@ ToolBar {
     signal openProjectClicked()
     signal saveClicked()
     signal exportClicked()
+    signal modelManagerClicked()
 
     implicitHeight: 48
     padding: 0
@@ -110,6 +111,13 @@ ToolBar {
                 RowLayout {
                     spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
                     Layout.rightMargin: root.isCompact ? Theme.spaceSmall : Theme.spaceMedium
+
+                    AppButton {
+                        objectName: "btnModelManager"
+                        text: typeof modelController !== "undefined" ? ("⚡ " + modelController.activeModelDisplayName) : "⚡ Model"
+                        tooltip: "Quản lý & Chọn Model AI"
+                        onClicked: root.modelManagerClicked()
+                    }
 
                     AppButton { objectName: "btnOpenSrt"; text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Open SRT — Ctrl + O"; enabled: !root.projectMutationLocked; onClicked: root.openSrtClicked() }
                     AppButton { objectName: "btnOpenProject"; text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Open Project — Ctrl + Shift + O"; enabled: !root.projectMutationLocked; onClicked: root.openProjectClicked() }

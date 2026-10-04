@@ -43,6 +43,7 @@ ApplicationWindow {
                 exportSrtDialog.open()
             }
         }
+        onModelManagerClicked: modelManagerDialog.open()
     }
 
     footer: AppStatusBar {
@@ -174,6 +175,15 @@ ApplicationWindow {
         function onNotify(title, msg) { appToast.show(title, msg) }
         function onLanguageLoaded(lang) { transWorkspace.setSourceLanguage(lang) }
         function onProjectLoaded(summary) { globalStorySummary = summary }
+    }
+
+    ModelManagerDialog {
+        id: modelManagerDialog
+    }
+
+    Connections {
+        target: typeof modelController !== "undefined" ? modelController : null
+        function onNotify(title, msg) { appToast.show(title, msg) }
     }
     // ==========================================
     // S2-T16: GLOBAL KEYBOARD SHORTCUTS
