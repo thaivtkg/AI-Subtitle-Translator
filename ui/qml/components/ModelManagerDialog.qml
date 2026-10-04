@@ -160,44 +160,15 @@ Dialog {
 
                     delegate: ModelCard {
                         width: modelListView.width - (modelListView.leftMargin + modelListView.rightMargin)
-                        modelData: modelData
                         controller: root.controller
+                        // cardData kh?c t?n modelData c?a delegate context n?n kh?ng b? che khu?t scope
+                        cardData: modelData
 
-                        modelId: modelData ? (modelData["model_id"] || modelData.model_id || "") : ""
-                        displayName: modelData ? (modelData["display_name"] || modelData.display_name || "") : ""
-                        sizeText: modelData ? (modelData["size_gb_formatted"] || modelData["size_formatted"] || modelData.size_gb_formatted || modelData.size_formatted || "") : ""
-                        description: modelData ? (modelData["description"] || modelData.description || "") : ""
-                        recommendationBadge: modelData ? (modelData["recommendation"] || modelData["badge"] || modelData.recommendation || modelData.badge || "") : ""
-                        recommendationReason: modelData ? (modelData["recommendation_reason"] || modelData["reason"] || modelData.recommendation_reason || modelData.reason || "") : ""
-                        status: modelData ? (modelData["status"] || modelData.status || "NOT_DOWNLOADED") : "NOT_DOWNLOADED"
-                        downloadPercent: modelData ? (modelData["download_percent"] !== undefined ? modelData["download_percent"] : (modelData["progress_percent"] || 0)) : 0
-                        downloadSpeed: modelData ? (modelData["download_speed"] || modelData["speed"] || "") : ""
-                        downloadEta: modelData ? (modelData["download_eta"] || modelData["eta"] || "") : ""
-
-                        onDownloadClicked: function(mId) {
-                            var id = mId || (modelData ? (modelData["model_id"] || modelData.model_id) : "")
-                            if (root.controller) root.controller.startDownload(id)
-                        }
-
-                        onCancelClicked: function(mId) {
-                            var id = mId || (modelData ? (modelData["model_id"] || modelData.model_id) : "")
-                            if (root.controller) root.controller.cancelDownload(id)
-                        }
-
-                        onUseClicked: function(mId) {
-                            var id = mId || (modelData ? (modelData["model_id"] || modelData.model_id) : "")
-                            if (root.controller) root.controller.selectActiveModel(id)
-                        }
-
-                        onSelectClicked: function(mId) {
-                            var id = mId || (modelData ? (modelData["model_id"] || modelData.model_id) : "")
-                            if (root.controller) root.controller.selectActiveModel(id)
-                        }
-
-                        onDeleteClicked: function(mId) {
-                            var id = mId || (modelData ? (modelData["model_id"] || modelData.model_id) : "")
-                            if (root.controller) root.controller.deleteModelFile(id)
-                        }
+                        onDownloadClicked: function(mId) { if (root.controller) root.controller.startDownload(mId) }
+                        onCancelClicked: function(mId) { if (root.controller) root.controller.cancelDownload(mId) }
+                        onSelectClicked: function(mId) { if (root.controller) root.controller.selectActiveModel(mId) }
+                        onDeleteClicked: function(mId) { if (root.controller) root.controller.deleteModelFile(mId) }
+                    }
                     }
                 }
             }

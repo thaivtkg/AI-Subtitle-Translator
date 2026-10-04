@@ -6,10 +6,10 @@ import "../theme"
 Rectangle {
     id: root
 
-    property var modelData: null
+    property var cardData: null
     property var controller: null
 
-    // Thuộc tính nhận trực tiếp từ delegate hoặc fallback từ modelData
+    // Thuộc tính nhận trực tiếp từ delegate hoặc fallback từ cardData
     property string modelId: ""
     property string displayName: ""
     property string sizeText: ""
@@ -22,23 +22,23 @@ Rectangle {
     property string downloadEta: ""
 
     // Computed properties với fallback 2 chiều (bracket notation & dot notation)
-    readonly property string effectiveModelId: modelId !== "" ? modelId : (modelData ? (modelData["model_id"] || modelData.model_id || "") : "")
-    readonly property string effectiveDisplayName: displayName !== "" ? displayName : (modelData ? (modelData["display_name"] || modelData.display_name || "") : "")
-    readonly property string effectiveSizeText: sizeText !== "" ? sizeText : (modelData ? (modelData["size_gb_formatted"] || modelData["size_formatted"] || modelData.size_gb_formatted || modelData.size_formatted || "") : "")
-    readonly property string effectiveDescription: description !== "" ? description : (modelData ? (modelData["description"] || modelData.description || "") : "")
-    readonly property string effectiveBadge: recommendationBadge !== "" ? recommendationBadge : (modelData ? (modelData["recommendation"] || modelData["badge"] || modelData.recommendation || modelData.badge || "") : "")
-    readonly property string effectiveReason: recommendationReason !== "" ? recommendationReason : (modelData ? (modelData["recommendation_reason"] || modelData["reason"] || modelData.recommendation_reason || modelData.reason || "") : "")
-    readonly property string effectiveStatus: status !== "NOT_DOWNLOADED" ? status : (modelData ? (modelData["status"] || modelData.status || "NOT_DOWNLOADED") : "NOT_DOWNLOADED")
-    readonly property int effectiveDownloadPercent: downloadPercent > 0 ? downloadPercent : (modelData ? (modelData["download_percent"] !== undefined ? modelData["download_percent"] : (modelData["progress_percent"] || modelData.download_percent || modelData.progress_percent || 0)) : 0)
-    readonly property string effectiveDownloadSpeed: downloadSpeed !== "" ? downloadSpeed : (modelData ? (modelData["download_speed"] || modelData["speed"] || modelData.download_speed || modelData.speed || "") : "")
-    readonly property string effectiveDownloadEta: downloadEta !== "" ? downloadEta : (modelData ? (modelData["download_eta"] || modelData["eta"] || modelData.download_eta || modelData.eta || "") : "")
+    readonly property string effectiveModelId: modelId !== "" ? modelId : (cardData ? (cardData["model_id"] || cardData.model_id || "") : "")
+    readonly property string effectiveDisplayName: displayName !== "" ? displayName : (cardData ? (cardData["display_name"] || cardData.display_name || "") : "")
+    readonly property string effectiveSizeText: sizeText !== "" ? sizeText : (cardData ? (cardData["size_gb_formatted"] || cardData["size_formatted"] || cardData.size_gb_formatted || cardData.size_formatted || "") : "")
+    readonly property string effectiveDescription: description !== "" ? description : (cardData ? (cardData["description"] || cardData.description || "") : "")
+    readonly property string effectiveBadge: recommendationBadge !== "" ? recommendationBadge : (cardData ? (cardData["recommendation"] || cardData["badge"] || cardData.recommendation || cardData.badge || "") : "")
+    readonly property string effectiveReason: recommendationReason !== "" ? recommendationReason : (cardData ? (cardData["recommendation_reason"] || cardData["reason"] || cardData.recommendation_reason || cardData.reason || "") : "")
+    readonly property string effectiveStatus: status !== "NOT_DOWNLOADED" ? status : (cardData ? (cardData["status"] || cardData.status || "NOT_DOWNLOADED") : "NOT_DOWNLOADED")
+    readonly property int effectiveDownloadPercent: downloadPercent > 0 ? downloadPercent : (cardData ? (cardData["download_percent"] !== undefined ? cardData["download_percent"] : (cardData["progress_percent"] || cardData.download_percent || cardData.progress_percent || 0)) : 0)
+    readonly property string effectiveDownloadSpeed: downloadSpeed !== "" ? downloadSpeed : (cardData ? (cardData["download_speed"] || cardData["speed"] || cardData.download_speed || cardData.speed || "") : "")
+    readonly property string effectiveDownloadEta: downloadEta !== "" ? downloadEta : (cardData ? (cardData["download_eta"] || cardData["eta"] || cardData.download_eta || cardData.eta || "") : "")
 
-    readonly property bool isDownloaded: effectiveStatus === "DOWNLOADED" || effectiveStatus === "ACTIVE" || (modelData && (modelData["is_downloaded"] || modelData.is_downloaded))
-    readonly property bool isDownloading: effectiveStatus === "DOWNLOADING" || (modelData && (modelData["is_downloading"] || modelData.is_downloading))
-    readonly property bool isActive: effectiveStatus === "ACTIVE" || (modelData && (modelData["is_active"] || modelData.is_active))
-    readonly property bool canDownload: (effectiveStatus === "NOT_DOWNLOADED" || (!isDownloaded && !isDownloading)) && (modelData ? (modelData["can_download"] !== undefined ? modelData["can_download"] : modelData.can_download) : true)
-    readonly property bool canSelect: isDownloaded && !isActive && (modelData ? (modelData["can_select"] !== undefined ? modelData["can_select"] : modelData.can_select) : true)
-    readonly property bool canDelete: isDownloaded && !isActive && (modelData ? (modelData["can_delete"] !== undefined ? modelData["can_delete"] : modelData.can_delete) : true)
+    readonly property bool isDownloaded: effectiveStatus === "DOWNLOADED" || effectiveStatus === "ACTIVE" || (cardData && (cardData["is_downloaded"] || cardData.is_downloaded))
+    readonly property bool isDownloading: effectiveStatus === "DOWNLOADING" || (cardData && (cardData["is_downloading"] || cardData.is_downloading))
+    readonly property bool isActive: effectiveStatus === "ACTIVE" || (cardData && (cardData["is_active"] || cardData.is_active))
+    readonly property bool canDownload: (effectiveStatus === "NOT_DOWNLOADED" || (!isDownloaded && !isDownloading)) && (cardData ? (cardData["can_download"] !== undefined ? cardData["can_download"] : cardData.can_download) : true)
+    readonly property bool canSelect: isDownloaded && !isActive && (cardData ? (cardData["can_select"] !== undefined ? cardData["can_select"] : cardData.can_select) : true)
+    readonly property bool canDelete: isDownloaded && !isActive && (cardData ? (cardData["can_delete"] !== undefined ? cardData["can_delete"] : cardData.can_delete) : true)
 
     signal downloadClicked(string modelId)
     signal cancelClicked(string modelId)
