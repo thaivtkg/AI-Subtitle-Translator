@@ -11,6 +11,7 @@ from app.controllers.translation_controller import TranslationController
 from app.controllers.project_controller import ProjectController
 from app.controllers.batch_controller import BatchController
 from app.controllers.batch_runtime_bridge import BatchRuntimeBridge
+from app.controllers.model_controller import ModelController
 from app.core.hardware_detector import HardwareDetector
 from PySide6.QtQuickControls2 import QQuickStyle
 
@@ -57,6 +58,13 @@ def main():
         entities=project_controller.entity_dictionary,
         translation_memory=project_controller.translation_memory,
     )
+
+    model_controller = ModelController(
+        models_dir=os.path.join(os.path.dirname(__file__), "models"),
+        translation_controller=translation_controller,
+        batch_controller=batch_controller,
+    )
+    engine.rootContext().setContextProperty("modelController", model_controller)
     
     engine.rootContext().setContextProperty("subtitleModel", subtitle_model)
 
