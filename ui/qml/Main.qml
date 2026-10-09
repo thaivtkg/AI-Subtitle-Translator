@@ -27,8 +27,8 @@ ApplicationWindow {
     // ==========================================
     header: AppHeader {
         projectName: "Workspace"
-        hasProject: projectController.hasProject
-        isSaved: projectController.hasProject && !projectController.isDirty
+        hasProject: projectController.hasProject || subListView.count > 0
+        isSaved: (projectController.hasProject || subListView.count > 0) && !projectController.isDirty
         hasProjectData: subListView.count > 0
         projectMutationLocked: batchController.executionLocked
         sourceLanguage: transWorkspace.getSourceLanguage()
@@ -67,10 +67,25 @@ ApplicationWindow {
         anchors.fill: parent
         spacing: 0
 
-        SplitView {
+        StudioLaunchpad {
+            id: studioLaunchpad
             Layout.fillWidth: true
             Layout.fillHeight: true
-        orientation: Qt.Horizontal
+            visible: subListView.count === 0
+            onOpenSrtClicked: {
+                if (!batchController.executionLocked) importSrtDialog.open()
+            }
+            onOpenProjectClicked: {
+                if (!batchController.executionLocked) loadProjectDialog.open()
+            }
+        }
+
+        SplitView {
+            id: mainSplitView
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: subListView.count > 0
+            orientation: Qt.Horizontal
         handle: Rectangle {
             implicitWidth: 1
             color: SplitHandle.pressed ? Theme.accentCyan : (SplitHandle.hovered ? Theme.textMuted : Theme.border)

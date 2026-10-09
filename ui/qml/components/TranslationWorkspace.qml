@@ -117,19 +117,27 @@ Item {
                 Text { text: "BẢN DỊCH TIẾNG VIỆT"; color: Theme.textPrimary; font.pixelSize: 12; font.bold: true }
                 Item { Layout.fillWidth: true }
 
-                RowLayout {
+                Item {
                     visible: typeof translationController.currentQaSeverity !== "undefined" && translationController.currentQaSeverity !== ""
-                    spacing: Theme.spaceXs
-                    Text {
-                        text: translationController.currentQaSeverity === "ERROR" ? "🛑" : "⚠️"
-                        font.pixelSize: 12
+                    implicitWidth: qaHeaderContent.implicitWidth
+                    implicitHeight: qaHeaderContent.implicitHeight
+
+                    RowLayout {
+                        id: qaHeaderContent
+                        anchors.fill: parent
+                        spacing: Theme.spaceXs
+                        Text {
+                            text: translationController.currentQaSeverity === "ERROR" ? "🛑" : "⚠️"
+                            font.pixelSize: 12
+                        }
+                        Text {
+                            text: translationController.currentQaSeverity === "ERROR" ? "Lỗi QA" : "Cảnh báo QA"
+                            color: translationController.currentQaSeverity === "ERROR" ? Theme.danger : Theme.accentPurple
+                            font.pixelSize: 11
+                            font.bold: true
+                        }
                     }
-                    Text {
-                        text: translationController.currentQaSeverity === "ERROR" ? "Lỗi QA" : "Cảnh báo QA"
-                        color: translationController.currentQaSeverity === "ERROR" ? Theme.danger : Theme.accentPurple
-                        font.pixelSize: 11
-                        font.bold: true
-                    }
+
                     ToolTip.visible: qaHeaderHoverArea.containsMouse
                     ToolTip.text: translationController.currentQaTooltip
                     ToolTip.delay: 200

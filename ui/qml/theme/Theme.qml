@@ -3,10 +3,10 @@ import QtQuick 2.15
 
 QtObject {
     // --- Backgrounds ---
-    readonly property color bgApp: "#0B1020"
-    readonly property color bgSurface: "#111827"
+    readonly property color bgApp: "#090D16"
+    readonly property color bgSurface: "#0F172A"
     readonly property color bgSurfaceElevated: "#172033"
-    readonly property color bgSurfaceSoft: "#1B263B"
+    readonly property color bgSurfaceSoft: "#1E293B"
     readonly property color border: "#273247"
     readonly property color borderDisabled: "#273247"
 

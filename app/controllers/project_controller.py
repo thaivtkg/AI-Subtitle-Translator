@@ -37,10 +37,13 @@ class ProjectController(QObject):
         self.entity_dictionary = EntityDictionary()
         self.translation_memory = TranslationMemory()
         self._subtitle_model.dataChanged.connect(self._on_model_changed)
+        self._subtitle_model.modelReset.connect(self.projectStateChanged.emit)
+        self._subtitle_model.rowsInserted.connect(self.projectStateChanged.emit)
+        self._subtitle_model.rowsRemoved.connect(self.projectStateChanged.emit)
 
     @Property(bool, notify=projectStateChanged)
     def hasProject(self):
-        return self._has_project
+        return self._has_project or (self._subtitle_model is not None and self._subtitle_model.rowCount() > 0)
 
     @Property(bool, notify=projectStateChanged)
     def isDirty(self):

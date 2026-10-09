@@ -48,29 +48,49 @@ ToolBar {
             anchors.fill: parent
             spacing: 0
 
+            // CỤM TRÁI: LOGO STUDIO + TÊN DỰ ÁN
             RowLayout {
                 Layout.leftMargin: Theme.spaceMedium
+                spacing: Theme.spaceSmall
+
                 Text {
-                    text: root.isMinimum ? "AI Subtitle Translator" : "◈ AI Subtitle Translator"
-                    color: Theme.textSecondary
+                    text: "◈ AI Subtitle Studio"
+                    color: Theme.accentCyan
                     font.pixelSize: 14
                     font.bold: true
                 }
-            }
 
-            Item {
-                Layout.fillWidth: !root.isMinimum
-                Layout.minimumWidth: root.isMinimum ? Theme.spaceMedium : 0
-            }
+                Rectangle {
+                    implicitWidth: 32
+                    implicitHeight: 18
+                    radius: 4
+                    color: Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.12)
+                    border.color: Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.3)
+                    border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
+                    Text {
+                        anchors.centerIn: parent
+                        text: "v1.2"
+                        color: Theme.accentCyan
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+                }
 
-            RowLayout {
-                spacing: Theme.spaceSmall
-                Layout.alignment: root.isMinimum ? Qt.AlignLeft : Qt.AlignHCenter
+                Rectangle {
+                    visible: root.hasProject
+                    implicitWidth: 1
+                    implicitHeight: 14
+                    color: Theme.border
+                    Layout.leftMargin: Theme.spaceXs
+                    Layout.rightMargin: Theme.spaceXs
+                }
 
                 Text {
+                    visible: root.hasProject
                     text: root.projectName
                     color: Theme.textPrimary
-                    font.pixelSize: 16
+                    font.pixelSize: 14
                     font.bold: true
                 }
 
@@ -79,8 +99,8 @@ ToolBar {
                     Layout.minimumWidth: 0
                     Layout.preferredWidth: root.hasProject ? implicitWidth : 0
                     implicitWidth: statusText.implicitWidth + (root.isMinimum ? Theme.spaceSmall : Theme.spaceMedium)
-                    implicitHeight: 22
-                    radius: 11
+                    implicitHeight: 20
+                    radius: 10
                     color: root.isSaved ? Theme.bgSurfaceElevated : Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.15)
                     border.color: root.isSaved ? Theme.border : Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.3)
                     border.width: 1
@@ -90,7 +110,7 @@ ToolBar {
                         anchors.centerIn: parent
                         text: root.isSaved ? (root.isMinimum ? "✓" : "✓ Đã lưu") : (root.isMinimum ? "●" : "● Chưa lưu")
                         color: root.isSaved ? Theme.textSecondary : Theme.warning
-                        font.pixelSize: 12
+                        font.pixelSize: 11
                         font.bold: true
                     }
 
@@ -107,6 +127,20 @@ ToolBar {
 
             Item { Layout.fillWidth: true }
 
+            // CỤM GIỮA: CHIP CHỌN MÔ HÌNH AI TRUNG TÂM
+            AppButton {
+                objectName: "btnModelManager"
+                Layout.alignment: Qt.AlignHCenter
+                text: typeof modelController !== "undefined"
+                      ? ("⚡ " + modelController.activeModelDisplayName + " ▼")
+                      : "⚡ Mô hình AI ▼"
+                tooltip: "Quản lý & Chọn Mô hình AI — Click để thay đổi"
+                onClicked: root.modelManagerClicked()
+            }
+
+            Item { Layout.fillWidth: true }
+
+            // CỤM PHẢI: CÁC NHÓM THAO TÁC CÓ PHÂN CẤP TRỌNG SỐ
             RowLayout {
                 spacing: 0
                 Layout.alignment: Qt.AlignRight
@@ -115,26 +149,34 @@ ToolBar {
                     spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
                     Layout.rightMargin: root.isCompact ? Theme.spaceSmall : Theme.spaceMedium
 
+                    // Nhóm nạp file
                     AppButton {
-                        objectName: "btnModelManager"
-                        text: typeof modelController !== "undefined" ? ("⚡ " + modelController.activeModelDisplayName) : "⚡ Mô hình"
-                        tooltip: "Quản lý & Chọn Model AI"
-                        onClicked: root.modelManagerClicked()
+                        objectName: "btnOpenSrt"
+                        text: root.isMinimum ? "SRT" : "Mở SRT"
+                        tooltip: "Mở file SRT — Ctrl + O"
+                        enabled: !root.projectMutationLocked
+                        onClicked: root.openSrtClicked()
+                    }
+                    AppButton {
+                        objectName: "btnOpenProject"
+                        text: root.isMinimum ? "Dự án" : "Mở dự án"
+                        tooltip: "Mở file dự án — Ctrl + Shift + O"
+                        enabled: !root.projectMutationLocked
+                        onClicked: root.openProjectClicked()
                     }
 
-                    AppButton { objectName: "btnOpenSrt"; text: root.isMinimum ? "SRT" : "Mở SRT"; tooltip: "Mở file SRT — Ctrl + O"; enabled: !root.projectMutationLocked; onClicked: root.openSrtClicked() }
-                    AppButton { objectName: "btnOpenProject"; text: root.isMinimum ? "Dự án" : "Mở dự án"; tooltip: "Mở file dự án — Ctrl + Shift + O"; enabled: !root.projectMutationLocked; onClicked: root.openProjectClicked() }
-                    AppButton { objectName: "btnSave"; text: "Lưu"; tooltip: "Lưu dự án — Ctrl + S"; enabled: root.hasProject && !root.isSaved; onClicked: root.saveClicked() }
-
                     Rectangle {
+                        visible: root.hasProject
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: 16
                         color: Theme.border
                         Layout.margins: Theme.spaceXs
                     }
 
+                    // Nhóm Primary Action: Dịch tự động
                     HeaderBatchControl {
                         id: headerBatch
+                        visible: root.hasProject
                         sourceLanguage: root.sourceLanguage
                         targetLanguage: root.targetLanguage
                         storySummary: root.storySummary
@@ -142,13 +184,31 @@ ToolBar {
                     }
 
                     Rectangle {
+                        visible: root.hasProject
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: 16
                         color: Theme.border
                         Layout.margins: Theme.spaceXs
                     }
 
-                    AppButton { objectName: "btnExport"; text: root.isMinimum ? "Xuất" : "Xuất SRT"; tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"; isPrimary: true; enabled: root.hasProject && root.hasProjectData; onClicked: root.exportClicked() }
+                    // Nhóm xuất bản: Lưu & Xuất SRT
+                    AppButton {
+                        objectName: "btnSave"
+                        visible: root.hasProject
+                        text: "Lưu"
+                        tooltip: "Lưu dự án — Ctrl + S"
+                        enabled: root.hasProject && !root.isSaved
+                        onClicked: root.saveClicked()
+                    }
+                    AppButton {
+                        objectName: "btnExport"
+                        visible: root.hasProject
+                        text: root.isMinimum ? "Xuất" : "Xuất SRT"
+                        tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"
+                        isPrimary: true
+                        enabled: root.hasProject && root.hasProjectData
+                        onClicked: root.exportClicked()
+                    }
                 }
 
                 Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }

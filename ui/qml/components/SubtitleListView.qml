@@ -268,15 +268,4 @@ ColumnLayout {
             }
         }
     }
-
-    Text {
-        Layout.fillWidth: true
-        Layout.alignment: Qt.AlignCenter
-        text: "📁 Mở file SRT hoặc Project\nđể bắt đầu làm việc."
-        color: Theme.textDisabled
-        font.pixelSize: 14
-        horizontalAlignment: Text.AlignHCenter
-        lineHeight: 1.5
-        visible: subListView.count === 0
-    }
 }

@@ -74,12 +74,24 @@ Item {
             width: parent.width - Theme.spaceLarge * 2
             spacing: Theme.spaceMedium
 
-            Text {
+            Rectangle {
                 Layout.alignment: Qt.AlignHCenter
-                text: root.emptyStateMode === "no_project"
-                      ? (dropArea.containsDrag ? "📥" : "📂")
-                      : "🎯"
-                font.pixelSize: 40
+                width: 52
+                height: 52
+                radius: 26
+                color: Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.12)
+                border.color: Theme.accentCyan
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: root.emptyStateMode === "no_project"
+                          ? (dropArea.containsDrag ? "📥" : "⤓")
+                          : "◈"
+                    color: Theme.accentCyan
+                    font.pixelSize: 22
+                    font.bold: true
+                }
             }
 
             Text {

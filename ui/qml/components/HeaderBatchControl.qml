@@ -59,8 +59,9 @@ Item {
 
         AppButton {
             objectName: "btnBatchStart"
-            text: root.isCompact ? "Tự động" : "Dịch tự động"
+            text: root.isCompact ? "⚡ Tự động" : "⚡ Dịch tự động"
             tooltip: "Dịch tự động toàn bộ phụ đề"
+            isPrimary: true
             visible: ["IDLE", "COMPLETED", "CANCELLED", "FAILED"].indexOf(root.controller.state) >= 0
             enabled: root.controller.canStart
             onClicked: root.controller.startBatch(root.sourceLanguage, root.targetLanguage, root.storySummary)
