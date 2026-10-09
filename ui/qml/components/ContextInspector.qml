@@ -11,11 +11,11 @@ ColumnLayout {
     ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.preferredHeight: 20
+        Layout.preferredHeight: translationController.currentOriginal ? 20 : 40
         spacing: Theme.spaceXs
 
         Text {
-            text: "STORY SUMMARY"
+            text: "BỐI CẢNH & QUY TẮC"
             color: Theme.textSecondary
             font.pixelSize: 12
             font.bold: true
@@ -62,15 +62,49 @@ ColumnLayout {
         }
     }
 
+    // --- EMPTY STATE PLACEHOLDER (When no subtitle is selected) ---
+    Rectangle {
+        visible: !translationController.currentOriginal
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        Layout.preferredHeight: 60
+        color: Theme.bgSurface
+        radius: Theme.radius
+        border.color: Theme.border
+        border.width: 1
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            width: parent.width - Theme.spaceLarge * 2
+            spacing: Theme.spaceSmall
+            opacity: 0.45
+
+            Text {
+                text: "💬"
+                font.pixelSize: 24
+                Layout.alignment: Qt.AlignHCenter
+            }
+            Text {
+                text: "Ngữ cảnh trước/sau sẽ hiển thị khi bạn chọn một câu phụ đề"
+                color: Theme.textMuted
+                font.pixelSize: 13
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+        }
+    }
+
     // --- 2. PREVIOUS CONTEXT (Muted Surface / Read-only) ---
     ColumnLayout {
+        visible: Boolean(translationController.currentOriginal)
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.preferredHeight: 20
         spacing: Theme.spaceXs
 
         Text {
-            text: "PREVIOUS"
+            text: "CÂU TRƯỚC"
             color: Theme.textSecondary
             font.pixelSize: 12
             font.bold: true
@@ -89,7 +123,7 @@ ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.spaceSmall
                 Text {
-                    text: translationController.contextPrev || "No previous context"
+                    text: translationController.contextPrev || "Không có ngữ cảnh trước"
                     color: translationController.contextPrev ? Theme.textSecondary : Theme.textDisabled
                     font.pixelSize: 13
                     wrapMode: Text.WordWrap
@@ -101,13 +135,14 @@ ColumnLayout {
 
     // --- 3. CURRENT HIGHLIGHT (Elevated Surface / Hero Context) ---
     ColumnLayout {
+        visible: Boolean(translationController.currentOriginal)
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.preferredHeight: 35
         spacing: Theme.spaceXs
 
         Text {
-            text: "◆ CURRENT"
+            text: "◆ CÂU HIỆN TẠI"
             color: Theme.accentCyan
             font.pixelSize: 12
             font.bold: true
@@ -126,11 +161,11 @@ ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.spaceMedium
                 Text {
-                    text: translationController.currentOriginal || "No subtitle selected"
-                    color: translationController.currentOriginal ? Theme.textPrimary : Theme.textDisabled
+                    text: translationController.currentOriginal
+                    color: Theme.textPrimary
                     font.pixelSize: 15
                     wrapMode: Text.WordWrap
-                    font.bold: translationController.currentOriginal !== ""
+                    font.bold: true
                     lineHeight: 1.3
                 }
             }
@@ -139,13 +174,14 @@ ColumnLayout {
 
     // --- 4. NEXT CONTEXT (Disabled text / Read-only) ---
     ColumnLayout {
+        visible: Boolean(translationController.currentOriginal)
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.preferredHeight: 25
         spacing: Theme.spaceXs
 
         Text {
-            text: "NEXT"
+            text: "CÂU KẾ TIẾP"
             color: Theme.textSecondary
             font.pixelSize: 12
             font.bold: true
@@ -164,7 +200,7 @@ ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.spaceSmall
                 Text {
-                    text: translationController.contextNext || "No next context"
+                    text: translationController.contextNext || "Không có ngữ cảnh kế tiếp"
                     color: translationController.contextNext ? Theme.textSecondary : Theme.textDisabled
                     font.pixelSize: 13
                     wrapMode: Text.WordWrap

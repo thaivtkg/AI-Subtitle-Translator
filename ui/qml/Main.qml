@@ -31,6 +31,9 @@ ApplicationWindow {
         isSaved: projectController.hasProject && !projectController.isDirty
         hasProjectData: subListView.count > 0
         projectMutationLocked: batchController.executionLocked
+        sourceLanguage: transWorkspace.getSourceLanguage()
+        targetLanguage: "Vietnamese"
+        storySummary: mainWindow.globalStorySummary
         onOpenSrtClicked: {
             if (!batchController.executionLocked) importSrtDialog.open()
         }
@@ -63,14 +66,6 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-
-        BatchControlBar {
-            id: batchControlBar
-            Layout.fillWidth: true
-            sourceLanguage: transWorkspace.getSourceLanguage()
-            targetLanguage: "Vietnamese"
-            storySummary: mainWindow.globalStorySummary
-        }
 
         SplitView {
             Layout.fillWidth: true

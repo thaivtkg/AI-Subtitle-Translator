@@ -8,6 +8,14 @@ from app.core.glossary import Glossary
 from app.core.entity_dictionary import EntityDictionary
 from app.core.translation_memory import TranslationMemory
 
+def _normalize_file_path(url_or_path: str) -> str:
+    if not url_or_path:
+        return ""
+    if url_or_path.startswith("file:"):
+        local = QUrl(url_or_path).toLocalFile()
+        return local if local else url_or_path
+    return url_or_path
+
 class ProjectController(QObject):
     notify = Signal(str, str)
     projectStateChanged = Signal()
@@ -68,8 +76,7 @@ class ProjectController(QObject):
     @Slot(str, bool)
     def exportSrt(self, file_path, force=False):
         """DEFENSE-IN-DEPTH: Bắt buộc validate bên trong backend trước khi ghi file"""
-        if file_path.startswith("file:///"):
-            file_path = QUrl(file_path).toLocalFile()
+        file_path = _normalize_file_path(file_path)
 
         subtitles = self._subtitle_model.get_all_data()
         
@@ -94,7 +101,7 @@ class ProjectController(QObject):
 
     @Slot(str)
     def importSrt(self, file_url):
-        file_path = QUrl(file_url).toLocalFile()
+        file_path = _normalize_file_path(file_url)
         if not os.path.exists(file_path):
             self.notify.emit("ERROR", "Không tìm thấy file SRT!")
             return
@@ -119,10 +126,7 @@ class ProjectController(QObject):
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
     @Slot(str, str, str, str)
     def saveProject(self, file_url, story_summary, source_lang="English", target_lang="Vietnamese"):
-        if file_url.startswith("file:///"):
-            file_path = QUrl(file_url).toLocalFile()
-        else:
-            file_path = file_url
+        file_path = _normalize_file_path(file_url)
 
         if not file_path.endswith('.aisrt'):
             file_path += '.aisrt'
@@ -168,7 +172,7 @@ class ProjectController(QObject):
 
     @Slot(str)
     def loadProject(self, file_url):
-        file_path = QUrl(file_url).toLocalFile()
+        file_path = _normalize_file_path(file_url)
         if not os.path.exists(file_path):
             self.notify.emit("ERROR", "Không tìm thấy file dự án!")
             return

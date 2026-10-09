@@ -55,7 +55,7 @@ Item {
                 visible: workspace.width >= 620
                 Layout.minimumWidth: 0
                 Text {
-                    text: "Status:"
+                    text: "Trạng thái:"
                     color: Theme.textMuted
                     font.pixelSize: 12
                 }
@@ -69,7 +69,7 @@ Item {
             visible: workspace.width < 620
             spacing: Theme.spaceSmall
             Item { Layout.fillWidth: true }
-            Text { text: "Status:"; color: Theme.textMuted; font.pixelSize: 12 }
+            Text { text: "Trạng thái:"; color: Theme.textMuted; font.pixelSize: 12 }
             StatusBadge { status: translationController.status }
         }
 
@@ -81,7 +81,7 @@ Item {
             spacing: Theme.spaceSmall
             RowLayout {
                 Layout.fillWidth: true
-                Text { text: "ORIGINAL"; color: Theme.textSecondary; font.pixelSize: 12; font.bold: true }
+                Text { text: "CÂU GỐC"; color: Theme.textSecondary; font.pixelSize: 12; font.bold: true }
                 Item { Layout.fillWidth: true }
                 Text { text: langSelector.sourceLang.toUpperCase(); color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
             }
@@ -114,7 +114,7 @@ Item {
             spacing: Theme.spaceSmall
             RowLayout {
                 Layout.fillWidth: true
-                Text { text: "VIETNAMESE"; color: Theme.textPrimary; font.pixelSize: 12; font.bold: true }
+                Text { text: "BẢN DỊCH TIẾNG VIỆT"; color: Theme.textPrimary; font.pixelSize: 12; font.bold: true }
                 Item { Layout.fillWidth: true }
 
                 RowLayout {
@@ -149,12 +149,12 @@ Item {
                 Text {
                     text: {
                         const s = translationController.status
-                        if (s === "TRANSLATING") return "Translating…"
-                        if (s === "ERROR") return "ERROR ✕"
-                        if (s === "ACCEPTED") return "[ ACCEPTED ]"
-                        if (s === "EDITED") return "EDITED ●"
-                        if (s === "TRANSLATED") return "TRANSLATED ✦"
-                        return "PENDING"
+                        if (s === "TRANSLATING") return "Đang dịch…"
+                        if (s === "ERROR") return "LỖI ✕"
+                        if (s === "ACCEPTED") return "[ ĐÃ DUYỆT ]"
+                        if (s === "EDITED") return "ĐÃ SỬA ●"
+                        if (s === "TRANSLATED") return "ĐÃ DỊCH ✦"
+                        return "CHỜ DỊCH"
                     }
                     color: translationController.status === "ACCEPTED" ? Theme.success : translationController.status === "ERROR" ? Theme.danger : translationController.status === "TRANSLATED" || translationController.status === "EDITED" ? Theme.accentPurple : Theme.textMuted
                     font.pixelSize: 12
@@ -200,7 +200,7 @@ Item {
             }
             Text {
                 visible: translationController.status === "ERROR"
-                text: "Translation failed. Model inference error."
+                text: "Dịch thất bại. Lỗi xử lý mô hình AI."
                 color: Theme.danger
                 font.pixelSize: 12
                 Layout.fillWidth: true
@@ -227,7 +227,7 @@ Item {
             }
             AppButton {
                 objectName: "btnRetry"
-                text: "Retry"
+                text: "Thử lại"
                 Layout.minimumWidth: 72
                 Layout.preferredWidth: workspace.compactActions ? 72 : 80
                 Layout.maximumWidth: 96
@@ -237,7 +237,7 @@ Item {
             }
             AppButton {
                 objectName: "btnTranslate"
-                text: translationController.status === "TRANSLATING" ? "◌ Translating..." : "Translate"
+                text: translationController.status === "TRANSLATING" ? "◌ Đang dịch..." : "Dịch câu"
                 Layout.minimumWidth: 84
                 Layout.preferredWidth: workspace.compactActions ? 84 : 96
                 Layout.maximumWidth: 112
@@ -248,7 +248,7 @@ Item {
             }
             AppButton {
                 objectName: "btnAccept"
-                text: "Accept"
+                text: "Chấp nhận"
                 Layout.minimumWidth: 72
                 Layout.preferredWidth: workspace.compactActions ? 72 : 88
                 Layout.maximumWidth: 100

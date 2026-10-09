@@ -11,6 +11,9 @@ ToolBar {
     property bool hasProject: false
     property bool hasProjectData: false
     property bool projectMutationLocked: false
+    property string sourceLanguage: "English"
+    property string targetLanguage: "Vietnamese"
+    property string storySummary: ""
     readonly property bool isCompact: width < 1280
     readonly property bool isMinimum: width < 1100
 
@@ -85,14 +88,14 @@ ToolBar {
                     Text {
                         id: statusText
                         anchors.centerIn: parent
-                        text: root.isSaved ? (root.isMinimum ? "✓" : "✓ Saved") : (root.isMinimum ? "●" : "● Unsaved")
+                        text: root.isSaved ? (root.isMinimum ? "✓" : "✓ Đã lưu") : (root.isMinimum ? "●" : "● Chưa lưu")
                         color: root.isSaved ? Theme.textSecondary : Theme.warning
                         font.pixelSize: 12
                         font.bold: true
                     }
 
                     ToolTip.visible: chipMouse.containsMouse
-                    ToolTip.text: root.isSaved ? "Project saved" : "Unsaved changes"
+                    ToolTip.text: root.isSaved ? "Dự án đã được lưu" : "Có thay đổi chưa lưu"
                     MouseArea {
                         id: chipMouse
                         anchors.fill: parent
@@ -114,14 +117,14 @@ ToolBar {
 
                     AppButton {
                         objectName: "btnModelManager"
-                        text: typeof modelController !== "undefined" ? ("⚡ " + modelController.activeModelDisplayName) : "⚡ Model"
+                        text: typeof modelController !== "undefined" ? ("⚡ " + modelController.activeModelDisplayName) : "⚡ Mô hình"
                         tooltip: "Quản lý & Chọn Model AI"
                         onClicked: root.modelManagerClicked()
                     }
 
-                    AppButton { objectName: "btnOpenSrt"; text: root.isMinimum ? "SRT" : "Open SRT"; tooltip: "Open SRT — Ctrl + O"; enabled: !root.projectMutationLocked; onClicked: root.openSrtClicked() }
-                    AppButton { objectName: "btnOpenProject"; text: root.isMinimum ? "Project" : "Open Project"; tooltip: "Open Project — Ctrl + Shift + O"; enabled: !root.projectMutationLocked; onClicked: root.openProjectClicked() }
-                    AppButton { objectName: "btnSave"; text: "Save"; tooltip: "Save Project — Ctrl + S"; enabled: root.hasProject && !root.isSaved; onClicked: root.saveClicked() }
+                    AppButton { objectName: "btnOpenSrt"; text: root.isMinimum ? "SRT" : "Mở SRT"; tooltip: "Mở file SRT — Ctrl + O"; enabled: !root.projectMutationLocked; onClicked: root.openSrtClicked() }
+                    AppButton { objectName: "btnOpenProject"; text: root.isMinimum ? "Dự án" : "Mở dự án"; tooltip: "Mở file dự án — Ctrl + Shift + O"; enabled: !root.projectMutationLocked; onClicked: root.openProjectClicked() }
+                    AppButton { objectName: "btnSave"; text: "Lưu"; tooltip: "Lưu dự án — Ctrl + S"; enabled: root.hasProject && !root.isSaved; onClicked: root.saveClicked() }
 
                     Rectangle {
                         Layout.preferredWidth: 1
@@ -130,7 +133,22 @@ ToolBar {
                         Layout.margins: Theme.spaceXs
                     }
 
-                    AppButton { objectName: "btnExport"; text: root.isMinimum ? "Export" : "Export SRT"; tooltip: "Export SRT — Ctrl + Shift + S"; isPrimary: true; enabled: root.hasProject && root.hasProjectData; onClicked: root.exportClicked() }
+                    HeaderBatchControl {
+                        id: headerBatch
+                        sourceLanguage: root.sourceLanguage
+                        targetLanguage: root.targetLanguage
+                        storySummary: root.storySummary
+                        isCompact: root.isMinimum
+                    }
+
+                    Rectangle {
+                        Layout.preferredWidth: 1
+                        Layout.preferredHeight: 16
+                        color: Theme.border
+                        Layout.margins: Theme.spaceXs
+                    }
+
+                    AppButton { objectName: "btnExport"; text: root.isMinimum ? "Xuất" : "Xuất SRT"; tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"; isPrimary: true; enabled: root.hasProject && root.hasProjectData; onClicked: root.exportClicked() }
                 }
 
                 Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }

@@ -21,9 +21,9 @@ ColumnLayout {
             anchors.fill: parent
             anchors.leftMargin: Theme.spaceMedium
             anchors.rightMargin: Theme.spaceMedium
-            Text { text: "SUBTITLES"; color: Theme.textSecondary; font.pixelSize: 12; font.bold: true }
+            Text { text: "DANH SÁCH CÂU"; color: Theme.textSecondary; font.pixelSize: 12; font.bold: true }
             Item { Layout.fillWidth: true }
-            Text { text: subListView.filteredCount + " / " + subListView.count + " items"; color: Theme.textMuted; font.pixelSize: 12 }
+            Text { text: subListView.filteredCount + " / " + subListView.count + " câu"; color: Theme.textMuted; font.pixelSize: 12 }
         }
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
     }
@@ -62,7 +62,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.margins: Theme.spaceSmall
                 Layout.bottomMargin: Theme.spaceXs
-                placeholderText: activeFocus ? "Search text..." : "🔍 Search text..."
+                placeholderText: activeFocus ? "Tìm kiếm nội dung..." : "🔍 Tìm kiếm nội dung..."
                 font.pixelSize: 14
                 color: Theme.textPrimary
                 rightPadding: 30
@@ -91,7 +91,7 @@ ColumnLayout {
                 Layout.bottomMargin: Theme.spaceSmall
                 model: ["ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ACCEPTED", "ERROR"]
                 contentItem: Text {
-                    text: statusFilterCombo.currentText === "ALL" ? "All statuses" : statusFilterCombo.currentText
+                    text: statusFilterCombo.currentText === "ALL" ? "Tất cả trạng thái" : statusFilterCombo.currentText
                     color: Theme.textPrimary
                     font.pixelSize: 14
                     font.bold: true
@@ -109,7 +109,7 @@ ColumnLayout {
                 delegate: ItemDelegate {
                     width: statusFilterCombo.width
                     contentItem: Text {
-                        text: modelData
+                        text: modelData === "ALL" ? "Tất cả trạng thái" : modelData
                         color: highlighted ? Theme.textPrimary : Theme.textSecondary
                         font.pixelSize: 14
                         font.bold: highlighted

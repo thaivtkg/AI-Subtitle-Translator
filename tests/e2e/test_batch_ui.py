@@ -98,7 +98,7 @@ def test_tc_p3a7_q07_graceful_cancel_presentation():
         wait_for(harness, lambda: harness.batch_controller.state == "RUNNING")
         harness.driver.click("btnBatchCancel")
         assert harness.batch_controller.cancelPending is True
-        assert "Cancelling" in harness.driver.text("batchStatusText")
+        assert any(word in harness.driver.text("batchStatusText") for word in ("Cancelling", "Đang hủy"))
         wait_for(harness, lambda: harness.batch_controller.state == "CANCELLED")
         assert harness.batch_controller.executionLocked is False
     finally:

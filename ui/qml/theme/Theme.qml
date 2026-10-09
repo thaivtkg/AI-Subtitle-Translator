@@ -8,6 +8,7 @@ QtObject {
     readonly property color bgSurfaceElevated: "#172033"
     readonly property color bgSurfaceSoft: "#1B263B"
     readonly property color border: "#273247"
+    readonly property color borderDisabled: "#273247"
 
     // --- Accents ---
     readonly property color accentPurple: "#8B5CF6"

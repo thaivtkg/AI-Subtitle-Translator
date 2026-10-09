@@ -41,7 +41,7 @@ def test_tc15_01_fresh_launch():
         assert harness.window.isVisible()
         assert harness.model.rowCount() == 0
         assert harness.translation_controller.totalSubtitleCount == 0
-        assert harness.driver.text("statusProgressText") == "No project"
+        assert harness.driver.text("statusProgressText") in ("No project", "Chưa mở dự án")
     finally:
         harness.close()
 

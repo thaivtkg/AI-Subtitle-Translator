@@ -34,7 +34,7 @@ Button {
                control.hovered ? (control.isPrimary ? Qt.lighter(Theme.accentCyan, 1.1) : Theme.bgSurfaceElevated) :
                (control.isPrimary ? Theme.accentCyan : "transparent")
 
-        border.color: (control.isPrimary || !control.enabled) ? "transparent" : Theme.border
+        border.color: !control.enabled ? Theme.borderDisabled : (control.isPrimary ? "transparent" : Theme.border)
         border.width: 1
 
         Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }

@@ -33,14 +33,14 @@ Rectangle {
                 objectName: "statusProgressText"
                 id: progressText
                 text: root.totalCount === 0
-                      ? "No project"
+                      ? "Chưa mở dự án"
                       : root.compactMode
                         ? ("✓ " + root.acceptedCount + " / " + root.totalCount + " · " + root.progressPercent + "%")
-                        : ("✓ " + root.acceptedCount + " / " + root.totalCount + " Accepted · " + root.progressPercent + "%")
+                        : ("✓ " + root.acceptedCount + " / " + root.totalCount + " Đã duyệt · " + root.progressPercent + "%")
                 color: root.totalCount > 0 && root.acceptedCount === root.totalCount ? Theme.success : root.totalCount === 0 ? Theme.textMuted : Theme.textSecondary
                 font.pixelSize: 12
                 ToolTip.visible: progressMouse.containsMouse
-                ToolTip.text: root.totalCount === 0 ? "No project loaded" : root.acceptedCount + " of " + root.totalCount + " subtitles accepted."
+                ToolTip.text: root.totalCount === 0 ? "Chưa mở tệp dự án nào" : root.acceptedCount + " / " + root.totalCount + " câu phụ đề đã được duyệt."
                 MouseArea { id: progressMouse; anchors.fill: parent; hoverEnabled: true }
             }
             Rectangle {

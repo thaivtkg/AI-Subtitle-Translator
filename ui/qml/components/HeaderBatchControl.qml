@@ -3,61 +3,64 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "../theme"
 
-Rectangle {
+Item {
     id: root
     objectName: "batchControlBar"
-    implicitHeight: 48
-    color: Theme.bgSurface
-    border.color: Theme.border
-    border.width: 1
 
     property var controller: batchController
     property string sourceLanguage: "English"
     property string targetLanguage: "Vietnamese"
     property string storySummary: ""
+    property bool isCompact: false
+
+    implicitWidth: contentRow.implicitWidth
+    implicitHeight: 32
 
     RowLayout {
+        id: contentRow
         anchors.fill: parent
-        anchors.leftMargin: Theme.spaceMedium
-        anchors.rightMargin: Theme.spaceMedium
         spacing: Theme.spaceSmall
 
         Text {
             objectName: "batchStatusText"
+            visible: root.controller.state !== "IDLE"
             text: {
-                if (root.controller.cancelPending) return "Cancelling…"
-                if (root.controller.state === "PAUSING") return "Pausing…"
-                if (root.controller.state === "PAUSED") return "Paused"
-                if (root.controller.state === "RUNNING") return "Batch running"
-                if (root.controller.state === "CANCELLED") return "Cancelled"
-                if (root.controller.state === "FAILED") return "Failed"
+                if (root.controller.cancelPending) return "Đang hủy…"
+                if (root.controller.state === "PAUSING") return "Đang tạm dừng…"
+                if (root.controller.state === "PAUSED") return "Đã tạm dừng"
+                if (root.controller.state === "RUNNING") return "Đang dịch hàng loạt…"
+                if (root.controller.state === "CANCELLED") return "Đã hủy"
+                if (root.controller.state === "FAILED") return "Thất bại"
                 if (root.controller.state === "COMPLETED") {
-                    return root.controller.failedCount > 0 ? "Completed with failures" : "Complete"
+                    return root.controller.failedCount > 0 ? "Hoàn tất có lỗi" : "Hoàn tất"
                 }
-                return "Batch"
+                return ""
             }
-            color: Theme.textSecondary
+            color: root.controller.state === "FAILED" || root.controller.failedCount > 0 ? Theme.danger :
+                   root.controller.state === "PAUSED" ? Theme.warning : Theme.textSecondary
             font.pixelSize: 12
             font.bold: true
+            Layout.alignment: Qt.AlignVCenter
         }
 
         Text {
             objectName: "batchProgressText"
+            visible: root.controller.state !== "IDLE" && root.controller.totalCount > 0
             text: root.controller.totalCount > 0
                   ? root.controller.progressPercent + "% · "
                     + root.controller.completedCount + "/"
                     + root.controller.totalCount
-                    + (root.controller.failedCount > 0 ? " · " + root.controller.failedCount + " failed" : "")
+                    + (root.controller.failedCount > 0 ? " · " + root.controller.failedCount + " lỗi" : "")
                   : ""
             color: Theme.textMuted
             font.pixelSize: 12
+            Layout.alignment: Qt.AlignVCenter
         }
-
-        Item { Layout.fillWidth: true }
 
         AppButton {
             objectName: "btnBatchStart"
-            text: "Start Batch"
+            text: root.isCompact ? "Tự động" : "Dịch tự động"
+            tooltip: "Dịch tự động toàn bộ phụ đề"
             visible: ["IDLE", "COMPLETED", "CANCELLED", "FAILED"].indexOf(root.controller.state) >= 0
             enabled: root.controller.canStart
             onClicked: root.controller.startBatch(root.sourceLanguage, root.targetLanguage, root.storySummary)
@@ -65,7 +68,8 @@ Rectangle {
 
         AppButton {
             objectName: "btnBatchPause"
-            text: "Pause"
+            text: "Tạm dừng"
+            tooltip: "Tạm dừng tiến trình dịch"
             visible: root.controller.state === "RUNNING" && !root.controller.cancelPending
             enabled: root.controller.canPause
             onClicked: root.controller.pauseBatch()
@@ -73,7 +77,8 @@ Rectangle {
 
         AppButton {
             objectName: "btnBatchResume"
-            text: "Resume"
+            text: "Tiếp tục"
+            tooltip: "Tiếp tục tiến trình dịch"
             visible: root.controller.state === "PAUSED"
             enabled: root.controller.canResume
             onClicked: root.controller.resumeBatch()
@@ -81,15 +86,17 @@ Rectangle {
 
         AppButton {
             objectName: "btnBatchCancel"
-            text: root.controller.cancelPending ? "Cancelling…" : "Cancel"
-            visible: root.controller.state === "RUNNING"
+            text: root.controller.cancelPending ? "Đang hủy…" : "Hủy"
+            tooltip: "Hủy tiến trình dịch"
+            visible: root.controller.state === "RUNNING" || root.controller.cancelPending
             enabled: root.controller.canCancel
             onClicked: root.controller.cancelBatch()
         }
 
         AppButton {
             objectName: "btnBatchRetryFailed"
-            text: "Retry Failed"
+            text: "Thử lại lỗi"
+            tooltip: "Dịch lại các câu bị lỗi"
             visible: root.controller.canRetryFailed
             enabled: root.controller.canRetryFailed
             onClicked: root.controller.retryFailed()
