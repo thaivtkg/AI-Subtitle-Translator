@@ -116,6 +116,31 @@ Item {
                 Layout.fillWidth: true
                 Text { text: "VIETNAMESE"; color: Theme.textPrimary; font.pixelSize: 12; font.bold: true }
                 Item { Layout.fillWidth: true }
+
+                RowLayout {
+                    visible: typeof translationController.currentQaSeverity !== "undefined" && translationController.currentQaSeverity !== ""
+                    spacing: Theme.spaceXs
+                    Text {
+                        text: translationController.currentQaSeverity === "ERROR" ? "🛑" : "⚠️"
+                        font.pixelSize: 12
+                    }
+                    Text {
+                        text: translationController.currentQaSeverity === "ERROR" ? "Lỗi QA" : "Cảnh báo QA"
+                        color: translationController.currentQaSeverity === "ERROR" ? Theme.danger : Theme.accentPurple
+                        font.pixelSize: 11
+                        font.bold: true
+                    }
+                    ToolTip.visible: qaHeaderHoverArea.containsMouse
+                    ToolTip.text: translationController.currentQaTooltip
+                    ToolTip.delay: 200
+
+                    MouseArea {
+                        id: qaHeaderHoverArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                    }
+                }
+
                 AIActivityIndicator {
                     active: translationController.status === "TRANSLATING"
                     color: Theme.accentCyan
@@ -178,6 +203,14 @@ Item {
                 text: "Translation failed. Model inference error."
                 color: Theme.danger
                 font.pixelSize: 12
+                Layout.fillWidth: true
+            }
+            Text {
+                visible: typeof translationController.currentQaSeverity !== "undefined" && translationController.currentQaSeverity !== "" && translationController.status !== "TRANSLATING"
+                text: translationController.currentQaTooltip
+                color: translationController.currentQaSeverity === "ERROR" ? Theme.danger : Theme.accentPurple
+                font.pixelSize: 12
+                wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }
         }

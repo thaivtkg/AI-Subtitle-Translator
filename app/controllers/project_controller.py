@@ -15,6 +15,8 @@ class ProjectController(QObject):
     projectLoaded = Signal(str) 
     # TÍN HIỆU MỚI: Bắn ngôn ngữ nguồn lên UI
     languageLoaded = Signal(str)
+    # Tín hiệu xác nhận xuất file khi tồn tại lỗi QA nghiêm trọng
+    qaExportWarningRequired = Signal(str, int)
 
     def __init__(self, subtitle_model):
         super().__init__()
@@ -63,8 +65,12 @@ class ProjectController(QObject):
         return True
     
     @Slot(str)
-    def exportSrt(self, file_path):
+    @Slot(str, bool)
+    def exportSrt(self, file_path, force=False):
         """DEFENSE-IN-DEPTH: Bắt buộc validate bên trong backend trước khi ghi file"""
+        if file_path.startswith("file:///"):
+            file_path = QUrl(file_path).toLocalFile()
+
         subtitles = self._subtitle_model.get_all_data()
         
         # KIỂM TRA TÍNH TOÀN VỆN NGAY TẠI LÕI
@@ -73,9 +79,13 @@ class ProjectController(QObject):
             self.notify.emit("ERROR", f"Lỗi xuất file: {val_msg}")
             return
             
-        if file_path.startswith("file:///"):
-            file_path = QUrl(file_path).toLocalFile()
-            
+        # ADVISORY QA CHECK: Nếu có lỗi đỏ và người dùng chưa bấm Force, yêu cầu xác nhận
+        if not force:
+            error_count = sum(1 for sub in subtitles if sub.get("_qa_severity") == "ERROR")
+            if error_count > 0:
+                self.qaExportWarningRequired.emit(file_path, error_count)
+                return
+
         success, msg = SRTExporter.export(subtitles, file_path)
         if success:
             self.notify.emit("SUCCESS", msg)
@@ -109,10 +119,19 @@ class ProjectController(QObject):
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
     @Slot(str, str, str, str)
     def saveProject(self, file_url, story_summary, source_lang="English", target_lang="Vietnamese"):
-        file_path = QUrl(file_url).toLocalFile()
+        if file_url.startswith("file:///"):
+            file_path = QUrl(file_url).toLocalFile()
+        else:
+            file_path = file_url
+
         if not file_path.endswith('.aisrt'):
             file_path += '.aisrt'
             
+        clean_subtitles = [
+            {k: v for k, v in sub.items() if not k.startswith("_")}
+            for sub in self._subtitle_model.get_all_data()
+        ]
+
         data = {
             "metadata": {
                 # FIX: Dùng biến state đã lưu, không tự đoán từ file_path
@@ -122,7 +141,7 @@ class ProjectController(QObject):
                 "version": "1.0"
             },
             "story_summary": story_summary,
-            "subtitles": self._subtitle_model.get_all_data(),
+            "subtitles": clean_subtitles,
             "intelligence": {
                 "glossary": self.glossary.to_payload(),
                 "entities": self.entity_dictionary.to_payload(),
