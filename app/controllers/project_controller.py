@@ -15,6 +15,8 @@ class ProjectController(QObject):
     projectLoaded = Signal(str) 
     # TÍN HIỆU MỚI: Bắn ngôn ngữ nguồn lên UI
     languageLoaded = Signal(str)
+    # Tín hiệu xác nhận xuất file khi tồn tại lỗi QA nghiêm trọng
+    qaExportWarningRequired = Signal(str, int)
 
     def __init__(self, subtitle_model):
         super().__init__()
@@ -63,7 +65,8 @@ class ProjectController(QObject):
         return True
     
     @Slot(str)
-    def exportSrt(self, file_path):
+    @Slot(str, bool)
+    def exportSrt(self, file_path, force=False):
         """DEFENSE-IN-DEPTH: Bắt buộc validate bên trong backend trước khi ghi file"""
         subtitles = self._subtitle_model.get_all_data()
         
@@ -73,6 +76,13 @@ class ProjectController(QObject):
             self.notify.emit("ERROR", f"Lỗi xuất file: {val_msg}")
             return
             
+        # ADVISORY QA CHECK: Nếu có lỗi đỏ và người dùng chưa bấm Force, yêu cầu xác nhận
+        if not force:
+            error_count = sum(1 for sub in subtitles if sub.get("_qa_severity") == "ERROR")
+            if error_count > 0:
+                self.qaExportWarningRequired.emit(file_path, error_count)
+                return
+
         if file_path.startswith("file:///"):
             file_path = QUrl(file_path).toLocalFile()
             
