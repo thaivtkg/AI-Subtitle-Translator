@@ -1,30 +1,31 @@
 # Subtitle QA Engine Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement a real-time, non-blocking Subtitle Quality Assurance (QA) engine (CPS, CPL, line count, tag integrity, timing checks) with dynamic UI indicators and an advisory SRT export confirmation prompt.
+**Goal:** Implement a real-time, non-blocking Subtitle Quality Assurance (QA) engine (CPS, CPL, line count, tag integrity, timing checks) with dynamic UI indicators, $O(1)$ Qt model caching, and an advisory SRT export confirmation prompt.
 
-**Architecture:** Pure deterministic Python domain engine in `app/core/qa_engine.py` calculating reading metrics and tag consistency; dynamically bound to `SubtitleModel` through custom roles (`qaSeverity`, `qaTooltip`); surfaced non-blockingly in QML views (`SubtitleListView`, `TranslationWorkspace`, `Main.qml`).
+**Architecture:** Pure deterministic Python domain engine in `app/core/qa_engine.py` calculating reading metrics (with HTML entity unescaping, attribute-aware tag extraction, and self-closing tag handling); precalculated $O(1)$ QA caching in `SubtitleModel` (`item["_qa_severity"]`, `item["_qa_tooltip"]`); overloaded PySide6 slots in `ProjectController`; surfaced non-blockingly in QML views (`SubtitleListView`, `TranslationWorkspace`, `Main.qml`).
 
-**Tech Stack:** Python 3.11, PySide6 (QAbstractListModel, Qt Quick/QML), pytest, pytest-qt.
+**Tech Stack:** Python 3.11, PySide6 (QAbstractListModel, Qt Quick/QML), pytest, pytest-qt, stdlib (`html`, `re`, `dataclasses`, `typing`).
 
 **Spec:** `docs/superpowers/specs/2026-10-09-subtitle-qa-engine-design.md`
 
 ## Global Constraints
 
 - **Python Version:** Python 3.11+
-- **Zero Third-party Dependencies:** QA Engine must rely solely on Python stdlib (`re`, `dataclasses`, `typing`).
-- **In-Memory Volatile State:** QA issues are computed dynamically in-memory; no changes or migrations to `.aisrt` file persistence.
+- **Zero Third-party Dependencies:** QA Engine must rely solely on Python stdlib (`html`, `re`, `dataclasses`, `typing`).
+- **In-Memory Volatile State:** QA issues are cached dynamically in item dictionaries in-memory; no changes or migrations to `.aisrt` file persistence.
+- **Performance Guarantee:** `SubtitleModel.data()` must NEVER perform dynamic regex or string calculations. QA results are computed during `load_data()` and `update_translation()`, ensuring $O(1)$ lookup during high-frequency Qt UI rendering.
 - **Language & Conventions:** Python identifiers and functions in English; docstrings and user-facing messages in natural Vietnamese.
 - **Advisory UX:** QA checks never block accepting edits (`Non-blocking`). Exporting with red errors prompts for user confirmation with an override option.
 
 ## Review Focus
 
-1. **Nested & Malformed HTML Tags:** Inputs like `<b><i>text</i></b>`, `<font color="red">text</font>`, or unclosed tags `<i>text` must be parsed safely without regex catastrophic backtracking.
-2. **Timing Edge Cases:** Subtitles with `start_time >= end_time`, `end_time - start_time == 0`, or corrupted timestamp strings must return `TIME_ERROR` without throwing `ZeroDivisionError` or crashing.
-3. **Multiline & Whitespace Edge Cases:** Trailing newlines, blank middle lines (e.g. `"Line 1\n\nLine 2"`), or leading/trailing whitespace must not skew line count or CPL calculations.
-4. **Empty or Whitespace-only Translations:** Untranslated items (`""` or `"   "`) must return `()` and have severity `""` without falsely triggering CPS/tag errors.
-5. **Dynamic Model Role Reactivity:** Editing a translation or updating timestamps in `SubtitleModel` must immediately update `qaSeverity` and `qaTooltip` roles for the affected rows.
+1. **HTML Entities & Real Length:** Inputs like `Tom &amp; Jerry` or `Xin ch&agrave;o&nbsp;bạn` must be unescaped using `html.unescape` so character count accurately reflects the visual string length.
+2. **Self-closing & Attribute-bearing Tags:** Tags like `<font color="#ff0000">text</font>` and self-closing tags `<br/>`, `<br />` must be parsed safely without falsely triggering `TAG_MISMATCH`.
+3. **Empty Middle Lines & Trailing Whitespace:** Formats like `"Dòng 1\n\nDòng 2\n"` must strip blank lines before counting lines (`len([l for l in lines if l.strip()]) <= 2`).
+4. **Timing Edge Cases:** Subtitles with `start_time >= end_time`, `end_time - start_time == 0`, or corrupted timestamp strings must return `TIME_ERROR` without throwing `ZeroDivisionError` or crashing.
+5. **PySide6 Slot Overload:** `ProjectController.exportSrt` must use `@Slot(str)` and `@Slot(str, bool)` so QML calls with 1 or 2 arguments resolve without `TypeError`.
 
 ---
 
@@ -49,15 +50,18 @@
   ```
 
 - [ ] **Step 1: Write failing tests for Core QA Engine in `tests/test_qa_engine.py`**
-  Cover TC-QA-01 (Sanitization & True Length), TC-QA-02 (Timing Resilience), TC-QA-03 (Boundary Correctness), TC-QA-04 (Line Overflow), TC-QA-05 (Tag Integrity), and TC-QA-06 (Empty Subtitle Handling).
+  Cover TC-QA-01 (Sanitization & True Length with HTML entities), TC-QA-02 (Timing Resilience), TC-QA-03 (Boundary Correctness), TC-QA-04 (Line Overflow & Empty Middle Lines), TC-QA-05 (Tag Integrity with attributes and self-closing tags), and TC-QA-06 (Empty Subtitle Handling).
 
 ```python
 import pytest
 from app.core.qa_engine import QAIssue, analyze_subtitle, strip_html_tags, time_to_ms
 
-def test_tc_qa_01_sanitization_and_true_length():
-    # "<i>Xin chào các bạn</i>" raw length is 22, clean length is 16.
-    # Duration: 1000ms -> clean CPS is 16.0 (Pass <= 17.0). If tags weren't stripped, CPS would be 22.0 (Error).
+def test_tc_qa_01_sanitization_and_html_entities():
+    # "Tom &amp; Jerry" unescapes to "Tom & Jerry" (11 chars)
+    assert strip_html_tags("Tom &amp; Jerry") == "Tom & Jerry"
+    assert len(strip_html_tags("Tom &amp; Jerry")) == 11
+
+    # "<i>Xin chào các bạn</i>" raw 22 chars -> clean 16 chars
     issues = analyze_subtitle(0, 1000, "Hello friends", "<i>Xin chào các bạn</i>")
     assert not any(i.code == "CPS_HIGH" for i in issues)
 
@@ -68,7 +72,6 @@ def test_tc_qa_02_timing_resilience_zero_or_negative():
     issues_negative = analyze_subtitle(2000, 1000, "Hi", "Chào")
     assert any(i.code == "TIME_ERROR" and i.severity == "ERROR" for i in issues_negative)
 
-    # Malformed timestamp string
     issues_invalid = analyze_subtitle("invalid", "00:00:02,000", "Hi", "Chào")
     assert any(i.code == "TIME_ERROR" and i.severity == "ERROR" for i in issues_invalid)
 
@@ -107,28 +110,34 @@ def test_tc_qa_03_cps_cpl_boundaries():
     cpl_issues = [i for i in issues if i.code == "CPL_LONG"]
     assert len(cpl_issues) == 1 and cpl_issues[0].severity == "ERROR"
 
-def test_tc_qa_04_line_overflow():
-    text_2_lines = "Dòng 1\nDòng 2"
-    issues = analyze_subtitle(0, 3000, "Source", text_2_lines)
+def test_tc_qa_04_line_overflow_and_empty_middle_lines():
+    # 2 lines with accidental empty middle line -> Pass (only 2 real lines)
+    text_with_empty_line = "Dòng 1\n\nDòng 2\n"
+    issues = analyze_subtitle(0, 3000, "Source", text_with_empty_line)
     assert not any(i.code == "LINE_OVERFLOW" for i in issues)
 
+    # 3 real lines -> ERROR
     text_3_lines = "Dòng 1\nDòng 2\nDòng 3"
     issues = analyze_subtitle(0, 3000, "Source", text_3_lines)
     line_issues = [i for i in issues if i.code == "LINE_OVERFLOW"]
     assert len(line_issues) == 1 and line_issues[0].severity == "ERROR"
 
-def test_tc_qa_05_tag_integrity():
+def test_tc_qa_05_tag_integrity_attributes_and_self_closing():
     # Unclosed tag in translation
     issues = analyze_subtitle(0, 2000, "<i>Hello</i>", "<i>Xin chào")
     assert any(i.code == "TAG_MISMATCH" and i.severity == "ERROR" for i in issues)
 
-    # Missing tag that source had
+    # Missing tag from source
     issues = analyze_subtitle(0, 2000, "<i>Hello</i>", "Xin chào")
     assert any(i.code == "TAG_MISMATCH" and i.severity == "ERROR" for i in issues)
 
-    # Matching tags
-    issues = analyze_subtitle(0, 2000, "<i>Hello</i>", "<i>Xin chào</i>")
+    # Matching tags with attributes (e.g. font color)
+    issues = analyze_subtitle(0, 2000, '<font color="#ff0000">Red</font>', '<font color="red">Đỏ</font>')
     assert not any(i.code == "TAG_MISMATCH" for i in issues)
+
+    # Self-closing tag <br/> or <br /> does not trigger tag mismatch
+    issues_br = analyze_subtitle(0, 2000, "Line 1<br/>Line 2", "Dòng 1<br />Dòng 2")
+    assert not any(i.code == "TAG_MISMATCH" for i in issues_br)
 
 def test_tc_qa_06_empty_or_whitespace_translation():
     assert analyze_subtitle(0, 2000, "Hello", "") == ()
@@ -140,12 +149,16 @@ def test_tc_qa_06_empty_or_whitespace_translation():
   Expected: FAIL with `ModuleNotFoundError: No module named 'app.core.qa_engine'`
 
 - [ ] **Step 3: Implement `app/core/qa_engine.py`**
-  Implement pure logic for:
-  - `QAIssue` dataclass.
+  Implement:
+  - `QAIssue` dataclass (`code`, `severity`, `message`).
   - `time_to_ms`: handles integer milliseconds or SRT format `HH:MM:SS,mmm`.
-  - `strip_html_tags`: regex substitution for HTML tags.
-  - Tag balancing and parity validation between original and translated.
-  - `analyze_subtitle`: integrates timing checks, duration calculation, CPS, CPL, line count, and tag checks.
+  - `strip_html_tags`: `html.unescape(re.sub(r'<[^>]+>', '', text))` and strip leading/trailing whitespace.
+  - Tag parity & balance:
+    - Self-closing tags regex exclusion: ignore tags matching `<[^>]+/\s*>` or `<br\s*/?>`.
+    - Tag name extraction: `re.findall(r'<\s*([a-zA-Z0-9]+)', ...)` ignoring case.
+    - Stack-based tag balancing for translation.
+    - Parity of tag names between source and target.
+  - `analyze_subtitle`: integrates timing checks, duration calculation, CPS, CPL, line count (filtering empty lines), and tag integrity.
 
 - [ ] **Step 4: Run tests to verify pass**
   Run: `pytest tests/test_qa_engine.py -v`
@@ -154,12 +167,12 @@ def test_tc_qa_06_empty_or_whitespace_translation():
 - [ ] **Step 5: Commit**
   ```bash
   git add app/core/qa_engine.py tests/test_qa_engine.py
-  git commit -m "feat(qa): implement core Subtitle QA Engine with CPS, CPL, line count and tag integrity"
+  git commit -m "feat(qa): implement core Subtitle QA Engine with CPS, CPL, unescape, and tag parity"
   ```
 
 ---
 
-### Task 2: SubtitleModel Dynamic QA Roles (`app/models/subtitle.py`)
+### Task 2: SubtitleModel $O(1)$ QA Roles (`app/models/subtitle.py`)
 
 **Files:**
 - Modify: `app/models/subtitle.py`
@@ -170,7 +183,7 @@ def test_tc_qa_06_empty_or_whitespace_translation():
 - Produces:
   - `SubtitleModel.QaSeverityRole = Qt.UserRole + 7` (`qaSeverity` -> `""`, `"WARNING"`, `"ERROR"`)
   - `SubtitleModel.QaTooltipRole = Qt.UserRole + 8` (`qaTooltip` -> Multiline string of issue messages)
-  - Helper `get_qa_summary() -> dict` returning `{'total_errors': int, 'total_warnings': int}`
+  - Method `get_qa_summary() -> dict` returning `{'total_errors': int, 'total_warnings': int}`
 
 - [ ] **Step 1: Write failing tests for SubtitleModel QA roles in `tests/test_subtitle_model_qa.py`**
 
@@ -179,7 +192,7 @@ import pytest
 from PySide6.QtCore import QModelIndex
 from app.models.subtitle import SubtitleModel
 
-def test_subtitle_model_qa_roles():
+def test_subtitle_model_qa_roles_o1():
     model = SubtitleModel()
     data = [
         {
@@ -209,6 +222,10 @@ def test_subtitle_model_qa_roles():
     assert model.data(idx_error, SubtitleModel.QaSeverityRole) == "ERROR"
     assert "Tốc độ đọc" in model.data(idx_error, SubtitleModel.QaTooltipRole)
 
+    # Verify cached fields in item dictionary
+    assert data[0]["_qa_severity"] == ""
+    assert data[1]["_qa_severity"] == "ERROR"
+
 def test_subtitle_model_qa_reactivity():
     model = SubtitleModel()
     data = [{
@@ -226,10 +243,12 @@ def test_subtitle_model_qa_reactivity():
     # Update to an error translation (CPS > 20)
     model.update_translation(0, "Câu này quá dài trong vòng một giây", "TRANSLATED")
     assert model.data(idx, SubtitleModel.QaSeverityRole) == "ERROR"
+    assert data[0]["_qa_severity"] == "ERROR"
 
     # Fix it to a short translation
     model.update_translation(0, "Ngắn", "EDITED")
     assert model.data(idx, SubtitleModel.QaSeverityRole) == ""
+    assert data[0]["_qa_severity"] == ""
 ```
 
 - [ ] **Step 2: Run test to verify failure**
@@ -237,11 +256,15 @@ def test_subtitle_model_qa_reactivity():
   Expected: FAIL with `AttributeError: type object 'SubtitleModel' has no attribute 'QaSeverityRole'`
 
 - [ ] **Step 3: Modify `app/models/subtitle.py`**
-  - Define `QaSeverityRole` and `QaTooltipRole`.
-  - Add to `roleNames()`: `b"qaSeverity"` and `b"qaTooltip"`.
-  - In `data()`: compute or cache QA issues on the item, return max severity and concatenated tooltip.
-  - Implement `get_qa_summary()` to return overall project error and warning counts.
-  - In `update_translation()`: emit `dataChanged` for roles including `QaSeverityRole` and `QaTooltipRole`.
+  - Define `QaSeverityRole = Qt.UserRole + 7` and `QaTooltipRole = Qt.UserRole + 8`.
+  - Add to `roleNames()`: `self.QaSeverityRole: b"qaSeverity"`, `self.QaTooltipRole: b"qaTooltip"`.
+  - Add helper `_update_item_qa(sub)`:
+    - Calls `analyze_subtitle(sub.get("start_time", 0), sub.get("end_time", 0), sub.get("original", ""), sub.get("translation", ""))`.
+    - If issues: max severity (`"ERROR"` if any error else `"WARNING"`), tooltip is `"\n".join(i.message for i in issues)`.
+    - Store directly in `sub["_qa_severity"]` and `sub["_qa_tooltip"]`.
+  - In `load_data()`: call `self._update_item_qa(sub)` for each item.
+  - In `update_translation()`: update `sub["translation"]`, call `self._update_item_qa(sub)`, and emit `dataChanged` with all affected roles.
+  - In `data()`: perform strict $O(1)$ lookup: `sub.get("_qa_severity", "")` and `sub.get("_qa_tooltip", "")`.
 
 - [ ] **Step 4: Run tests to verify pass**
   Run: `pytest tests/test_subtitle_model_qa.py -v`
@@ -250,12 +273,12 @@ def test_subtitle_model_qa_reactivity():
 - [ ] **Step 5: Commit**
   ```bash
   git add app/models/subtitle.py tests/test_subtitle_model_qa.py
-  git commit -m "feat(qa): expose dynamic qaSeverity and qaTooltip roles in SubtitleModel"
+  git commit -m "feat(qa): precompute and cache qaSeverity and qaTooltip in SubtitleModel for O(1) rendering"
   ```
 
 ---
 
-### Task 3: Export Confirmation Prompt in ProjectController (`app/controllers/project_controller.py`)
+### Task 3: Overloaded Export Hook in ProjectController (`app/controllers/project_controller.py`)
 
 **Files:**
 - Modify: `app/controllers/project_controller.py`
@@ -263,8 +286,13 @@ def test_subtitle_model_qa_reactivity():
 
 **Interfaces:**
 - Produces:
-  - Signal: `qaExportWarningRequired(str, int)` with `(file_path, error_count)`
-  - Parameter `force: bool = False` in `exportSrt(self, file_path, force=False)`
+  - Signal: `qaExportWarningRequired = Signal(str, int)`
+  - Overloaded Slot:
+    ```python
+    @Slot(str)
+    @Slot(str, bool)
+    def exportSrt(self, file_path, force=False): ...
+    ```
 
 - [ ] **Step 1: Write failing test in `tests/test_project_qa_export.py`**
 
@@ -301,16 +329,16 @@ def test_export_intercept_when_qa_errors_exist(qtbot, tmp_path):
     warning_emitted = []
     controller.qaExportWarningRequired.connect(lambda path, count: warning_emitted.append((path, count)))
 
-    # Attempt export without force
-    controller.exportSrt(export_path, force=False)
+    # 1-argument call without force -> must intercept
+    controller.exportSrt(export_path)
 
     assert len(warning_emitted) == 1
     assert warning_emitted[0][0] == export_path
-    assert warning_emitted[0][1] == 1  # 1 error item
+    assert warning_emitted[0][1] == 1
 
-    # Attempt export with force=True -> succeeds without intercept
-    controller.exportSrt(export_path, force=True)
-    assert len(warning_emitted) == 1  # No extra warning
+    # 2-argument call with force=True -> must export without extra warning
+    controller.exportSrt(export_path, True)
+    assert len(warning_emitted) == 1
 ```
 
 - [ ] **Step 2: Run test to verify failure**
@@ -319,8 +347,9 @@ def test_export_intercept_when_qa_errors_exist(qtbot, tmp_path):
 
 - [ ] **Step 3: Modify `app/controllers/project_controller.py`**
   - Add `qaExportWarningRequired = Signal(str, int)`.
-  - In `exportSrt(self, file_path, force=False)`:
-    - Before writing file, check for subtitles with `QaSeverityRole == "ERROR"`.
+  - Decorate `exportSrt` with both `@Slot(str)` and `@Slot(str, bool)`.
+  - In `exportSrt`:
+    - Before writing file, check `subtitles`: count items where `sub.get("_qa_severity") == "ERROR"`.
     - If `not force` and `error_count > 0`: emit `qaExportWarningRequired.emit(file_path, error_count)` and return.
     - Otherwise proceed to `SRTExporter.export()`.
 
@@ -331,7 +360,7 @@ def test_export_intercept_when_qa_errors_exist(qtbot, tmp_path):
 - [ ] **Step 5: Commit**
   ```bash
   git add app/controllers/project_controller.py tests/test_project_qa_export.py
-  git commit -m "feat(qa): add non-blocking export intercept for severe QA errors"
+  git commit -m "feat(qa): add overloaded exportSrt slot with non-blocking QA error confirmation hook"
   ```
 
 ---
@@ -343,42 +372,37 @@ def test_export_intercept_when_qa_errors_exist(qtbot, tmp_path):
 - Modify: `ui/qml/components/TranslationWorkspace.qml`
 - Modify: `ui/qml/Main.qml`
 
-**Interfaces:**
-- Consumes:
-  - `model.qaSeverity` and `model.qaTooltip` in `SubtitleListView`
-  - `projectController.qaExportWarningRequired(filePath, errorCount)` in `Main.qml`
-
-- [ ] **Step 1: Update `SubtitleListView.qml` to display QA badge & ToolTip**
-  - In delegate: Add visual badge indicator:
-    - If `qaSeverity === "ERROR"`: `🛑` (danger color).
-    - If `qaSeverity === "WARNING"`: `⚠️` (warning yellow color).
-    - Attach a native QML `ToolTip` to display `qaTooltip` when hovering over the indicator.
-
-- [ ] **Step 2: Update `TranslationWorkspace.qml`**
-  - Display QA indicator and message preview next to the translation character counter or header so translator immediately sees live feedback while editing.
-
-- [ ] **Step 3: Update `Main.qml` for Export Confirmation Dialog**
-  - Add connection:
+- [ ] **Step 1: Update `SubtitleListView.qml`**
+  - In delegate: Add visual QA badge next to status:
     ```qml
-    Connections {
-        target: projectController
-        function onQaExportWarningRequired(filePath, errorCount) {
-            qaConfirmDialog.targetFilePath = filePath
-            qaConfirmDialog.errorCount = errorCount
-            qaConfirmDialog.open()
+    Text {
+        visible: qaSeverity !== ""
+        text: qaSeverity === "ERROR" ? "🛑" : "⚠️"
+        font.pixelSize: 11
+        ToolTip.visible: qaMouseArea.containsMouse
+        ToolTip.text: qaTooltip
+        MouseArea {
+            id: qaMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
         }
     }
     ```
-  - Define Dialog with message: `"Có " + errorCount + " dòng phụ đề vi phạm quy tắc hiển thị (Lỗi đỏ). Bạn có chắc chắn muốn xuất file không?"`
-  - Action "Vẫn xuất": `projectController.exportSrt(targetFilePath, true)`.
+
+- [ ] **Step 2: Update `TranslationWorkspace.qml`**
+  - Add live QA issue indicator in the translation header area showing current subtitle's QA status.
+
+- [ ] **Step 3: Update `Main.qml` for Export Confirmation Dialog**
+  - Connect to `projectController.qaExportWarningRequired(filePath, errorCount)` to open confirmation dialog.
+  - On confirm ("Vẫn xuất"): call `projectController.exportSrt(targetFilePath, true)`.
 
 - [ ] **Step 4: Verify QML syntax & bindings**
-  Run: `python -c "from PySide6.QtQml import QQmlApplicationEngine; from PySide6.QtCore import QCoreApplication; app = QCoreApplication([]); engine = QQmlApplicationEngine(); ..."` or run full test suite.
+  Run pytest suite to verify no regressions in harness.
 
 - [ ] **Step 5: Commit**
   ```bash
   git add ui/qml/components/SubtitleListView.qml ui/qml/components/TranslationWorkspace.qml ui/qml/Main.qml
-  git commit -m "feat(ui): add QA issue indicators, tooltips, and export confirmation dialog in QML"
+  git commit -m "feat(ui): display QA warning/error badges and wire export confirmation dialog"
   ```
 
 ---
@@ -386,11 +410,11 @@ def test_export_intercept_when_qa_errors_exist(qtbot, tmp_path):
 ### Task 5: Full Regression Testing & Verification
 
 **Files:**
-- Test: All tests in `tests/`
+- Test: All tests across the test suite
 
 - [ ] **Step 1: Run complete test suite**
   Run: `pytest -v`
-  Expected: All 242+ previous tests plus new QA tests PASS (approx 255+ tests total).
+  Expected: All existing 242+ tests + new QA tests PASS.
 
 - [ ] **Step 2: Commit and verify clean working tree**
   ```bash
