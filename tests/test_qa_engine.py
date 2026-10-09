@@ -89,3 +89,19 @@ def test_tc_qa_05_tag_integrity_attributes_and_self_closing():
 def test_tc_qa_06_empty_or_whitespace_translation():
     assert analyze_subtitle(0, 2000, "Hello", "") == ()
     assert analyze_subtitle(0, 2000, "Hello", "   \n  ") == ()
+
+def test_tc_qa_07_no_cascading_cps_on_time_error():
+    # Long text with time error (2000 -> 1000) must only emit TIME_ERROR, NOT CPS_HIGH
+    long_text = "Đây là một câu phụ đề tương đối dài có thể kích hoạt lỗi tốc độ đọc nếu tính nhầm"
+    issues = analyze_subtitle(2000, 1000, "Source", long_text)
+    assert any(i.code == "TIME_ERROR" for i in issues)
+    assert not any(i.code == "CPS_HIGH" for i in issues)
+
+def test_tc_qa_08_ignore_non_subtitle_tags():
+    # Placeholders like <player_name> or angle brackets like Vector<int> should not trigger TAG_MISMATCH
+    issues = analyze_subtitle(0, 3000, "Winner: <player_name>", "Người thắng: <player_name>")
+    assert not any(i.code == "TAG_MISMATCH" for i in issues)
+
+    issues_brackets = analyze_subtitle(0, 3000, "Type Vector<int>", "Kiểu Vector<int>")
+    assert not any(i.code == "TAG_MISMATCH" for i in issues_brackets)
+

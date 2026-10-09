@@ -13,6 +13,7 @@ class TranslationController(QObject):
     engineStatusChanged = Signal(str)
     translationCompleted = Signal(int)
     translationFailed = Signal(int, str)
+    qaStatusChanged = Signal()
 
     def __init__(self, subtitle_model, worker_factory=None):
         super().__init__()
@@ -35,6 +36,11 @@ class TranslationController(QObject):
         self._translation_memory = None
         self._subtitle_model.modelReset.connect(self._emit_progress)
         self._subtitle_model.dataChanged.connect(self._emit_progress)
+        self._subtitle_model.modelReset.connect(self._emit_qa_status)
+        self._subtitle_model.dataChanged.connect(self._emit_qa_status)
+
+    def _emit_qa_status(self, *args):
+        self.qaStatusChanged.emit()
 
     def bind_intelligence(self, glossary=None, entities=None, translation_memory=None):
         """Kết nối các thành phần trí tuệ: glossary, entities, translation_memory."""
@@ -82,6 +88,20 @@ class TranslationController(QObject):
     @Property(str, notify=contextUpdated)
     def contextNext(self): return self._context_next
 
+    @Property(str, notify=qaStatusChanged)
+    def currentQaSeverity(self):
+        subtitles = self._subtitle_model.get_all_data()
+        if 0 <= self._current_index < len(subtitles):
+            return subtitles[self._current_index].get("_qa_severity", "")
+        return ""
+
+    @Property(str, notify=qaStatusChanged)
+    def currentQaTooltip(self):
+        subtitles = self._subtitle_model.get_all_data()
+        if 0 <= self._current_index < len(subtitles):
+            return subtitles[self._current_index].get("_qa_tooltip", "")
+        return ""
+
     @Slot(int)
     def loadSubtitle(self, index):
         if index < 0: 
@@ -94,6 +114,7 @@ class TranslationController(QObject):
             self.statusChanged.emit(self._status)
             self.translationUpdated.emit(self._current_translation)
             self.contextUpdated.emit()
+            self.qaStatusChanged.emit()
             return
             
         subtitles = self._subtitle_model.get_all_data()
@@ -124,6 +145,7 @@ class TranslationController(QObject):
         self.statusChanged.emit(self._status)
         self.translationUpdated.emit(self._current_translation)
         self.contextUpdated.emit()
+        self.qaStatusChanged.emit()
 
     @Slot()
     def markAsEdited(self):

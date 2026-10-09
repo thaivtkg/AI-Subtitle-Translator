@@ -185,6 +185,8 @@ ColumnLayout {
             Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 3; color: isSelected ? Theme.accentCyan : "transparent" }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: 0.4; visible: delegateItem.visible }
 
+            MouseArea { id: mouseArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: subListView.currentIndex = index }
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.spaceMedium
@@ -201,6 +203,7 @@ ColumnLayout {
                     Text { text: startTime; color: Theme.textMuted; font.pixelSize: 12 }
                     Item { Layout.fillWidth: true }
                     Text {
+                        z: 2
                         visible: typeof qaSeverity !== "undefined" && qaSeverity !== ""
                         text: qaSeverity === "ERROR" ? "🛑" : "⚠️"
                         font.pixelSize: 11
@@ -212,6 +215,7 @@ ColumnLayout {
                             id: qaHoverArea
                             anchors.fill: parent
                             hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
                             onClicked: subListView.currentIndex = index
                         }
                     }
@@ -231,8 +235,6 @@ ColumnLayout {
                     Layout.fillWidth: true
                 }
             }
-
-            MouseArea { id: mouseArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: subListView.currentIndex = index }
         }
 
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded; width: 8 }

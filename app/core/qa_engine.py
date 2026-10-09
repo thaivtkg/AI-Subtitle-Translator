@@ -44,6 +44,9 @@ def strip_html_tags(text: str) -> str:
     return html.unescape(no_tags).strip()
 
 
+SUPPORTED_SUBTITLE_TAGS = {"i", "b", "u", "s", "font", "strike", "em", "strong"}
+
+
 def _check_tags(original: str, translated: str) -> list[QAIssue]:
     """Kiểm tra tính cân bằng thẻ trong câu dịch và tính toàn vẹn so với câu gốc."""
     issues = []
@@ -55,7 +58,10 @@ def _check_tags(original: str, translated: str) -> list[QAIssue]:
 
     for is_closing, tag_name, is_self_closing in tokens:
         tag_lower = tag_name.lower()
+        # Bỏ qua thẻ tự đóng và các thẻ không thuộc định dạng phụ đề (tránh false positive với placeholder)
         if tag_lower in {"br", "hr"} or is_self_closing.strip() == "/":
+            continue
+        if tag_lower not in SUPPORTED_SUBTITLE_TAGS:
             continue
 
         if not is_closing:
@@ -79,12 +85,12 @@ def _check_tags(original: str, translated: str) -> list[QAIssue]:
     orig_tags = {
         name.lower()
         for is_closing, name, is_self in TAG_TOKEN_PATTERN.findall(original)
-        if name.lower() not in {"br", "hr"} and is_self.strip() != "/"
+        if name.lower() in SUPPORTED_SUBTITLE_TAGS and is_self.strip() != "/"
     }
     trans_tags = {
         name.lower()
         for is_closing, name, is_self in TAG_TOKEN_PATTERN.findall(translated)
-        if name.lower() not in {"br", "hr"} and is_self.strip() != "/"
+        if name.lower() in SUPPORTED_SUBTITLE_TAGS and is_self.strip() != "/"
     }
 
     missing_tags = orig_tags - trans_tags
@@ -124,8 +130,9 @@ def analyze_subtitle(
     # 1. Timing validation
     start_ms = time_to_ms(start_time)
     end_ms = time_to_ms(end_time)
+    has_time_error = (start_ms == -1 or end_ms == -1 or end_ms <= start_ms)
 
-    if start_ms == -1 or end_ms == -1 or end_ms <= start_ms:
+    if has_time_error:
         issues.append(
             QAIssue(
                 code="TIME_ERROR",
@@ -133,31 +140,30 @@ def analyze_subtitle(
                 message="Lỗi timestamp: Thời lượng kết thúc nhỏ hơn hoặc bằng thời lượng bắt đầu.",
             )
         )
-        duration_sec = 0.1
-    else:
-        duration_sec = max(0.1, (end_ms - start_ms) / 1000.0)
 
     # 2. Lấy nội dung hiển thị thực tế sau khi gỡ thẻ và giải mã thực thể
     clean_text = strip_html_tags(translated)
 
-    # 3. CPS (Characters Per Second)
-    cps = len(clean_text) / duration_sec
-    if cps > 20.0:
-        issues.append(
-            QAIssue(
-                code="CPS_HIGH",
-                severity="ERROR",
-                message=f"Tốc độ đọc quá nhanh ({cps:.1f} ký tự/giây > 20).",
+    # 3. CPS (Characters Per Second) - Chỉ tính khi thời lượng hợp lệ
+    if not has_time_error:
+        duration_sec = max(0.1, (end_ms - start_ms) / 1000.0)
+        cps = len(clean_text) / duration_sec
+        if cps > 20.0:
+            issues.append(
+                QAIssue(
+                    code="CPS_HIGH",
+                    severity="ERROR",
+                    message=f"Tốc độ đọc quá nhanh ({cps:.1f} ký tự/giây > 20).",
+                )
             )
-        )
-    elif cps > 17.0:
-        issues.append(
-            QAIssue(
-                code="CPS_HIGH",
-                severity="WARNING",
-                message=f"Tốc độ đọc hơi nhanh ({cps:.1f} ký tự/giây > 17).",
+        elif cps > 17.0:
+            issues.append(
+                QAIssue(
+                    code="CPS_HIGH",
+                    severity="WARNING",
+                    message=f"Tốc độ đọc hơi nhanh ({cps:.1f} ký tự/giây > 17).",
+                )
             )
-        )
 
     # 4. CPL (Characters Per Line) & Line Count (Lọc bỏ dòng trống)
     raw_lines = [l.strip() for l in clean_text.splitlines() if l.strip()]
