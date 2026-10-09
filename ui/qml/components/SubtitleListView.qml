@@ -201,6 +201,21 @@ ColumnLayout {
                     Text { text: startTime; color: Theme.textMuted; font.pixelSize: 12 }
                     Item { Layout.fillWidth: true }
                     Text {
+                        visible: typeof qaSeverity !== "undefined" && qaSeverity !== ""
+                        text: qaSeverity === "ERROR" ? "🛑" : "⚠️"
+                        font.pixelSize: 11
+                        ToolTip.visible: qaHoverArea.containsMouse
+                        ToolTip.text: typeof qaTooltip !== "undefined" ? qaTooltip : ""
+                        ToolTip.delay: 300
+
+                        MouseArea {
+                            id: qaHoverArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: subListView.currentIndex = index
+                        }
+                    }
+                    Text {
                         text: normalizedStatus === "ACCEPTED" ? "✓ ACCEPTED" : normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? "● TRANSLATED" : normalizedStatus === "TRANSLATING" ? "◌ TRANSLATING" : normalizedStatus === "ERROR" ? "✕ ERROR" : "○ PENDING"
                         color: normalizedStatus === "ACCEPTED" ? Theme.success : normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.accentPurple : normalizedStatus === "ERROR" ? Theme.danger : Theme.textMuted
                         font.pixelSize: 10

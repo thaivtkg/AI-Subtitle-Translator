@@ -175,6 +175,43 @@ ApplicationWindow {
         function onNotify(title, msg) { appToast.show(title, msg) }
         function onLanguageLoaded(lang) { transWorkspace.setSourceLanguage(lang) }
         function onProjectLoaded(summary) { globalStorySummary = summary }
+        function onQaExportWarningRequired(filePath, errorCount) {
+            qaConfirmDialog.targetFilePath = filePath
+            qaConfirmDialog.errorCount = errorCount
+            qaConfirmDialog.open()
+        }
+    }
+
+    Dialog {
+        id: qaConfirmDialog
+        title: "Cảnh báo chất lượng phụ đề (QA)"
+        anchors.centerIn: parent
+        modal: true
+        standardButtons: Dialog.Yes | Dialog.No
+
+        property string targetFilePath: ""
+        property int errorCount: 0
+
+        ColumnLayout {
+            spacing: Theme.spaceMedium
+            Text {
+                text: "⚠️ Có " + qaConfirmDialog.errorCount + " dòng phụ đề vi phạm quy tắc hiển thị (Lỗi đỏ)."
+                color: Theme.danger
+                font.pixelSize: 14
+                font.bold: true
+            }
+            Text {
+                text: "Bạn có chắc chắn muốn bỏ qua cảnh báo và tiếp tục xuất file SRT không?"
+                color: Theme.textSecondary
+                font.pixelSize: 13
+            }
+        }
+
+        onAccepted: {
+            if (targetFilePath !== "") {
+                projectController.exportSrt(targetFilePath, true)
+            }
+        }
     }
 
     ModelManagerDialog {
