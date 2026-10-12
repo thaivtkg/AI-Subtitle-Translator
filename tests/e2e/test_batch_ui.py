@@ -81,6 +81,11 @@ def test_tc_p3a7_q06_pause_resume():
     try:
         harness.driver.click("btnBatchStart")
         wait_for(harness, lambda: harness.batch_controller.state == "RUNNING")
+        wait_for(
+            harness,
+            lambda: harness.driver.is_enabled("btnBatchPause")
+            and harness.driver.find("btnBatchPause").property("x") > 0,
+        )
         harness.driver.click("btnBatchPause")
         wait_for(harness, lambda: harness.batch_controller.state == "PAUSED")
         assert harness.driver.is_enabled("btnBatchResume")
@@ -156,6 +161,21 @@ def test_tc_p3a7_custom_batch_limit_execution():
         wait_for(harness, lambda: harness.batch_controller.state == "COMPLETED")
         assert harness.batch_controller.totalCount == 2
         assert harness.batch_controller.completedCount == 2
+    finally:
+        harness.close()
+
+
+def test_tc_p3a7_multi_selection_batch_execution():
+    harness = AppHarness(FIXTURE, worker_factory=DeterministicWorkerFactory("success"))
+    try:
+        harness.batch_controller.startBatchWithIndices("English", "Vietnamese", "", [0, 2])
+        wait_for(harness, lambda: harness.batch_controller.state == "COMPLETED")
+        assert harness.batch_controller.totalCount == 2
+        assert harness.batch_controller.completedCount == 2
+        data = harness.model.get_all_data()
+        assert data[0]["status"] == "TRANSLATED"
+        assert data[1]["status"].upper() == "PENDING"
+        assert data[2]["status"] == "TRANSLATED"
     finally:
         harness.close()
 

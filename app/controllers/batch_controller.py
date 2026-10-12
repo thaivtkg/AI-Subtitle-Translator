@@ -175,6 +175,53 @@ class BatchController(QObject):
         self._service.start(self._job)
         self._refresh()
 
+    @Slot(str, str, str, "QVariantList")
+    @Slot(str, str, str, list)
+    def startBatchWithIndices(
+        self,
+        source_lang: str,
+        target_lang: str,
+        story_summary: str,
+        indices: list,
+    ) -> None:
+        if not self.canStart:
+            raise RuntimeError("Cannot start batch")
+
+        all_data = self._subtitle_model.get_all_data()
+        total_len = len(all_data)
+        if total_len == 0 or not indices:
+            return
+
+        seen = set()
+        target_indices = []
+        for raw_idx in indices:
+            try:
+                idx = int(raw_idx)
+            except (ValueError, TypeError):
+                continue
+            if 0 <= idx < total_len and idx not in seen:
+                seen.add(idx)
+                target_indices.append(idx)
+
+        if not target_indices:
+            return
+
+        items = {
+            index: BatchItem(
+                target_index=index,
+                source_hash=compute_source_hash(str(all_data[index].get("original", ""))),
+            )
+            for index in target_indices
+        }
+        self._config = (source_lang, target_lang, story_summary)
+        self._job = BatchJob.create(self._project_id, items)
+        self._cancel_pending = False
+        configure = getattr(self._service, "configure", None)
+        if configure is not None:
+            configure(source_lang, target_lang, story_summary)
+        self._service.start(self._job)
+        self._refresh()
+
     @Slot()
     def pauseBatch(self):
         if self._job is None:

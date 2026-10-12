@@ -15,6 +15,8 @@ Item {
 
     property int selectedLimit: 50
     property int currentSubtitleIndex: 0
+    property var selectedIndices: []
+    readonly property bool hasMultiSelection: root.selectedIndices && root.selectedIndices.length > 1
 
     implicitWidth: contentRow.implicitWidth
     implicitHeight: 32
@@ -62,19 +64,33 @@ Item {
 
         AppButton {
             objectName: "btnBatchStart"
-            text: root.selectedLimit === 0 ? "⚡ Dịch toàn bộ" : "⚡ Dịch " + root.selectedLimit + " câu"
-            tooltip: "Dịch tự động phụ đề theo lô"
+            text: {
+                if (root.hasMultiSelection) {
+                    return "⚡ Dịch đã chọn (" + root.selectedIndices.length + " câu)"
+                }
+                return root.selectedLimit === 0 ? "⚡ Dịch toàn bộ" : "⚡ Dịch " + root.selectedLimit + " câu"
+            }
+            tooltip: root.hasMultiSelection ? "Dịch các câu đã chọn (Ctrl + Click)" : "Dịch tự động phụ đề theo lô"
             isPrimary: true
             visible: ["IDLE", "COMPLETED", "CANCELLED", "FAILED"].indexOf(root.controller.state) >= 0
             enabled: root.controller.canStart
             onClicked: {
-                root.controller.startBatch(
-                    root.sourceLanguage,
-                    root.targetLanguage,
-                    root.storySummary,
-                    root.currentSubtitleIndex >= 0 ? root.currentSubtitleIndex : 0,
-                    root.selectedLimit
-                )
+                if (root.hasMultiSelection) {
+                    root.controller.startBatchWithIndices(
+                        root.sourceLanguage,
+                        root.targetLanguage,
+                        root.storySummary,
+                        root.selectedIndices
+                    )
+                } else {
+                    root.controller.startBatch(
+                        root.sourceLanguage,
+                        root.targetLanguage,
+                        root.storySummary,
+                        root.currentSubtitleIndex >= 0 ? root.currentSubtitleIndex : 0,
+                        root.selectedLimit
+                    )
+                }
             }
         }
 
@@ -99,6 +115,19 @@ Item {
                     radius: Theme.radius
                 }
 
+                MenuItem {
+                    visible: root.hasMultiSelection
+                    text: "⚡ Các câu đã chọn (" + (root.selectedIndices ? root.selectedIndices.length : 0) + " câu)"
+                    contentItem: Text { text: parent.text; color: Theme.accentCyan; font.pixelSize: 12; font.bold: true }
+                    onTriggered: {
+                        root.controller.startBatchWithIndices(
+                            root.sourceLanguage,
+                            root.targetLanguage,
+                            root.storySummary,
+                            root.selectedIndices
+                        )
+                    }
+                }
                 MenuItem {
                     text: "⚡ 5 câu (Đoạn ngắn)"
                     contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }

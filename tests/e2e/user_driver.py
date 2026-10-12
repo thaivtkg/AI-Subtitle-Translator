@@ -36,6 +36,7 @@ class UserDriver:
         return None
 
     def click(self, object_name):
+        QTest.qWait(20)
         item = self.find(object_name)
         width = item.property("width")
         height = item.property("height")

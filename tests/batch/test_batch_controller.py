@@ -233,3 +233,19 @@ def test_batch_start_backward_compatible_signature():
     controller.startBatch("English", "Vietnamese", "")
     assert controller.state == "RUNNING"
 
+
+def test_batch_start_with_specific_indices():
+    model = SubtitleModel()
+    data = [
+        {"index": i, "original": f"Line {i}", "status": "PENDING"} for i in range(10)
+    ]
+    model.load_data(data)
+    service = FakeBatchService()
+    controller = BatchController(model, service, "test_proj")
+
+    controller.startBatchWithIndices("English", "Vietnamese", "", [1, 3, 4, 5])
+
+    assert controller.totalCount == 4
+    assert list(controller._job.items.keys()) == [1, 3, 4, 5]
+
+

@@ -35,6 +35,7 @@ ApplicationWindow {
         targetLanguage: "Vietnamese"
         storySummary: mainWindow.globalStorySummary
         currentSubtitleIndex: subListView.currentIndex
+        selectedIndices: subListView.selectedIndices
         onOpenSrtClicked: {
             if (!batchController.executionLocked) importSrtDialog.open()
         }
@@ -96,7 +97,7 @@ ApplicationWindow {
         // CỘT 1: SUBTITLE NAVIGATOR
         Rectangle {
             SplitView.preferredWidth: 320
-            SplitView.minimumWidth: 250
+            SplitView.minimumWidth: 260
             SplitView.maximumWidth: 450
             color: Theme.bgSurface
 
@@ -143,7 +144,7 @@ ApplicationWindow {
         // CỘT 3: CONTEXT INSPECTOR (Giữ chỗ cho S2-T8)
         Rectangle {
             SplitView.preferredWidth: 300
-            SplitView.minimumWidth: 250
+            SplitView.minimumWidth: 280
             SplitView.maximumWidth: 400
             color: Theme.bgSurface
 

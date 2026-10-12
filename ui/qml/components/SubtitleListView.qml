@@ -13,6 +13,7 @@ ColumnLayout {
     property string currentFilter: "ALL" // "ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"
     property string searchQuery: ""
     property int filteredCount: subListView.count
+    property var selectedIndices: []
 
     property int currentChunkSize: 0 // 0 = Tất cả câu
     property int currentPage: 1
@@ -45,13 +46,16 @@ ColumnLayout {
             id: searchLayout
             anchors.fill: parent
             anchors.margins: Theme.spaceSmall
-            spacing: Theme.spaceMedium
+            spacing: Theme.spaceSmall
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
 
             // Search
             TextField {
                 objectName: "searchInput"
                 id: searchInput
                 Layout.fillWidth: true
+                Layout.minimumWidth: 50
                 placeholderText: "Tìm kiếm..."
                 font.pixelSize: 12
                 color: Theme.textPrimary
@@ -67,6 +71,8 @@ ColumnLayout {
             ComboBox {
                 objectName: "chunkFilterCombo"
                 id: chunkFilterCombo
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 Layout.preferredWidth: 105
                 Layout.preferredHeight: 32
                 font.pixelSize: 12
@@ -156,7 +162,9 @@ ColumnLayout {
             ComboBox {
                 objectName: "statusFilterCombo"
                 id: filterCombo
-                Layout.preferredWidth: 120
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 105
                 Layout.preferredHeight: 32
                 font.pixelSize: 12
                 model: ["Tất cả", "Chờ dịch", "Đang dịch", "Đã dịch", "Đã sửa", "Lỗi", "Đã duyệt"]
@@ -253,6 +261,9 @@ ColumnLayout {
             if (count > 0 && currentIndex < 0) {
                 currentIndex = 0
             }
+            if (count === 0) {
+                root.selectedIndices = []
+            }
             root.updatePagination()
         }
         onCurrentIndexChanged: { if (currentIndex >= 0) translationController.loadSubtitle(currentIndex) }
@@ -271,7 +282,7 @@ ColumnLayout {
                                        (root.currentFilter === "PENDING" && (normalizedStatus === "PENDING" || normalizedStatus === "")) ||
                                        normalizedStatus === root.currentFilter
             property bool matchChunk: root.selectedChunkStart < 0 || (index >= root.selectedChunkStart && index <= root.selectedChunkEnd)
-            property bool isSelected: ListView.isCurrentItem
+            property bool isSelected: (root.selectedIndices.indexOf(index) !== -1) || (root.selectedIndices.length <= 1 && ListView.isCurrentItem)
             property bool hasTranslation: typeof translationText !== "undefined" && String(translationText).trim().length > 0
             
             property string durationStr: {
@@ -295,7 +306,28 @@ ColumnLayout {
 
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: isSelected ? 0 : 0.4; visible: delegateItem.visible }
 
-            MouseArea { id: mouseArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: subListView.currentIndex = index }
+            MouseArea {
+                id: mouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                acceptedButtons: Qt.LeftButton
+                onClicked: function(mouse) {
+                    if (mouse.modifiers & Qt.ControlModifier) {
+                        var list = root.selectedIndices.slice()
+                        var pos = list.indexOf(index)
+                        if (pos !== -1) {
+                            list.splice(pos, 1)
+                        } else {
+                            list.push(index)
+                        }
+                        root.selectedIndices = list
+                    } else {
+                        root.selectedIndices = [index]
+                    }
+                    subListView.currentIndex = index
+                }
+            }
 
             ColumnLayout {
                 anchors.fill: parent

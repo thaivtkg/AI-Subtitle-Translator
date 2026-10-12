@@ -12,6 +12,7 @@ ColumnLayout {
         id: contextTabs
         objectName: "contextTabs"
         Layout.fillWidth: true
+        Layout.minimumWidth: 0
         background: Rectangle { 
             color: "transparent"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border } 
@@ -19,7 +20,7 @@ ColumnLayout {
         
         TabButton {
             text: "TIMELINE"
-            width: implicitWidth + 24
+            width: Math.max(implicitWidth, contextTabs.width / 3)
             contentItem: Text {
                 text: parent.text
                 font.pixelSize: 11
@@ -27,6 +28,7 @@ ColumnLayout {
                 color: parent.checked ? Theme.accentCyan : Theme.textSecondary
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
             }
             background: Rectangle {
                 color: "transparent"
@@ -40,7 +42,7 @@ ColumnLayout {
         }
         TabButton {
             text: "INTELLIGENCE"
-            width: implicitWidth + 24
+            width: Math.max(implicitWidth, contextTabs.width / 3)
             contentItem: Text {
                 text: parent.text
                 font.pixelSize: 11
@@ -48,6 +50,7 @@ ColumnLayout {
                 color: parent.checked ? Theme.accentCyan : Theme.textSecondary
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
             }
             background: Rectangle {
                 color: "transparent"
@@ -61,7 +64,7 @@ ColumnLayout {
         }
         TabButton {
             text: "SUMMARY"
-            width: implicitWidth + 24
+            width: Math.max(implicitWidth, contextTabs.width / 3)
             contentItem: Text {
                 text: parent.text
                 font.pixelSize: 11
@@ -69,6 +72,7 @@ ColumnLayout {
                 color: parent.checked ? Theme.accentCyan : Theme.textSecondary
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
             }
             background: Rectangle {
                 color: "transparent"
@@ -109,6 +113,7 @@ ColumnLayout {
                     font.pixelSize: 13
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                 }
             }
             
@@ -136,6 +141,7 @@ ColumnLayout {
                     font.pixelSize: 13
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                 }
             }
             Item { Layout.fillHeight: true }
@@ -147,6 +153,7 @@ ColumnLayout {
             
             Text {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 Layout.alignment: Qt.AlignHCenter
                 text: "Không tìm thấy thuật ngữ (Glossary) hoặc bộ nhớ dịch (TM) khớp với câu này."
                 color: Theme.textMuted

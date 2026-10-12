@@ -15,6 +15,7 @@ ToolBar {
     property string targetLanguage: "Vietnamese"
     property string storySummary: ""
     property int currentSubtitleIndex: 0
+    property var selectedIndices: []
     readonly property bool isCompact: width < 1280
     readonly property bool isMinimum: width < 1100
 
@@ -183,6 +184,7 @@ ToolBar {
                         storySummary: root.storySummary
                         isCompact: root.isMinimum
                         currentSubtitleIndex: root.currentSubtitleIndex
+                        selectedIndices: root.selectedIndices
                     }
 
                     Rectangle {
