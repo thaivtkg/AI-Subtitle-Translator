@@ -202,3 +202,34 @@ def test_tc_p3a7_10_action_calls_are_forwarded_to_service(model):
         "start", "pause", "resume", "cancel"
     ]
     assert all(call_job is job for _, call_job in service.calls)
+
+
+def test_batch_start_with_limit_and_circular_rollover():
+    model = SubtitleModel()
+    data = [
+        {"index": i, "original": f"Line {i}", "status": "TRANSLATED"} for i in range(10)
+    ]
+    data[8]["status"] = "PENDING"
+    data[9]["status"] = "PENDING"
+    data[0]["status"] = "PENDING"
+    data[1]["status"] = "PENDING"
+    model.load_data(data)
+
+    service = FakeBatchService()
+    controller = BatchController(model, service, "test_proj")
+
+    controller.startBatch("English", "Vietnamese", "", start_index=8, limit=4)
+
+    assert controller.totalCount == 4
+    assert list(controller._job.items.keys()) == [8, 9, 0, 1]
+
+
+def test_batch_start_backward_compatible_signature():
+    model = SubtitleModel()
+    model.load_data([{"index": 0, "original": "Line 0", "status": "PENDING"}])
+    service = FakeBatchService()
+    controller = BatchController(model, service, "test_proj")
+
+    controller.startBatch("English", "Vietnamese", "")
+    assert controller.state == "RUNNING"
+

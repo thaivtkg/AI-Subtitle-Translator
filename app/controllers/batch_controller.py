@@ -121,17 +121,50 @@ class BatchController(QObject):
         )
 
     @Slot(str, str, str)
-    def startBatch(self, source_lang, target_lang, story_summary):
+    @Slot(str, str, str, int)
+    @Slot(str, str, str, int, int)
+    def startBatch(
+        self,
+        source_lang: str,
+        target_lang: str,
+        story_summary: str,
+        start_index: int = 0,
+        limit: int = 0,
+    ) -> None:
         if not self.canStart:
             raise RuntimeError("Cannot start batch")
+
+        all_data = self._subtitle_model.get_all_data()
+        total_len = len(all_data)
+        if total_len == 0:
+            return
+
+        start_pos = max(0, min(start_index, total_len - 1))
+
+        # Duyệt tuần hoàn từ start_pos đến hết rồi vòng lại từ 0 đến start_pos
+        traversal_order = list(range(start_pos, total_len)) + list(range(0, start_pos))
+
+        target_indices = []
+        seen = set()
+        for idx in traversal_order:
+            if idx in seen:
+                continue
+            seen.add(idx)
+            st = str(all_data[idx].get("status", "PENDING")).upper()
+            if st == "PENDING":
+                target_indices.append(idx)
+                if limit > 0 and len(target_indices) >= limit:
+                    break
+
+        if not target_indices:
+            return
 
         items = {
             index: BatchItem(
                 target_index=index,
-                source_hash=compute_source_hash(str(subtitle.get("original", ""))),
+                source_hash=compute_source_hash(str(all_data[index].get("original", ""))),
             )
-            for index, subtitle in enumerate(self._subtitle_model.get_all_data())
-            if str(subtitle.get("status", "PENDING")).upper() == "PENDING"
+            for index in target_indices
         }
         self._config = (source_lang, target_lang, story_summary)
         self._job = BatchJob.create(self._project_id, items)
