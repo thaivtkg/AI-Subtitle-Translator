@@ -5,68 +5,18 @@ import "../theme"
 
 Item {
     id: root
-    property string emptyStateMode: "no_project"
+    property string emptyStateMode: "no_selection"
     signal openSrtClicked()
     signal openProjectClicked()
 
-    DropArea {
-        id: dropArea
-        anchors.fill: parent
-        enabled: root.emptyStateMode === "no_project"
-
-        onEntered: (drag) => {
-            if (!drag.hasUrls) {
-                drag.accepted = false
-                return
-            }
-            var hasValid = false
-            for (var i = 0; i < drag.urls.length; i++) {
-                var url = drag.urls[i].toString().toLowerCase()
-                if (url.endsWith(".srt") || url.endsWith(".aisrt")) {
-                    hasValid = true
-                    break
-                }
-            }
-            drag.accepted = hasValid
-        }
-
-        onDropped: (drop) => {
-            if (drop.hasUrls && drop.urls.length > 0) {
-                for (var i = 0; i < drop.urls.length; i++) {
-                    var urlStr = drop.urls[i].toString()
-                    var lower = urlStr.toLowerCase()
-                    if (lower.endsWith(".srt")) {
-                        if (typeof projectController !== "undefined") {
-                            projectController.importSrt(urlStr)
-                        }
-                        break
-                    } else if (lower.endsWith(".aisrt")) {
-                        if (typeof projectController !== "undefined") {
-                            projectController.loadProject(urlStr)
-                        }
-                        break
-                    }
-                }
-            }
-        }
-    }
-
     Rectangle {
-        id: dropCard
         anchors.centerIn: parent
-        width: Math.min(parent.width * 0.85, 460)
+        width: Math.min(parent.width * 0.85, 520)
         implicitHeight: cardContent.implicitHeight + Theme.spaceLarge * 2
-        radius: Theme.radius * 2
-        color: root.emptyStateMode === "no_project" && dropArea.containsDrag
-               ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.08)
-               : Theme.bgSurface
-        border.color: root.emptyStateMode === "no_project" && dropArea.containsDrag
-                      ? Theme.accentCyan
-                      : Theme.border
-        border.width: root.emptyStateMode === "no_project" && dropArea.containsDrag ? 2 : 1
-
-        Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
-        Behavior on border.color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
+        radius: 12
+        color: Theme.bgSurface
+        border.color: Theme.border
+        border.width: 1
 
         ColumnLayout {
             id: cardContent
@@ -74,66 +24,67 @@ Item {
             width: parent.width - Theme.spaceLarge * 2
             spacing: Theme.spaceMedium
 
-            Rectangle {
-                Layout.alignment: Qt.AlignHCenter
-                width: 52
-                height: 52
-                radius: 26
-                color: Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.12)
-                border.color: Theme.accentCyan
-                border.width: 1
-
-                Text {
-                    anchors.centerIn: parent
-                    text: root.emptyStateMode === "no_project"
-                          ? (dropArea.containsDrag ? "📥" : "⤓")
-                          : "◈"
-                    color: Theme.accentCyan
-                    font.pixelSize: 22
-                    font.bold: true
-                }
-            }
-
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                text: root.emptyStateMode === "no_project"
-                      ? (dropArea.containsDrag ? "Thả tệp vào đây để mở" : "Chưa mở dự án phụ đề")
-                      : "Chọn một câu phụ đề"
-                color: Theme.textPrimary
-                font.pixelSize: 18
+                text: "⚡ HƯỚNG DẪN THAO TÁC NHANH"
+                color: Theme.accentCyan
+                font.pixelSize: 14
                 font.bold: true
-                horizontalAlignment: Text.AlignHCenter
+                font.letterSpacing: 1.5
             }
 
             Text {
-                Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter
-                text: root.emptyStateMode === "no_project"
-                      ? (dropArea.containsDrag
-                         ? "Nhả chuột để tải tệp .srt hoặc .aisrt ngay lập tức"
-                         : "Kéo thả tệp .srt hoặc .aisrt vào đây, hoặc nhấn nút bên dưới để bắt đầu dịch thuật.")
-                      : "Chọn một câu phụ đề từ danh sách bên trái để xem, chỉnh sửa hoặc dịch câu."
-                color: Theme.textMuted
+                text: "Chọn một câu phụ đề bên trái để bắt đầu dịch"
+                color: Theme.textSecondary
                 font.pixelSize: 13
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                lineHeight: 1.3
+                Layout.bottomMargin: Theme.spaceSmall
             }
 
-            RowLayout {
-                visible: root.emptyStateMode === "no_project"
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: Theme.spaceSmall
-                spacing: Theme.spaceMedium
+            GridLayout {
+                Layout.fillWidth: true
+                columns: 2
+                rowSpacing: Theme.spaceMedium
+                columnSpacing: Theme.spaceLarge
 
-                AppButton {
-                    text: "Mở file SRT"
-                    isPrimary: true
-                    onClicked: root.openSrtClicked()
+                // Phím tắt 1
+                RowLayout {
+                    spacing: Theme.spaceSmall
+                    Rectangle {
+                        width: 32; height: 32; radius: 6; color: Theme.bgSurfaceSoft; border.color: Theme.border
+                        Text { anchors.centerIn: parent; text: "T"; color: Theme.textPrimary; font.bold: true; font.pixelSize: 14 }
+                    }
+                    Text { text: "Dịch bằng AI"; color: Theme.textSecondary; font.pixelSize: 12 }
                 }
-                AppButton {
-                    text: "Mở file dự án"
-                    onClicked: root.openProjectClicked()
+
+                // Phím tắt 2
+                RowLayout {
+                    spacing: Theme.spaceSmall
+                    Rectangle {
+                        width: 32; height: 32; radius: 6; color: Theme.bgSurfaceSoft; border.color: Theme.border
+                        Text { anchors.centerIn: parent; text: "↵"; color: Theme.textPrimary; font.bold: true; font.pixelSize: 16 }
+                    }
+                    Text { text: "Duyệt & Tới câu tiếp"; color: Theme.textSecondary; font.pixelSize: 12 }
+                }
+
+                // Phím tắt 3
+                RowLayout {
+                    spacing: Theme.spaceSmall
+                    Rectangle {
+                        width: 32; height: 32; radius: 6; color: Theme.bgSurfaceSoft; border.color: Theme.border
+                        Text { anchors.centerIn: parent; text: "↑↓"; color: Theme.textPrimary; font.bold: true; font.pixelSize: 14 }
+                    }
+                    Text { text: "Điều hướng danh sách câu"; color: Theme.textSecondary; font.pixelSize: 12 }
+                }
+
+                // Phím tắt 4
+                RowLayout {
+                    spacing: Theme.spaceSmall
+                    Rectangle {
+                        width: 32; height: 32; radius: 6; color: Theme.bgSurfaceSoft; border.color: Theme.border
+                        Text { anchors.centerIn: parent; text: "S"; color: Theme.textPrimary; font.bold: true; font.pixelSize: 14 }
+                    }
+                    Text { text: "Lưu dự án"; color: Theme.textSecondary; font.pixelSize: 12 }
                 }
             }
         }

@@ -5,206 +5,197 @@ import "../theme"
 
 ColumnLayout {
     id: inspectorRoot
-    spacing: Theme.spaceMedium
-
-    // --- 1. STORY SUMMARY (Muted Surface / Editable) ---
-    ColumnLayout {
+    spacing: 0
+    
+    // TAB BAR
+    TabBar {
+        id: contextTabs
+        objectName: "contextTabs"
+        Layout.fillWidth: true
+        background: Rectangle { 
+            color: "transparent"
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border } 
+        }
+        
+        TabButton {
+            text: "TIMELINE"
+            width: implicitWidth + 24
+            contentItem: Text {
+                text: parent.text
+                font.pixelSize: 11
+                font.bold: parent.checked
+                color: parent.checked ? Theme.accentCyan : Theme.textSecondary
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: "transparent"
+                Rectangle {
+                    width: parent.width
+                    height: 2
+                    anchors.bottom: parent.bottom
+                    color: parent.parent.checked ? Theme.accentCyan : "transparent"
+                }
+            }
+        }
+        TabButton {
+            text: "INTELLIGENCE"
+            width: implicitWidth + 24
+            contentItem: Text {
+                text: parent.text
+                font.pixelSize: 11
+                font.bold: parent.checked
+                color: parent.checked ? Theme.accentCyan : Theme.textSecondary
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: "transparent"
+                Rectangle {
+                    width: parent.width
+                    height: 2
+                    anchors.bottom: parent.bottom
+                    color: parent.parent.checked ? Theme.accentCyan : "transparent"
+                }
+            }
+        }
+        TabButton {
+            text: "SUMMARY"
+            width: implicitWidth + 24
+            contentItem: Text {
+                text: parent.text
+                font.pixelSize: 11
+                font.bold: parent.checked
+                color: parent.checked ? Theme.accentCyan : Theme.textSecondary
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: "transparent"
+                Rectangle {
+                    width: parent.width
+                    height: 2
+                    anchors.bottom: parent.bottom
+                    color: parent.parent.checked ? Theme.accentCyan : "transparent"
+                }
+            }
+        }
+    }
+    
+    StackLayout {
+        currentIndex: contextTabs.currentIndex
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.preferredHeight: translationController.currentOriginal ? 20 : 40
-        spacing: Theme.spaceXs
-
-        Text {
-            text: "BỐI CẢNH & QUY TẮC"
-            color: Theme.textSecondary
-            font.pixelSize: 12
-            font.bold: true
-            Layout.leftMargin: Theme.spaceXs
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: Theme.bgSurface
-            radius: Theme.radius
-            border.color: summaryInput.activeFocus ? Theme.accentCyan : Theme.border
-            border.width: 1
-            Behavior on border.color { ColorAnimation { duration: 100 } }
-
-            ScrollView {
-                anchors.fill: parent
-                anchors.margins: Theme.spaceSmall
-                TextArea {
-                    objectName: "storySummaryInput"
-                    id: summaryInput
-                    text: globalStorySummary
-                    placeholderText: "Nhập quy tắc dịch, bối cảnh, xưng hô..."
-                    color: Theme.textPrimary
-                    font.pixelSize: 14
+        Layout.margins: Theme.spaceMedium
+        
+        // TAB 1: TIMELINE
+        ColumnLayout {
+            spacing: Theme.spaceMedium
+            
+            // --- PREV CONTEXT ---
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spaceXs
+                
+                Text {
+                    text: "CÂU TRƯỚC"
+                    color: Theme.textMuted
+                    font.pixelSize: 11
+                    font.bold: true
+                }
+                Text {
+                    text: translationController.contextPrev !== "" ? translationController.contextPrev : "Không có ngữ cảnh trước."
+                    color: Theme.textSecondary
+                    font.pixelSize: 13
                     wrapMode: Text.WordWrap
-                    background: null
-                    selectByMouse: true
-                    Keys.onPressed: function(event) {
-                        if (event.key !== Qt.Key_Tab) return
+                    Layout.fillWidth: true
+                }
+            }
+            
+            // Current marker
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: Theme.border
+            }
+            
+            // --- NEXT CONTEXT ---
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spaceXs
+                
+                Text {
+                    text: "CÂU TIẾP THEO"
+                    color: Theme.textMuted
+                    font.pixelSize: 11
+                    font.bold: true
+                }
+                Text {
+                    text: translationController.contextNext !== "" ? translationController.contextNext : "Không có ngữ cảnh sau."
+                    color: Theme.textSecondary
+                    font.pixelSize: 13
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+            }
+            Item { Layout.fillHeight: true }
+        }
+        
+        // TAB 2: INTELLIGENCE
+        ColumnLayout {
+            spacing: Theme.spaceMedium
+            
+            Text {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                text: "Không tìm thấy thuật ngữ (Glossary) hoặc bộ nhớ dịch (TM) khớp với câu này."
+                color: Theme.textMuted
+                font.pixelSize: 12
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Item { Layout.fillHeight: true }
+        }
+        
+        // TAB 3: SUMMARY
+        ColumnLayout {
+            spacing: Theme.spaceSmall
+            
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                color: Theme.bgSurface
+                radius: Theme.radius
+                border.color: summaryInput.activeFocus ? Theme.accentCyan : Theme.border
+                border.width: 1
+                
+                ScrollView {
+                    anchors.fill: parent
+                    anchors.margins: Theme.spaceSmall
+                    TextArea {
+                        objectName: "storySummaryInput"
+                        id: summaryInput
+                        text: typeof globalStorySummary !== "undefined" ? globalStorySummary : ""
+                        placeholderText: "Nhập quy tắc dịch, bối cảnh, xưng hô..."
+                        color: Theme.textPrimary
+                        font.pixelSize: 13
+                        wrapMode: Text.WordWrap
+                        background: null
+                        selectByMouse: true
+                        Keys.onPressed: function(event) {
+                            if (event.key !== Qt.Key_Tab) return
 
-                        const nextItem = summaryInput.nextItemInFocusChain(!(event.modifiers & Qt.ShiftModifier))
-                        if (nextItem) {
-                            nextItem.forceActiveFocus(Qt.TabFocusReason)
-                            event.accepted = true
+                            const nextItem = summaryInput.nextItemInFocusChain(!(event.modifiers & Qt.ShiftModifier))
+                            if (nextItem) {
+                                nextItem.forceActiveFocus(Qt.TabFocusReason)
+                                event.accepted = true
+                            }
+                        }
+                        onTextChanged: {
+                            globalStorySummary = text
+                            if (typeof projectController !== "undefined") projectController.markDirty()
                         }
                     }
-                    onTextChanged: {
-                        globalStorySummary = text
-                        if (typeof projectController !== "undefined") projectController.markDirty()
-                    }
-                }
-            }
-        }
-    }
-
-    // --- EMPTY STATE PLACEHOLDER (When no subtitle is selected) ---
-    Rectangle {
-        visible: !translationController.currentOriginal
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.preferredHeight: 60
-        color: Theme.bgSurface
-        radius: Theme.radius
-        border.color: Theme.border
-        border.width: 1
-
-        ColumnLayout {
-            anchors.centerIn: parent
-            width: parent.width - Theme.spaceLarge * 2
-            spacing: Theme.spaceSmall
-            opacity: 0.45
-
-            Text {
-                text: "💬"
-                font.pixelSize: 24
-                Layout.alignment: Qt.AlignHCenter
-            }
-            Text {
-                text: "Ngữ cảnh trước/sau sẽ hiển thị khi bạn chọn một câu phụ đề"
-                color: Theme.textMuted
-                font.pixelSize: 13
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-            }
-        }
-    }
-
-    // --- 2. PREVIOUS CONTEXT (Muted Surface / Read-only) ---
-    ColumnLayout {
-        visible: Boolean(translationController.currentOriginal)
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.preferredHeight: 20
-        spacing: Theme.spaceXs
-
-        Text {
-            text: "CÂU TRƯỚC"
-            color: Theme.textSecondary
-            font.pixelSize: 12
-            font.bold: true
-            Layout.leftMargin: Theme.spaceXs
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: Theme.bgSurface
-            radius: Theme.radius
-            border.color: Theme.border
-            border.width: 1
-
-            ScrollView {
-                anchors.fill: parent
-                anchors.margins: Theme.spaceSmall
-                Text {
-                    text: translationController.contextPrev || "Không có ngữ cảnh trước"
-                    color: translationController.contextPrev ? Theme.textSecondary : Theme.textDisabled
-                    font.pixelSize: 13
-                    wrapMode: Text.WordWrap
-                    lineHeight: 1.3
-                }
-            }
-        }
-    }
-
-    // --- 3. CURRENT HIGHLIGHT (Elevated Surface / Hero Context) ---
-    ColumnLayout {
-        visible: Boolean(translationController.currentOriginal)
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.preferredHeight: 35
-        spacing: Theme.spaceXs
-
-        Text {
-            text: "◆ CÂU HIỆN TẠI"
-            color: Theme.accentCyan
-            font.pixelSize: 12
-            font.bold: true
-            Layout.leftMargin: Theme.spaceXs
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: Theme.bgSurfaceElevated
-            radius: Theme.radius
-            border.color: Theme.accentCyan
-            border.width: 1
-
-            ScrollView {
-                anchors.fill: parent
-                anchors.margins: Theme.spaceMedium
-                Text {
-                    text: translationController.currentOriginal
-                    color: Theme.textPrimary
-                    font.pixelSize: 15
-                    wrapMode: Text.WordWrap
-                    font.bold: true
-                    lineHeight: 1.3
-                }
-            }
-        }
-    }
-
-    // --- 4. NEXT CONTEXT (Disabled text / Read-only) ---
-    ColumnLayout {
-        visible: Boolean(translationController.currentOriginal)
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.preferredHeight: 25
-        spacing: Theme.spaceXs
-
-        Text {
-            text: "CÂU KẾ TIẾP"
-            color: Theme.textSecondary
-            font.pixelSize: 12
-            font.bold: true
-            Layout.leftMargin: Theme.spaceXs
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: Theme.bgSurface
-            radius: Theme.radius
-            border.color: Theme.border
-            border.width: 1
-
-            ScrollView {
-                anchors.fill: parent
-                anchors.margins: Theme.spaceSmall
-                Text {
-                    text: translationController.contextNext || "Không có ngữ cảnh kế tiếp"
-                    color: translationController.contextNext ? Theme.textSecondary : Theme.textDisabled
-                    font.pixelSize: 13
-                    wrapMode: Text.WordWrap
-                    lineHeight: 1.3
                 }
             }
         }

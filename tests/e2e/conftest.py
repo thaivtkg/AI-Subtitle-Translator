@@ -9,8 +9,7 @@ _final_reports = {}
 
 
 def pytest_configure(config):
-    repo_root = Path(__file__).parents[2]
-    config.option.basetemp = tempfile.mkdtemp(prefix=".pytest-tmp-", dir=repo_root)
+    pass
 
 
 @pytest.hookimpl(hookwrapper=True)

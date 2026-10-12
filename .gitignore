@@ -52,3 +52,9 @@ artifacts/t15/
 .pytest-tmp/
 .pytest-tmp-*/
 artifacts/t15-real/
+
+# Pytest tmp folders
+.pytest-tmp-*
+.pytest_cache/
+
+.pytest_temp/

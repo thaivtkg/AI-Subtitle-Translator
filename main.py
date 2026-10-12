@@ -16,9 +16,8 @@ from app.core.hardware_detector import HardwareDetector
 from PySide6.QtQuickControls2 import QQuickStyle
 
 def main():
-    app = QGuiApplication(sys.argv)
-
     QQuickStyle.setStyle("Basic")
+    app = QGuiApplication(sys.argv)
     
     engine = QQmlApplicationEngine()
 

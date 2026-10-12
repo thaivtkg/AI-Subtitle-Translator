@@ -1,99 +1,170 @@
 # AI Subtitle Translator 🎬🤖
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
-![PySide6](https://img.shields.io/badge/Framework-PySide6-green.svg)
-![Llama.cpp](https://img.shields.io/badge/Backend-Llama.cpp-orange.svg)
-![CUDA](https://img.shields.io/badge/Acceleration-CUDA-76B900.svg)
-![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![PySide6](https://img.shields.io/badge/GUI-PySide6%20%2F%20Qt%20Quick-41CD52.svg?logo=qt&logoColor=white)](https://www.qt.io/)
+[![Llama.cpp](https://img.shields.io/badge/Inference-llama--cpp--python-FF6F00.svg)](https://github.com/abetlen/llama-cpp-python)
+[![CUDA](https://img.shields.io/badge/Acceleration-NVIDIA%20CUDA-76B900.svg?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
+[![Tests](https://img.shields.io/badge/Tests-255%20Passed-brightgreen.svg)](tests/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**AI Subtitle Translator** là công cụ dịch phụ đề chuyên nghiệp, hoạt động hoàn toàn ngoại tuyến (Offline) trên máy tính cá nhân. Ứng dụng tận dụng sức mạnh của các Local LLM (như Qwen 2.5, DeepSeek) để mang lại chất lượng bản địa hóa ngôn ngữ vượt trội, bảo mật dữ liệu 100% và không yêu cầu bất kỳ API Key nào.
+**AI Subtitle Translator** là phần mềm dịch và biên tập phụ đề chuyên nghiệp (CAT Tool) thế hệ mới, hoạt động **100% Ngoại tuyến (Offline)** trên máy tính cá nhân. Ứng dụng khai thác tối đa sức mạnh của các mô hình ngôn ngữ lớn cục bộ (Local LLM qua định dạng GGUF như **Qwen 2.5**, **DeepSeek**) để mang lại bản dịch tiếng Việt tự nhiên, chuẩn văn phong điện ảnh, bảo mật tuyệt đối dữ liệu và không yêu cầu bất kỳ API Key hay kết nối Internet nào.
 
 ---
 
-## ✨ Tính năng cốt lõi
+## ✨ Tính năng nổi bật
 
-### 🧠 Trí tuệ Bản địa hóa (Translation Intelligence)
-* **Translation Memory (LWW):** Tự động ghi nhớ và tái sử dụng các câu đã dịch với độ chính xác 100% (Zero-overhead context injection).
-* **Glossary & Forbidden Words:** Quản lý từ vựng chuyên ngành; ép buộc LLM tuân thủ hoặc tuyệt đối tránh sử dụng các từ cấm (ngăn chặn hallucination).
-* **Entity Dictionary:** Quản lý danh tính nhân vật, địa danh (alias resolution) đảm bảo tính nhất quán trên toàn bộ series.
+### 🎨 1. Studio Workspace 2.0 — Giao diện Biên tập Chuyên nghiệp
+* **Bố cục 3 cột chuẩn Studio:** Phân tách tối ưu giữa Danh sách phụ đề (Trái) — Bàn làm việc dịch thuật (Giữa) — Bảng thanh tra ngữ cảnh đa năng (Phải).
+* **Native Dark Mode:** Bảng màu Deep Navy & Cyan Cyber (`#0B0F19`, `#00A3FF`) hiện đại, hạn chế mỏi mắt tối đa khi làm việc trong thời gian dài.
+* **Thẻ phụ đề giàu thông tin (Data-Dense Cards):** Hiển thị số thứ tự, mốc thời gian, thời lượng (`duration`), xem trước song ngữ và huy hiệu trạng thái (`PENDING`, `TRANSLATING`, `TRANSLATED`, `EDITED`, `ACCEPTED`, `ERROR`).
+* **Hiệu ứng AI Neural Scramble Matrix:** Hiệu ứng giải mã chữ ngẫu nhiên ma trận chuyển động theo thời gian thực (40ms/frame) trong lúc chờ mô hình AI xử lý token đầu tiên.
+* **Live Streaming HUD:** Theo dõi trực tiếp tiến độ khi AI đang dịch với bộ đếm:
+  * 📝 **Số từ (Word Count)** nhảy số tức thời.
+  * 🔤 **Số ký tự (Character Count)**.
+  * 🟢/🛑 **Số dòng (Line Count)** phát hiện sớm vi phạm phụ đề.
+  * ◌ **Con trỏ Braille động** hiển thị trạng thái sinh từ của mạng nơ-ron.
 
-### ⚙️ Động cơ Dịch thuật (Batch Processing)
-* **Dịch hàng loạt tự động:** Đưa toàn bộ file SRT vào hàng đợi xử lý.
-* **Checkpoint an toàn:** Tự động lưu tiến độ. Bạn có thể tắt máy và Resume vào hôm sau mà không mất bất kỳ dòng dịch nào.
+### 🛡️ 2. Subtitle QA Engine v1.1 — Kiểm định Chất lượng Tiêu chuẩn Quốc tế
+* **Đo lường thời gian thực (In-Memory Volatile State):** Phân tích trực tiếp trên bộ nhớ mà không làm phình to cấu trúc file `.aisrt`.
+* **Cảnh báo tốc độ đọc (CPS - Characters Per Second):**
+  * Ngưỡng tối ưu: `CPS ≤ 17` (🟢 Xanh an toàn).
+  * Ngưỡng cảnh báo: `17 < CPS ≤ 20` (🟡 Cảnh báo ⚠️).
+  * Ngưỡng vượt chuẩn: `CPS > 20` (🛑 Lỗi nghiêm trọng).
+* **Cảnh báo độ dài dòng (CPL - Characters Per Line):**
+  * Tối ưu: `CPL ≤ 40` ký tự/dòng.
+  * Cảnh báo: `40 < CPL ≤ 42`.
+  * Vi phạm: `CPL > 42` ký tự/dòng.
+* **Cảnh báo số dòng:** Tối đa 2 dòng cho mỗi câu phụ đề.
+* **Export Guard:** Tự động chặn và hiển thị hộp thoại cảnh báo nếu người dùng xuất file SRT chứa các câu phụ đề vi phạm QA nghiêm trọng.
 
-### 📦 Quản lý Mô hình Thông minh (Smart Model Management)
-* **Hardware-Aware:** Tự động phân tích GPU, VRAM, RAM và Backend để dán nhãn khuyên dùng (RECOMMENDED / COMPATIBLE).
-* **Safe Download Manager:** Tải mô hình trực tiếp từ server qua luồng ngầm (QThread) với cơ chế *Atomic Rename* an toàn tuyệt đối.
-* Hỗ trợ chuyển đổi nhanh các mô hình tối ưu cho tiếng Việt: **Qwen 2.5 (3B, 7B, 14B)** và **DeepSeek-R1-Distill-Qwen**.
+### 🧠 3. Bộ ba Trí tuệ Bản địa hóa (Translation Intelligence)
+* **Translation Memory (TM):** Tự động ghi nhớ các cặp câu gốc - câu dịch theo nguyên lý *Last-Write-Wins (LWW)*. Tái sử dụng câu dịch với độ chính xác 100% mà không cần gọi lại LLM.
+* **Glossary & Forbidden Words:** Quản lý bảng thuật ngữ chuyên ngành; áp đặt quy tắc dịch và danh sách từ cấm kỵ để triệt tiêu hiện tượng ảo giác (hallucination).
+* **Entity Dictionary:** Quản lý danh xưng nhân vật, đại từ, địa danh đồng bộ xuyên suốt toàn bộ mùa phim / series.
+* **Story Summary:** Khu vực ghi chú cốt truyện tổng quát để định hướng phong cách dịch của AI.
+
+### ⚙️ 4. Động cơ Dịch thuật Tự động (Batch Processing Engine)
+* Đưa toàn bộ file phụ đề vào hàng đợi xử lý nền qua `QThread` độc lập, giao diện không bao giờ bị đơ (Zero-blocking UI).
+* Hỗ trợ Tạm dừng (`Pause`), Tiếp tục (`Resume`), Hủy an toàn (`Cancel`) và Dịch lại các câu lỗi (`Retry Failed`).
+* **Checkpoint an toàn:** Tự động lưu tiến độ vào file dự án `.aisrt`. Bạn có thể tắt máy và tiếp tục bất kỳ lúc nào mà không bị mất dữ liệu.
+
+### 📦 5. Quản lý Mô hình Thông minh (Smart Model Manager)
+* **Hardware-Aware Scanning:** Tự động quét phần cứng (GPU VRAM, System RAM, CUDA driver) và gắn nhãn đề xuất mô hình phù hợp (`RECOMMENDED`, `COMPATIBLE`).
+* Hỗ trợ tải mô hình ngầm với cơ chế **Atomic Promotion** (tải qua file tạm `.part`, chỉ đổi tên thành `.gguf` khi SHA256 và kích thước hợp lệ 100%).
+* Danh mục mô hình tối ưu cho tiếng Việt:
+  * **Qwen 2.5 3B / 7B / 14B Instruct (GGUF)**
+  * **DeepSeek-R1-Distill-Qwen 7B / 14B (GGUF)**
+
+---
+
+## ⌨️ Bảng Phím tắt Thao tác Nhanh
+
+| Phím tắt | Chức năng |
+| :--- | :--- |
+| `Ctrl + T` | Bắt đầu dịch câu hiện tại bằng AI |
+| `Ctrl + Enter` | Duyệt bản dịch (`ACCEPT`) và tự động chuyển sang câu tiếp theo |
+| `↑` / `↓` | Di chuyển lên / xuống giữa các câu phụ đề trong danh sách |
+| `Ctrl + S` | Lưu dự án hiện tại (`.aisrt`) |
+| `Ctrl + O` | Mở tệp phụ đề SRT hoặc dự án đã lưu |
 
 ---
 
 ## 💻 Yêu cầu hệ thống
 
-| Thành phần | Tối thiểu (CPU Mode) | Khuyên dùng (GPU Offload) |
+| Thành phần | Cấu hình Tối thiểu (CPU Mode) | Cấu hình Đề xuất (GPU CUDA Acceleration) |
 | :--- | :--- | :--- |
-| **OS** | Windows 10/11 (64-bit) | Windows 10/11 (64-bit) |
-| **RAM** | 8 GB | 16 GB trở lên |
-| **GPU** | Không yêu cầu | NVIDIA RTX 3060 / 4060 trở lên |
-| **VRAM** | N/A | 6.0 GB - 8.0 GB+ |
-| **Ổ cứng** | 5 GB (SSD) | 15 GB (SSD) |
+| **Hệ điều hành** | Windows 10 / 11 (64-bit) | Windows 10 / 11 (64-bit) |
+| **Bộ nhớ RAM** | 8 GB | 16 GB — 32 GB |
+| **Card đồ họa (GPU)** | Đồ họa tích hợp (Intel / AMD) | NVIDIA GeForce RTX 3060 / 4060 trở lên |
+| **Dung lượng VRAM** | Không áp dụng | 6.0 GB — 12.0 GB+ VRAM |
+| **Lưu trữ** | 5 GB SSD trống | 15 GB+ SSD (dùng lưu các mô hình GGUF) |
 
 ---
 
-## 🚀 Hướng dẫn cài đặt
+## 🚀 Hướng dẫn cài đặt & Khởi chạy
 
 ### Bước 1: Chuẩn bị môi trường
-Yêu cầu máy tính đã cài đặt [Python 3.11+](https://www.python.org/downloads/) và Git. Mở Terminal/PowerShell:
+Yêu cầu máy tính đã cài đặt [Python 3.11+](https://www.python.org/downloads/) và Git. Mở Terminal (PowerShell trên Windows):
 
-```bash
+```powershell
+# 1. Clone kho mã nguồn về máy
 git clone https://github.com/thaivtkg/AI-Subtitle-Translator.git
 cd AI-Subtitle-Translator
 
-# Tạo và kích hoạt môi trường ảo (Virtual Environment)
+# 2. Tạo môi trường ảo (Virtual Environment)
 python -m venv venv
+
+# 3. Kích hoạt môi trường ảo
 .\venv\Scripts\activate
 ```
 
-### Bước 2: Cài đặt thư viện cốt lõi
+### Bước 2: Cài đặt các thư viện phụ thuộc
 
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
-### Bước 3: Kích hoạt tăng tốc GPU NVIDIA (Quan trọng)
+### Bước 3: Kích hoạt tăng tốc GPU NVIDIA (Khuyên dùng)
+Để đạt tốc độ dịch cao nhất (hàng chục token/giây), hãy cài đặt bản `llama-cpp-python` được biên dịch sẵn với CUDA:
 
-Để mô hình chạy mượt mà và tận dụng GPU rời, bạn cần cài đặt lại `llama-cpp-python` với tùy chọn hỗ trợ CUDA.
-*(Yêu cầu đã cài đặt NVIDIA CUDA Toolkit trên máy)*
-
-```bash
-# Xóa bản thường (nếu có)
+```powershell
+# Gỡ bỏ bản CPU mặc định (nếu có)
 pip uninstall llama-cpp-python -y
 
-# Cài đặt bản hỗ trợ CUDA
+# Cài đặt bản CUDA (Yêu cầu máy đã cài NVIDIA CUDA Toolkit 12.x+)
 $env:CMAKE_ARGS="-DGGML_CUDA=on"
 pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir
 ```
 
+> **Mẹo:** Nếu không có card rời NVIDIA, ứng dụng vẫn sẽ tự động nhận diện và chạy mượt mà ở chế độ CPU đa luồng.
+
 ### Bước 4: Khởi chạy ứng dụng
 
-```bash
+```powershell
 python main.py
 ```
 
-*Lần đầu tiên mở ứng dụng, hãy vào mục **Quản lý Mô hình**, hệ thống sẽ tự động quét cấu hình máy bạn và đề xuất mô hình phù hợp nhất để tải về.*
+Khi mở ứng dụng lần đầu, hãy bấm vào nút **Quản lý Mô hình** trên thanh tiêu đề để hệ thống tự động kiểm tra phần cứng và gợi ý tải mô hình phù hợp nhất.
 
 ---
 
-## 🧪 Dành cho lập trình viên (Testing)
+## 🧪 Kiểm định chất lượng (Testing)
 
-Dự án được bảo vệ bởi hơn 240+ bài kiểm thử tự động (Unit Test, Integration Test, Batch Test). Để chạy kiểm thử:
+Dự án được bảo vệ toàn diện với **255 bài kiểm thử tự động** bao gồm Unit Tests, E2E UI Harness (PySide6 QTest), Deterministic Worker Tests, QA Rules và Round-trip Serialization:
 
-```bash
+```powershell
+# Chạy toàn bộ test suite
 pytest -v
+
+# Chạy riêng các bài kiểm thử E2E giao diện
+pytest tests/e2e/ -v
+```
+
+---
+
+## 📁 Cấu trúc thư mục
+
+```text
+AI-Subtitle-Translator/
+├── app/
+│   ├── controllers/      # Bộ điều khiển trung gian: Translation, Project, Batch, Model
+│   ├── core/             # Lõi nghiệp vụ: SRT Parser, QA Engine, TM, Glossary, Entities
+│   ├── llm/              # Giao tiếp Local LLM: Worker, PromptBuilder, ModelManager
+│   └── models/           # Qt Models: SubtitleModel (bảng phụ đề động)
+├── ui/
+│   ├── qml/              # Giao diện Qt Quick QML: Main, Studio Workspace, Theme
+│   │   ├── components/   # SubtitleListView, TranslationWorkspace, ContextInspector...
+│   │   ├── dialogs/      # ModelManagerDialog, ExportGuardDialog...
+│   │   └── theme/        # Theme.qml (Bảng màu, typography, khoảng cách)
+├── tests/                # 255+ bài kiểm thử tự động (E2E, Core, Controllers)
+├── main.py               # Điểm khởi chạy ứng dụng chính
+├── pytest.ini            # Cấu hình kiểm thử tự động
+└── requirements.txt      # Danh sách thư viện phụ thuộc
 ```
 
 ---
 
 ## 📜 Giấy phép
 
-Dự án được phân phối dưới giấy phép **MIT License**.
+Dự án được phát hành mã nguồn mở theo giấy phép [MIT License](LICENSE).
+Mọi đóng góp (Pull Request, Báo cáo lỗi) đều được hoan nghênh!

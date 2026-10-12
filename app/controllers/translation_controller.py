@@ -24,6 +24,8 @@ class TranslationController(QObject):
         self._selection_changed_during_translation = False
         self._current_translation = ""
         self._current_original = ""
+        self._current_start_time = ""
+        self._current_end_time = ""
         self._context_prev = "" # LƯU CONTEXT TRƯỚC
         self._context_next = "" # LƯU CONTEXT SAU
         
@@ -80,6 +82,12 @@ class TranslationController(QObject):
 
     @Property(str, notify=translationUpdated)
     def currentOriginal(self): return self._current_original
+    
+    @Property(str, notify=translationUpdated)
+    def currentStartTime(self): return self._current_start_time
+    
+    @Property(str, notify=translationUpdated)
+    def currentEndTime(self): return self._current_end_time
 
     # EXPOSE CONTEXT RA QML
     @Property(str, notify=contextUpdated)
@@ -108,6 +116,8 @@ class TranslationController(QObject):
             self._current_index = -1
             self._current_original = ""
             self._current_translation = ""
+            self._current_start_time = ""
+            self._current_end_time = ""
             self._context_prev = ""
             self._context_next = ""
             self._status = "PENDING"
@@ -128,6 +138,8 @@ class TranslationController(QObject):
         self._current_index = index
         
         self._current_original = sub.get("original", "")
+        self._current_start_time = sub.get("start_time", "")
+        self._current_end_time = sub.get("end_time", "")
         status = str(sub.get("status", "PENDING")).upper()
         
         if status in ["ACCEPTED", "EDITED", "TRANSLATED", "TRANSLATING", "ERROR"]:

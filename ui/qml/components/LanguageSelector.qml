@@ -29,10 +29,56 @@ RowLayout {
             leftPadding: Theme.spaceSmall
             elide: Text.ElideRight
         }
+        
+        indicator: Text {
+            x: sourceCombo.width - width - Theme.spaceSmall
+            anchors.verticalCenter: parent.verticalCenter
+            text: sourcePopup.visible ? "▴" : "▾"
+            color: Theme.textSecondary
+            font.pixelSize: 12
+        }
+
+        delegate: ItemDelegate {
+            width: sourceCombo.width - (Theme.spaceXs * 2)
+            contentItem: Text {
+                text: modelData
+                color: highlighted ? Theme.accentCyan : Theme.textPrimary
+                font.pixelSize: 13
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: highlighted ? Theme.bgSurfaceElevated : (sourceCombo.currentIndex === index ? Theme.bgSurfaceSoft : "transparent")
+                radius: 4
+            }
+        }
+
+        popup: Popup {
+            id: sourcePopup
+            y: sourceCombo.height + 4
+            width: sourceCombo.width
+            padding: Theme.spaceXs
+            implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 250)
+
+            contentItem: ListView {
+                clip: true
+                implicitHeight: contentHeight
+                model: sourcePopup.visible ? sourceCombo.delegateModel : null
+                currentIndex: sourceCombo.highlightedIndex
+                ScrollIndicator.vertical: ScrollIndicator { }
+            }
+
+            background: Rectangle {
+                color: Theme.bgSurface
+                border.color: Theme.border
+                border.width: 1
+                radius: Theme.radius
+            }
+        }
         background: Rectangle {
             color: Theme.bgApp
             radius: Theme.radius
-            border.color: Theme.border
+            border.color: sourceCombo.activeFocus || sourcePopup.visible ? Theme.accentCyan : Theme.border
+            border.width: 1
         }
     }
 
@@ -50,16 +96,26 @@ RowLayout {
         Layout.fillWidth: true
         contentItem: Text {
             text: targetCombo.currentText
-            color: Theme.textPrimary
+            color: Theme.textSecondary
             font.pixelSize: 14
             verticalAlignment: Text.AlignVCenter
             leftPadding: Theme.spaceSmall
+            rightPadding: targetIndicator.width + Theme.spaceSmall
             elide: Text.ElideRight
+        }
+        indicator: Text {
+            id: targetIndicator
+            x: targetCombo.width - width - Theme.spaceSmall
+            anchors.verticalCenter: parent.verticalCenter
+            text: "▾"
+            color: Theme.textDisabled
+            font.pixelSize: 12
         }
         background: Rectangle {
             color: Theme.bgApp
             radius: Theme.radius
             border.color: Theme.border
+            border.width: 1
         }
         enabled: false // Target luôn cố định
     }

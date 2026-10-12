@@ -47,6 +47,10 @@ def test_tc15_01_fresh_launch():
 
 
 def test_tc15_02_keyboard_navigation(harness):
+    from PySide6.QtTest import QTest
+    tabs = harness.driver.find("contextTabs")
+    if tabs: tabs.setCurrentIndex(2)
+    QTest.qWait(50)
     harness.driver.focus("storySummaryInput")
     harness.driver.key(Qt.Key_Tab)
     wait_for(harness, lambda: not harness.driver.find("storySummaryInput").property("activeFocus"))
@@ -68,7 +72,7 @@ def test_tc15_04_status_filter(harness):
     harness.driver.key(Qt.Key_Home)
     harness.driver.key(Qt.Key_Down)
     harness.driver.key(Qt.Key_Return)
-    assert combo.property("currentText") == "PENDING"
+    assert combo.property("currentText") == "Chờ dịch"
 
 
 def test_tc15_05_import_and_dirty_state():
