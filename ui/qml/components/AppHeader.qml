@@ -46,8 +46,54 @@ ToolBar {
             onPressed: Window.window.startSystemMove()
         }
 
+        // CỤM ĐIỀU KHIỂN CỬA SỔ (LUÔN GHIM GÓC PHẢI TRÊN, KHÔNG BAO GIỜ BỊ ĐẨY MẤT)
         RowLayout {
-            anchors.fill: parent
+            id: windowControlsRow
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            spacing: 0
+            z: 2
+
+            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }
+
+            Button {
+                objectName: "btnMinimize"
+                implicitWidth: 46; implicitHeight: 48
+                ToolTip.visible: hovered
+                ToolTip.text: "Minimize"
+                contentItem: Text { text: "—"; color: Theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.bold: true }
+                background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
+                onClicked: Window.window.showMinimized()
+            }
+            Button {
+                objectName: "btnMaximize"
+                implicitWidth: 46; implicitHeight: 48
+                ToolTip.visible: hovered
+                ToolTip.text: Window.window.visibility === Window.Maximized ? "Restore" : "Maximize"
+                contentItem: Text { text: Window.window.visibility === Window.Maximized ? "🗗" : "🗖"; color: Theme.textSecondary; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
+                onClicked: {
+                    if (Window.window.visibility === Window.Maximized) Window.window.showNormal()
+                    else Window.window.showMaximized()
+                }
+            }
+            Button {
+                objectName: "btnClose"
+                implicitWidth: 46; implicitHeight: 48
+                ToolTip.visible: hovered
+                ToolTip.text: "Close"
+                contentItem: Text { text: "✕"; color: parent.hovered ? "#FFFFFF" : Theme.textSecondary; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                background: Rectangle { color: parent.hovered ? Theme.danger : "transparent" }
+                onClicked: Window.window.close()
+            }
+        }
+
+        RowLayout {
+            anchors.left: parent.left
+            anchors.right: windowControlsRow.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
             spacing: 0
 
             // CỤM TRÁI: LOGO STUDIO + TÊN DỰ ÁN
@@ -56,7 +102,7 @@ ToolBar {
                 spacing: Theme.spaceSmall
 
                 Text {
-                    text: "◈ AI Subtitle Studio"
+                    text: root.isMinimum ? "◈ Studio" : "◈ AI Subtitle Studio"
                     color: Theme.accentCyan
                     font.pixelSize: 14
                     font.bold: true
@@ -127,128 +173,89 @@ ToolBar {
                 }
             }
 
-            Item { Layout.fillWidth: true }
+            Item { Layout.fillWidth: true; Layout.minimumWidth: 0 }
 
             // CỤM GIỮA: CHIP CHỌN MÔ HÌNH AI TRUNG TÂM
             AppButton {
                 objectName: "btnModelManager"
                 Layout.alignment: Qt.AlignHCenter
+                Layout.minimumWidth: 0
                 text: typeof modelController !== "undefined"
-                      ? ("⚡ " + modelController.activeModelDisplayName + " ▼")
+                      ? ("⚡ " + (root.isMinimum ? "Mô hình" : modelController.activeModelDisplayName) + " ▼")
                       : "⚡ Mô hình AI ▼"
                 tooltip: "Quản lý & Chọn Mô hình AI — Click để thay đổi"
                 onClicked: root.modelManagerClicked()
             }
 
-            Item { Layout.fillWidth: true }
+            Item { Layout.fillWidth: true; Layout.minimumWidth: 0 }
 
             // CỤM PHẢI: CÁC NHÓM THAO TÁC CÓ PHÂN CẤP TRỌNG SỐ
             RowLayout {
-                spacing: 0
+                spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
+                Layout.rightMargin: root.isCompact ? Theme.spaceSmall : Theme.spaceMedium
                 Layout.alignment: Qt.AlignRight
 
-                RowLayout {
-                    spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
-                    Layout.rightMargin: root.isCompact ? Theme.spaceSmall : Theme.spaceMedium
-
-                    // Nhóm nạp file
-                    AppButton {
-                        objectName: "btnOpenSrt"
-                        text: root.isMinimum ? "SRT" : "Mở SRT"
-                        tooltip: "Mở file SRT — Ctrl + O"
-                        enabled: !root.projectMutationLocked
-                        onClicked: root.openSrtClicked()
-                    }
-                    AppButton {
-                        objectName: "btnOpenProject"
-                        text: root.isMinimum ? "Dự án" : "Mở dự án"
-                        tooltip: "Mở file dự án — Ctrl + Shift + O"
-                        enabled: !root.projectMutationLocked
-                        onClicked: root.openProjectClicked()
-                    }
-
-                    Rectangle {
-                        visible: root.hasProject
-                        Layout.preferredWidth: 1
-                        Layout.preferredHeight: 16
-                        color: Theme.border
-                        Layout.margins: Theme.spaceXs
-                    }
-
-                    // Nhóm Primary Action: Dịch tự động
-                    HeaderBatchControl {
-                        id: headerBatch
-                        visible: root.hasProject
-                        sourceLanguage: root.sourceLanguage
-                        targetLanguage: root.targetLanguage
-                        storySummary: root.storySummary
-                        isCompact: root.isMinimum
-                        currentSubtitleIndex: root.currentSubtitleIndex
-                        selectedIndices: root.selectedIndices
-                    }
-
-                    Rectangle {
-                        visible: root.hasProject
-                        Layout.preferredWidth: 1
-                        Layout.preferredHeight: 16
-                        color: Theme.border
-                        Layout.margins: Theme.spaceXs
-                    }
-
-                    // Nhóm xuất bản: Lưu & Xuất SRT
-                    AppButton {
-                        objectName: "btnSave"
-                        visible: root.hasProject
-                        text: "Lưu"
-                        tooltip: "Lưu dự án — Ctrl + S"
-                        enabled: root.hasProject && !root.isSaved
-                        onClicked: root.saveClicked()
-                    }
-                    AppButton {
-                        objectName: "btnExport"
-                        visible: root.hasProject
-                        text: root.isMinimum ? "Xuất" : "Xuất SRT"
-                        tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"
-                        isPrimary: true
-                        enabled: root.hasProject && root.hasProjectData
-                        onClicked: root.exportClicked()
-                    }
+                // Nhóm nạp file
+                AppButton {
+                    objectName: "btnOpenSrt"
+                    text: root.isCompact ? "SRT" : "Mở SRT"
+                    tooltip: "Mở file SRT — Ctrl + O"
+                    enabled: !root.projectMutationLocked
+                    onClicked: root.openSrtClicked()
+                }
+                AppButton {
+                    objectName: "btnOpenProject"
+                    text: root.isCompact ? "Dự án" : "Mở dự án"
+                    tooltip: "Mở file dự án — Ctrl + Shift + O"
+                    enabled: !root.projectMutationLocked
+                    onClicked: root.openProjectClicked()
                 }
 
-                Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }
+                Rectangle {
+                    visible: root.hasProject
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 16
+                    color: Theme.border
+                    Layout.margins: Theme.spaceXs
+                }
 
-                RowLayout {
-                    spacing: 0
-                    Button {
-                        objectName: "btnMinimize"
-                        implicitWidth: 46; implicitHeight: 48
-                        ToolTip.visible: hovered
-                        ToolTip.text: "Minimize"
-                        contentItem: Text { text: "—"; color: Theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.bold: true }
-                        background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
-                        onClicked: Window.window.showMinimized()
-                    }
-                    Button {
-                        objectName: "btnMaximize"
-                        implicitWidth: 46; implicitHeight: 48
-                        ToolTip.visible: hovered
-                        ToolTip.text: Window.window.visibility === Window.Maximized ? "Restore" : "Maximize"
-                        contentItem: Text { text: Window.window.visibility === Window.Maximized ? "🗗" : "🗖"; color: Theme.textSecondary; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                        background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
-                        onClicked: {
-                            if (Window.window.visibility === Window.Maximized) Window.window.showNormal()
-                            else Window.window.showMaximized()
-                        }
-                    }
-                    Button {
-                        objectName: "btnClose"
-                        implicitWidth: 46; implicitHeight: 48
-                        ToolTip.visible: hovered
-                        ToolTip.text: "Close"
-                        contentItem: Text { text: "✕"; color: parent.hovered ? "#FFFFFF" : Theme.textSecondary; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                        background: Rectangle { color: parent.hovered ? Theme.danger : "transparent" }
-                        onClicked: Window.window.close()
-                    }
+                // Nhóm Primary Action: Dịch tự động
+                HeaderBatchControl {
+                    id: headerBatch
+                    visible: root.hasProject
+                    sourceLanguage: root.sourceLanguage
+                    targetLanguage: root.targetLanguage
+                    storySummary: root.storySummary
+                    isCompact: root.isCompact
+                    currentSubtitleIndex: root.currentSubtitleIndex
+                    selectedIndices: root.selectedIndices
+                }
+
+                Rectangle {
+                    visible: root.hasProject
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 16
+                    color: Theme.border
+                    Layout.margins: Theme.spaceXs
+                }
+
+                // Nhóm xuất bản: Lưu & Xuất SRT
+                AppButton {
+                    objectName: "btnSave"
+                    visible: root.hasProject
+                    text: "Lưu"
+                    tooltip: "Lưu dự án — Ctrl + S"
+                    enabled: root.hasProject && !root.isSaved
+                    onClicked: root.saveClicked()
+                }
+                AppButton {
+                    objectName: "btnExport"
+                    visible: root.hasProject
+                    text: root.isCompact ? "Xuất" : "Xuất SRT"
+                    tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"
+                    isPrimary: true
+                    enabled: root.hasProject && root.hasProjectData
+                    onClicked: root.exportClicked()
                 }
             }
         }

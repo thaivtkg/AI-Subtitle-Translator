@@ -14,6 +14,7 @@ ColumnLayout {
     property string searchQuery: ""
     property int filteredCount: subListView.count
     property var selectedIndices: []
+    signal selectionChanged(var indices)
 
     property int currentChunkSize: 0 // 0 = Tất cả câu
     property int currentPage: 1
@@ -263,6 +264,7 @@ ColumnLayout {
             }
             if (count === 0) {
                 root.selectedIndices = []
+                root.selectionChanged([])
             }
             root.updatePagination()
         }
@@ -313,18 +315,27 @@ ColumnLayout {
                 cursorShape: Qt.PointingHandCursor
                 acceptedButtons: Qt.LeftButton
                 onClicked: function(mouse) {
+                    var list = []
                     if (mouse.modifiers & Qt.ControlModifier) {
-                        var list = root.selectedIndices.slice()
+                        list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (subListView.currentIndex >= 0 ? [subListView.currentIndex] : [])
                         var pos = list.indexOf(index)
                         if (pos !== -1) {
                             list.splice(pos, 1)
                         } else {
                             list.push(index)
                         }
-                        root.selectedIndices = list
+                    } else if (mouse.modifiers & Qt.ShiftModifier) {
+                        var start = (subListView.currentIndex >= 0) ? subListView.currentIndex : index
+                        var minIdx = Math.min(start, index)
+                        var maxIdx = Math.max(start, index)
+                        for (var i = minIdx; i <= maxIdx; i++) {
+                            list.push(i)
+                        }
                     } else {
-                        root.selectedIndices = [index]
+                        list = [index]
                     }
+                    root.selectedIndices = list
+                    root.selectionChanged(list)
                     subListView.currentIndex = index
                 }
             }

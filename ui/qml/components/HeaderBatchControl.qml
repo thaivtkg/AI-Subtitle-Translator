@@ -66,11 +66,14 @@ Item {
             objectName: "btnBatchStart"
             text: {
                 if (root.hasMultiSelection) {
-                    return "⚡ Dịch đã chọn (" + root.selectedIndices.length + " câu)"
+                    return root.isCompact ? ("⚡ Chọn (" + root.selectedIndices.length + ")") : ("⚡ Dịch đã chọn (" + root.selectedIndices.length + " câu)")
                 }
-                return root.selectedLimit === 0 ? "⚡ Dịch toàn bộ" : "⚡ Dịch " + root.selectedLimit + " câu"
+                if (root.isCompact) {
+                    return root.selectedLimit === 0 ? "⚡ Toàn bộ" : ("⚡ " + root.selectedLimit + " câu")
+                }
+                return root.selectedLimit === 0 ? "⚡ Dịch toàn bộ" : ("⚡ Dịch " + root.selectedLimit + " câu")
             }
-            tooltip: root.hasMultiSelection ? "Dịch các câu đã chọn (Ctrl + Click)" : "Dịch tự động phụ đề theo lô"
+            tooltip: root.hasMultiSelection ? "Dịch các câu đã chọn (Ctrl/Shift + Click)" : "Dịch tự động phụ đề theo lô"
             isPrimary: true
             visible: ["IDLE", "COMPLETED", "CANCELLED", "FAILED"].indexOf(root.controller.state) >= 0
             enabled: root.controller.canStart

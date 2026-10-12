@@ -19,6 +19,7 @@ ApplicationWindow {
 
     // THÊM MỚI: Biến toàn cục hứng Story Summary (đặt ở cấp cao nhất)
     property string globalStorySummary: ""
+    property var selectedSubtitleIndices: []
     // P2.5-T13-D0: manual responsive acceptance only.
     property bool responsiveTestToolsEnabled: Qt.application.arguments.indexOf("--dev-tools") >= 0
 
@@ -35,7 +36,7 @@ ApplicationWindow {
         targetLanguage: "Vietnamese"
         storySummary: mainWindow.globalStorySummary
         currentSubtitleIndex: subListView.currentIndex
-        selectedIndices: subListView.selectedIndices
+        selectedIndices: mainWindow.selectedSubtitleIndices
         onOpenSrtClicked: {
             if (!batchController.executionLocked) importSrtDialog.open()
         }
@@ -105,6 +106,10 @@ ApplicationWindow {
                 id: subListView // ĐÃ FIX: Khai báo ID cho danh sách
                 anchors.fill: parent
                 model: subtitleModel
+                selectedIndices: mainWindow.selectedSubtitleIndices
+                onSelectionChanged: function(indices) {
+                    mainWindow.selectedSubtitleIndices = indices
+                }
             }
         }
 

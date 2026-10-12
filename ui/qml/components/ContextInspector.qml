@@ -13,6 +13,7 @@ ColumnLayout {
         objectName: "contextTabs"
         Layout.fillWidth: true
         Layout.minimumWidth: 0
+        implicitWidth: 0
         background: Rectangle { 
             color: "transparent"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border } 
@@ -20,7 +21,7 @@ ColumnLayout {
         
         TabButton {
             text: "TIMELINE"
-            width: Math.max(implicitWidth, contextTabs.width / 3)
+            width: Math.floor(contextTabs.width / 3)
             contentItem: Text {
                 text: parent.text
                 font.pixelSize: 11
@@ -42,7 +43,7 @@ ColumnLayout {
         }
         TabButton {
             text: "INTELLIGENCE"
-            width: Math.max(implicitWidth, contextTabs.width / 3)
+            width: Math.floor(contextTabs.width / 3)
             contentItem: Text {
                 text: parent.text
                 font.pixelSize: 11
@@ -64,7 +65,7 @@ ColumnLayout {
         }
         TabButton {
             text: "SUMMARY"
-            width: Math.max(implicitWidth, contextTabs.width / 3)
+            width: Math.floor(contextTabs.width / 3)
             contentItem: Text {
                 text: parent.text
                 font.pixelSize: 11

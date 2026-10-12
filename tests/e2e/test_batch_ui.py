@@ -179,3 +179,38 @@ def test_tc_p3a7_multi_selection_batch_execution():
     finally:
         harness.close()
 
+
+def test_tc_p3a7_multi_selection_ui_interaction_and_execution():
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    harness = AppHarness(FIXTURE, worker_factory=DeterministicWorkerFactory("success"))
+    try:
+        batch_btn = harness.driver.find("btnBatchStart")
+        # 1. Click row 0 normally
+        harness.driver.click("subtitleRow_0")
+        QTest.qWait(50)
+        assert "50 câu" in batch_btn.property("text")
+
+        # 2. Ctrl+Click row 2
+        row2 = harness.driver.find("subtitleRow_2")
+        p2 = row2.mapToScene(QPoint(10, 10)).toPoint()
+        QTest.mouseClick(harness.window, Qt.LeftButton, Qt.ControlModifier, p2)
+        QTest.qWait(50)
+
+        # 3. Verify batch button dynamically updates to multi-selection mode
+        assert "2 câu" in batch_btn.property("text")
+
+        # 4. Click batch start button
+        harness.driver.click("btnBatchStart")
+        wait_for(harness, lambda: harness.batch_controller.state == "COMPLETED")
+        assert harness.batch_controller.totalCount == 2
+        assert harness.batch_controller.completedCount == 2
+
+        data = harness.model.get_all_data()
+        assert data[0]["status"] == "TRANSLATED"
+        assert data[1]["status"].upper() == "PENDING"
+        assert data[2]["status"] == "TRANSLATED"
+    finally:
+        harness.close()
+
