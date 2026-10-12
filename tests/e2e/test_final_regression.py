@@ -230,3 +230,38 @@ def test_tc15_15_export_guard(tmp_path):
         assert "Mau rời khỏi đây!" in exported_text
     finally:
         harness.close()
+
+
+def test_tc15_16_chunk_filter():
+    harness = AppHarness(FIXTURE)
+    try:
+        combo = harness.driver.find("chunkFilterCombo")
+        assert combo is not None
+        assert combo.property("count") == 2
+        assert combo.property("currentText") == "Tất cả câu"
+
+        # Load 120 items to verify multi-chunk generation
+        data = [
+            {"index": i + 1, "start_time": "00:00:01,000", "end_time": "00:00:02,000", "original": f"Line {i+1}", "status": "PENDING", "translation": ""}
+            for i in range(120)
+        ]
+        harness.model.load_data(data)
+        harness.app.processEvents()
+
+        # Model should have: "Tất cả câu", "Câu 1 - 50", "Câu 51 - 100", "Câu 101 - 120"
+        assert combo.property("count") == 4
+        combo.setProperty("currentIndex", 1)
+        harness.app.processEvents()
+        assert combo.property("currentText") == "Câu 1 - 50"
+
+        combo.setProperty("currentIndex", 2)
+        harness.app.processEvents()
+        assert combo.property("currentText") == "Câu 51 - 100"
+
+        combo.setProperty("currentIndex", 0)
+        harness.app.processEvents()
+        assert combo.property("currentText") == "Tất cả câu"
+    finally:
+        harness.close()
+
+

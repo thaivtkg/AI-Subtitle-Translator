@@ -14,6 +14,23 @@ ColumnLayout {
     property string searchQuery: ""
     property int filteredCount: subListView.count
 
+    readonly property int chunkSize: 50
+    property int selectedChunkStart: -1
+    property int selectedChunkEnd: -1
+
+    function getChunkModel() {
+        var total = subListView.count;
+        if (total <= 0) return ["Tất cả câu"];
+        var list = ["Tất cả câu"];
+        var chunks = Math.ceil(total / chunkSize);
+        for (var i = 0; i < chunks; i++) {
+            var start = (i * chunkSize) + 1;
+            var end = Math.min((i + 1) * chunkSize, total);
+            list.push("Câu " + start + " - " + end);
+        }
+        return list;
+    }
+
     // Header controls
     Rectangle {
         Layout.fillWidth: true
@@ -42,6 +59,90 @@ ColumnLayout {
                     border.color: searchInput.activeFocus ? Theme.accentCyan : Theme.border
                 }
                 onTextChanged: root.searchQuery = text.toLowerCase()
+            }
+
+            // Chunk Filter Combo
+            ComboBox {
+                objectName: "chunkFilterCombo"
+                id: chunkFilterCombo
+                Layout.preferredWidth: 105
+                Layout.preferredHeight: 32
+                font.pixelSize: 12
+                model: root.getChunkModel()
+                onCurrentIndexChanged: {
+                    if (currentIndex <= 0) {
+                        root.selectedChunkStart = -1
+                        root.selectedChunkEnd = -1
+                    } else {
+                        root.selectedChunkStart = (currentIndex - 1) * root.chunkSize
+                        root.selectedChunkEnd = Math.min(currentIndex * root.chunkSize - 1, subListView.count - 1)
+                    }
+                    subListView.updateFilteredCount()
+                }
+
+                contentItem: Text {
+                    leftPadding: Theme.spaceSmall
+                    rightPadding: chunkFilterCombo.indicator.width + Theme.spaceSmall
+                    text: chunkFilterCombo.currentText
+                    font.pixelSize: 12
+                    color: Theme.textPrimary
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+
+                indicator: Text {
+                    x: chunkFilterCombo.width - width - Theme.spaceSmall
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: chunkPopup.visible ? "▴" : "▾"
+                    color: Theme.textSecondary
+                    font.pixelSize: 12
+                }
+
+                background: Rectangle {
+                    implicitWidth: 105
+                    implicitHeight: 32
+                    color: Theme.bgSurface
+                    radius: Theme.radius
+                    border.color: chunkFilterCombo.activeFocus || chunkPopup.visible ? Theme.accentCyan : Theme.border
+                    border.width: 1
+                }
+
+                delegate: ItemDelegate {
+                    width: chunkFilterCombo.width - (Theme.spaceXs * 2)
+                    contentItem: Text {
+                        text: modelData
+                        color: highlighted ? Theme.accentCyan : Theme.textPrimary
+                        font.pixelSize: 12
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        color: highlighted ? Theme.bgSurfaceElevated : (chunkFilterCombo.currentIndex === index ? Theme.bgSurfaceSoft : "transparent")
+                        radius: 4
+                    }
+                }
+
+                popup: Popup {
+                    id: chunkPopup
+                    y: chunkFilterCombo.height + 4
+                    width: chunkFilterCombo.width
+                    padding: Theme.spaceXs
+                    implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 220)
+
+                    contentItem: ListView {
+                        clip: true
+                        implicitHeight: contentHeight
+                        model: chunkPopup.visible ? chunkFilterCombo.delegateModel : null
+                        currentIndex: chunkFilterCombo.highlightedIndex
+                        ScrollIndicator.vertical: ScrollIndicator { }
+                    }
+
+                    background: Rectangle {
+                        color: Theme.bgSurface
+                        border.color: Theme.border
+                        border.width: 1
+                        radius: Theme.radius
+                    }
+                }
             }
 
             // Filter Combo
@@ -145,6 +246,9 @@ ColumnLayout {
             if (count > 0 && currentIndex < 0) {
                 currentIndex = 0
             }
+            if (typeof chunkFilterCombo !== "undefined" && chunkFilterCombo) {
+                chunkFilterCombo.model = root.getChunkModel()
+            }
         }
         onCurrentIndexChanged: { if (currentIndex >= 0) translationController.loadSubtitle(currentIndex) }
 
@@ -161,6 +265,7 @@ ColumnLayout {
             property bool matchFilter: root.currentFilter === "ALL" ||
                                        (root.currentFilter === "PENDING" && (normalizedStatus === "PENDING" || normalizedStatus === "")) ||
                                        normalizedStatus === root.currentFilter
+            property bool matchChunk: root.selectedChunkStart < 0 || (index >= root.selectedChunkStart && index <= root.selectedChunkEnd)
             property bool isSelected: ListView.isCurrentItem
             property bool hasTranslation: typeof translationText !== "undefined" && String(translationText).trim().length > 0
             
@@ -175,7 +280,7 @@ ColumnLayout {
                 return d > 0 ? d.toFixed(1) + "s" : ""
             }
 
-            visible: matchSearch && matchFilter
+            visible: matchSearch && matchFilter && matchChunk
             height: visible ? (hasTranslation ? 82 : 62) : 0
             
             color: isSelected ? Theme.bgSurfaceElevated : (mouseArea.containsMouse ? Theme.bgSurfaceSoft : "transparent")
