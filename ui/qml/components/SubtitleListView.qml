@@ -14,21 +14,23 @@ ColumnLayout {
     property string searchQuery: ""
     property int filteredCount: subListView.count
 
-    readonly property int chunkSize: 50
+    property int currentChunkSize: 0 // 0 = Tất cả câu
+    property int currentPage: 1
     property int selectedChunkStart: -1
     property int selectedChunkEnd: -1
 
-    function getChunkModel() {
-        var total = subListView.count;
-        if (total <= 0) return ["Tất cả câu"];
-        var list = ["Tất cả câu"];
-        var chunks = Math.ceil(total / chunkSize);
-        for (var i = 0; i < chunks; i++) {
-            var start = (i * chunkSize) + 1;
-            var end = Math.min((i + 1) * chunkSize, total);
-            list.push("Câu " + start + " - " + end);
+    function updatePagination() {
+        if (currentChunkSize <= 0 || subListView.count === 0) {
+            selectedChunkStart = -1
+            selectedChunkEnd = -1
+        } else {
+            var maxPage = Math.max(1, Math.ceil(subListView.count / currentChunkSize))
+            if (currentPage > maxPage) currentPage = maxPage
+            if (currentPage < 1) currentPage = 1
+            selectedChunkStart = (currentPage - 1) * currentChunkSize
+            selectedChunkEnd = Math.min(currentPage * currentChunkSize - 1, subListView.count - 1)
         }
-        return list;
+        subListView.updateFilteredCount()
     }
 
     // Header controls
@@ -68,16 +70,21 @@ ColumnLayout {
                 Layout.preferredWidth: 105
                 Layout.preferredHeight: 32
                 font.pixelSize: 12
-                model: root.getChunkModel()
+                model: [
+                    "Tất cả câu",
+                    "Hiển thị 5 câu / trang",
+                    "Hiển thị 10 câu / trang",
+                    "Hiển thị 20 câu / trang",
+                    "Hiển thị 50 câu / trang"
+                ]
                 onCurrentIndexChanged: {
-                    if (currentIndex <= 0) {
-                        root.selectedChunkStart = -1
-                        root.selectedChunkEnd = -1
-                    } else {
-                        root.selectedChunkStart = (currentIndex - 1) * root.chunkSize
-                        root.selectedChunkEnd = Math.min(currentIndex * root.chunkSize - 1, subListView.count - 1)
-                    }
-                    subListView.updateFilteredCount()
+                    if (currentIndex === 0) root.currentChunkSize = 0
+                    else if (currentIndex === 1) root.currentChunkSize = 5
+                    else if (currentIndex === 2) root.currentChunkSize = 10
+                    else if (currentIndex === 3) root.currentChunkSize = 20
+                    else if (currentIndex === 4) root.currentChunkSize = 50
+                    root.currentPage = 1
+                    root.updatePagination()
                 }
 
                 contentItem: Text {
@@ -246,9 +253,7 @@ ColumnLayout {
             if (count > 0 && currentIndex < 0) {
                 currentIndex = 0
             }
-            if (typeof chunkFilterCombo !== "undefined" && chunkFilterCombo) {
-                chunkFilterCombo.model = root.getChunkModel()
-            }
+            root.updatePagination()
         }
         onCurrentIndexChanged: { if (currentIndex >= 0) translationController.loadSubtitle(currentIndex) }
 
@@ -388,6 +393,63 @@ ColumnLayout {
                     font.pixelSize: 13
                     elide: Text.ElideRight
                     maximumLineCount: 1
+                }
+            }
+        }
+    }
+
+    // Pagination bar
+    Rectangle {
+        objectName: "paginationBar"
+        id: paginationBar
+        Layout.fillWidth: true
+        Layout.preferredHeight: 34
+        visible: root.currentChunkSize > 0 && subListView.count > 0
+        color: Theme.bgSurface
+        border.color: Theme.border
+        border.width: 1
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: Theme.spaceSmall
+            anchors.rightMargin: Theme.spaceSmall
+            spacing: Theme.spaceSmall
+
+            AppButton {
+                objectName: "btnPrevPage"
+                text: "◀"
+                implicitWidth: 32
+                implicitHeight: 26
+                enabled: root.currentPage > 1
+                onClicked: {
+                    if (root.currentPage > 1) {
+                        root.currentPage--
+                        root.updatePagination()
+                    }
+                }
+            }
+
+            Text {
+                objectName: "paginationText"
+                text: "Trang " + root.currentPage + " / " + Math.max(1, Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1)))
+                color: Theme.textPrimary
+                font.pixelSize: 12
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            AppButton {
+                objectName: "btnNextPage"
+                text: "▶"
+                implicitWidth: 32
+                implicitHeight: 26
+                enabled: root.currentPage < Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1))
+                onClicked: {
+                    if (root.currentPage < Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1))) {
+                        root.currentPage++
+                        root.updatePagination()
+                    }
                 }
             }
         }

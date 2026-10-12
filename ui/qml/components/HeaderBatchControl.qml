@@ -100,9 +100,19 @@ Item {
                 }
 
                 MenuItem {
+                    text: "⚡ 5 câu (Đoạn ngắn)"
+                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    onTriggered: root.selectedLimit = 5
+                }
+                MenuItem {
                     text: "⚡ 10 câu (Thử AI)"
                     contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
                     onTriggered: root.selectedLimit = 10
+                }
+                MenuItem {
+                    text: "⚡ 20 câu (Vừa phải)"
+                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    onTriggered: root.selectedLimit = 20
                 }
                 MenuItem {
                     text: "⚡ 50 câu (Khuyên dùng)"

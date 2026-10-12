@@ -237,10 +237,13 @@ def test_tc15_16_chunk_filter():
     try:
         combo = harness.driver.find("chunkFilterCombo")
         assert combo is not None
-        assert combo.property("count") == 2
+        assert combo.property("count") == 5
         assert combo.property("currentText") == "Tất cả câu"
 
-        # Load 120 items to verify multi-chunk generation
+        # Initially, pagination bar is not visible
+        assert not harness.driver.find("paginationBar").property("visible")
+
+        # Load 120 items to verify multi-page navigation
         data = [
             {"index": i + 1, "start_time": "00:00:01,000", "end_time": "00:00:02,000", "original": f"Line {i+1}", "status": "PENDING", "translation": ""}
             for i in range(120)
@@ -248,19 +251,34 @@ def test_tc15_16_chunk_filter():
         harness.model.load_data(data)
         harness.app.processEvents()
 
-        # Model should have: "Tất cả câu", "Câu 1 - 50", "Câu 51 - 100", "Câu 101 - 120"
-        assert combo.property("count") == 4
+        # Select "Hiển thị 5 câu / trang" (index 1)
         combo.setProperty("currentIndex", 1)
         harness.app.processEvents()
-        assert combo.property("currentText") == "Câu 1 - 50"
+        assert harness.driver.find("paginationBar").property("visible")
+        assert harness.driver.text("paginationText") == "Trang 1 / 24"
+        assert not harness.driver.is_enabled("btnPrevPage")
+        assert harness.driver.is_enabled("btnNextPage")
 
-        combo.setProperty("currentIndex", 2)
+        # Click next page -> Trang 2 / 24
+        harness.driver.click("btnNextPage")
         harness.app.processEvents()
-        assert combo.property("currentText") == "Câu 51 - 100"
+        assert harness.driver.text("paginationText") == "Trang 2 / 24"
+        assert harness.driver.is_enabled("btnPrevPage")
 
+        # Click prev page -> Trang 1 / 24
+        harness.driver.click("btnPrevPage")
+        harness.app.processEvents()
+        assert harness.driver.text("paginationText") == "Trang 1 / 24"
+
+        # Switch to "Hiển thị 50 câu / trang" (index 4)
+        combo.setProperty("currentIndex", 4)
+        harness.app.processEvents()
+        assert harness.driver.text("paginationText") == "Trang 1 / 3"
+
+        # Switch back to "Tất cả câu" (index 0)
         combo.setProperty("currentIndex", 0)
         harness.app.processEvents()
-        assert combo.property("currentText") == "Tất cả câu"
+        assert not harness.driver.find("paginationBar").property("visible")
     finally:
         harness.close()
 
