@@ -34,6 +34,7 @@ ApplicationWindow {
         sourceLanguage: transWorkspace.getSourceLanguage()
         targetLanguage: "Vietnamese"
         storySummary: mainWindow.globalStorySummary
+        currentSubtitleIndex: subListView.currentIndex
         onOpenSrtClicked: {
             if (!batchController.executionLocked) importSrtDialog.open()
         }

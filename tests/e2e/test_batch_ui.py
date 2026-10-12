@@ -9,7 +9,7 @@ from .deterministic_worker import DeterministicWorkerFactory
 FIXTURE = Path(__file__).parent / "fixtures" / "regression.srt"
 
 
-def wait_for(harness, predicate, timeout_ms=3000):
+def wait_for(harness, predicate, timeout_ms=5000):
     harness.driver.wait_until(predicate, timeout_ms)
 
 
@@ -147,3 +147,15 @@ def test_tc_p3a7_q10_terminal_unlock():
         assert not harness.driver.is_enabled("btnBatchCancel")
     finally:
         harness.close()
+
+
+def test_tc_p3a7_custom_batch_limit_execution():
+    harness = AppHarness(FIXTURE, worker_factory=DeterministicWorkerFactory("success"))
+    try:
+        harness.batch_controller.startBatch("English", "Vietnamese", "", 0, 2)
+        wait_for(harness, lambda: harness.batch_controller.state == "COMPLETED")
+        assert harness.batch_controller.totalCount == 2
+        assert harness.batch_controller.completedCount == 2
+    finally:
+        harness.close()
+

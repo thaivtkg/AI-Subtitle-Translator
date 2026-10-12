@@ -13,6 +13,9 @@ Item {
     property string storySummary: ""
     property bool isCompact: false
 
+    property int selectedLimit: 50
+    property int currentSubtitleIndex: 0
+
     implicitWidth: contentRow.implicitWidth
     implicitHeight: 32
 
@@ -28,7 +31,7 @@ Item {
                 if (root.controller.cancelPending) return "Đang hủy…"
                 if (root.controller.state === "PAUSING") return "Đang tạm dừng…"
                 if (root.controller.state === "PAUSED") return "Đã tạm dừng"
-                if (root.controller.state === "RUNNING") return "Đang dịch hàng loạt…"
+                if (root.controller.state === "RUNNING") return "Đang dịch lô…"
                 if (root.controller.state === "CANCELLED") return "Đã hủy"
                 if (root.controller.state === "FAILED") return "Thất bại"
                 if (root.controller.state === "COMPLETED") {
@@ -59,12 +62,59 @@ Item {
 
         AppButton {
             objectName: "btnBatchStart"
-            text: root.isCompact ? "⚡ Tự động" : "⚡ Dịch tự động"
-            tooltip: "Dịch tự động toàn bộ phụ đề"
+            text: root.selectedLimit === 0 ? "⚡ Dịch toàn bộ" : "⚡ Dịch " + root.selectedLimit + " câu"
+            tooltip: "Dịch tự động phụ đề theo lô"
             isPrimary: true
             visible: ["IDLE", "COMPLETED", "CANCELLED", "FAILED"].indexOf(root.controller.state) >= 0
             enabled: root.controller.canStart
-            onClicked: root.controller.startBatch(root.sourceLanguage, root.targetLanguage, root.storySummary)
+            onClicked: {
+                root.controller.startBatch(
+                    root.sourceLanguage,
+                    root.targetLanguage,
+                    root.storySummary,
+                    root.currentSubtitleIndex >= 0 ? root.currentSubtitleIndex : 0,
+                    root.selectedLimit
+                )
+            }
+        }
+
+        AppButton {
+            objectName: "btnBatchPresetMenu"
+            text: "▾"
+            tooltip: "Chọn số lượng câu dịch mỗi lần"
+            isPrimary: true
+            Layout.preferredWidth: 26
+            visible: ["IDLE", "COMPLETED", "CANCELLED", "FAILED"].indexOf(root.controller.state) >= 0
+            enabled: root.controller.canStart
+            onClicked: presetMenu.open()
+
+            Menu {
+                id: presetMenu
+                y: parent.height + 4
+                width: 190
+                background: Rectangle {
+                    color: Theme.bgSurfaceElevated
+                    border.color: Theme.border
+                    border.width: 1
+                    radius: Theme.radius
+                }
+
+                MenuItem {
+                    text: "⚡ 10 câu (Thử AI)"
+                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    onTriggered: root.selectedLimit = 10
+                }
+                MenuItem {
+                    text: "⚡ 50 câu (Khuyên dùng)"
+                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    onTriggered: root.selectedLimit = 50
+                }
+                MenuItem {
+                    text: "⚡ Toàn bộ tệp"
+                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    onTriggered: root.selectedLimit = 0
+                }
+            }
         }
 
         AppButton {
