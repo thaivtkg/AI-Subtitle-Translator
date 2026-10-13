@@ -35,7 +35,7 @@ ApplicationWindow {
         sourceLanguage: transWorkspace.getSourceLanguage()
         targetLanguage: "Vietnamese"
         storySummary: mainWindow.globalStorySummary
-        currentSubtitleIndex: subListView.currentIndex
+        currentSubtitleIndex: subListView.currentRawIndex
         selectedIndices: mainWindow.selectedSubtitleIndices
         onOpenSrtClicked: {
             if (!batchController.executionLocked) importSrtDialog.open()
@@ -105,7 +105,7 @@ ApplicationWindow {
             SubtitleListView {
                 id: subListView // ĐÃ FIX: Khai báo ID cho danh sách
                 anchors.fill: parent
-                model: subtitleModel
+                model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : subtitleModel
                 selectedIndices: mainWindow.selectedSubtitleIndices
                 onSelectionChanged: function(indices) {
                     mainWindow.selectedSubtitleIndices = indices
@@ -123,16 +123,16 @@ ApplicationWindow {
                 id: transWorkspace
                 anchors.fill: parent
                 anchors.margins: Theme.spaceMedium
-                hasSelection: subListView.currentIndex >= 0
+                hasSelection: subListView.currentRawIndex >= 0
                 totalCount: subListView.count
                 executionLocked: batchController.executionLocked
 
                 onTranslateRequested: (sourceLang) => {
-                    translationController.requestTranslation(subListView.currentIndex, sourceLang, "Vietnamese", globalStorySummary)
+                    translationController.requestTranslation(subListView.currentRawIndex, sourceLang, "Vietnamese", globalStorySummary)
                 }
 
                 onAcceptRequested: (text) => {
-                    let isSuccess = translationController.acceptTranslation(subListView.currentIndex, text)
+                    let isSuccess = translationController.acceptTranslation(subListView.currentRawIndex, text)
                     if (isSuccess && subListView.currentIndex < subListView.count - 1) {
                         subListView.currentIndex += 1
                     }

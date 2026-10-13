@@ -12,7 +12,7 @@ from app.controllers.batch_runtime_bridge import BatchRuntimeBridge
 from app.controllers.translation_controller import TranslationController
 from app.core.hardware_detector import HardwareDetector
 from app.core.srt_parser import SRTParser
-from app.models.subtitle import SubtitleModel
+from app.models.subtitle import SubtitleModel, FilteredSubtitleModel
 
 from .user_driver import UserDriver
 
@@ -53,9 +53,11 @@ class AppHarness:
             self.batch_runtime,
             project_id=str(uuid4()),
         )
+        self.filtered_subtitle_model = FilteredSubtitleModel(self.model)
         self.engine.rootContext().setContextProperty("translationController", self.translation_controller)
         self.engine.rootContext().setContextProperty("projectController", self.project_controller)
         self.engine.rootContext().setContextProperty("subtitleModel", self.model)
+        self.engine.rootContext().setContextProperty("filteredSubtitleModel", self.filtered_subtitle_model)
         self.engine.rootContext().setContextProperty("batchController", self.batch_controller)
 
         qml_file = Path(__file__).parents[2] / "ui" / "qml" / "Main.qml"

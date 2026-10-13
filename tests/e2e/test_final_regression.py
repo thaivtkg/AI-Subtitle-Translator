@@ -329,22 +329,28 @@ def test_tc15_17_time_range_filter():
         end_input.setProperty("text", "20")
         harness.app.processEvents()
 
-        # Row 0 (min 2) and Row 3 (min 25) are hidden; Row 1 (min 7) and Row 2 (min 15) are visible
-        assert row0.property("visible") is False
-        assert row1.property("visible") is True
-        assert row2.property("visible") is True
-        assert row3.property("visible") is False
+        # Row 0 (min 2) and Row 3 (min 25) are filtered out; Row 1 (min 7) and Row 2 (min 15) are present
+        sub_list = harness.driver.find("subtitleList")
+        nav = harness.driver.find("subtitleListView")
+        assert nav.property("filteredCount") == 2
+        assert sub_list.property("count") == 2
 
-        # Verify Chunking Bypass: selecting a chunk size does not hide items or show paginationBar while time filter is active
+        active_row1 = harness.driver.find("subtitleRow_1")
+        active_row2 = harness.driver.find("subtitleRow_2")
+        assert active_row1.property("visible") is True
+        assert active_row2.property("visible") is True
+
+        # Verify Chunking Composition: selecting page size works together with time filter
         chunk_combo.setProperty("currentIndex", 1)  # "Hiển thị 5 câu / trang"
         harness.app.processEvents()
-        assert not pagination_bar.property("visible")
-        assert row1.property("visible") is True
-        assert row2.property("visible") is True
+        assert pagination_bar.property("visible") is True
+        assert harness.driver.find("subtitleRow_1").property("visible") is True
+        assert harness.driver.find("subtitleRow_2").property("visible") is True
 
-        # Deactivate time filter -> Pagination bar restored, chunking restored without losing chunk combo state
+        # Deactivate time filter -> Pagination bar and all items restored without losing chunk combo state
         time_check.setProperty("checked", False)
         harness.app.processEvents()
+        assert nav.property("filteredCount") == 4
         assert pagination_bar.property("visible") is True
         assert chunk_combo.property("currentIndex") == 1
     finally:

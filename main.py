@@ -5,7 +5,7 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QUrl
 
-from app.models.subtitle import SubtitleModel
+from app.models.subtitle import SubtitleModel, FilteredSubtitleModel
 from app.core.srt_parser import SRTParser
 from app.controllers.translation_controller import TranslationController
 from app.controllers.project_controller import ProjectController
@@ -65,6 +65,8 @@ def main():
     )
     engine.rootContext().setContextProperty("modelController", model_controller)
     
+    filtered_subtitle_model = FilteredSubtitleModel(subtitle_model)
+    engine.rootContext().setContextProperty("filteredSubtitleModel", filtered_subtitle_model)
     engine.rootContext().setContextProperty("subtitleModel", subtitle_model)
 
     qml_file = os.path.join(os.path.dirname(__file__), "ui/qml/Main.qml")

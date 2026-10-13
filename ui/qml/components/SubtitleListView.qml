@@ -11,9 +11,16 @@ ColumnLayout {
     property alias model: subListView.model
     property alias currentIndex: subListView.currentIndex
     property alias count: subListView.count
+    property bool isProxyModel: subListView.model && typeof subListView.model.getRawIndex === "function"
+    property int currentRawIndex: {
+        if (currentIndex < 0 || currentIndex >= count) return -1
+        if (isProxyModel) return subListView.model.getRawIndex(currentIndex)
+        return currentIndex
+    }
     property string currentFilter: "ALL" // "ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"
     property string searchQuery: ""
-    property int filteredCount: subListView.count
+    property int clientFilteredCount: subListView.count
+    property int filteredCount: isProxyModel ? (subListView.model ? subListView.model.filteredCount : 0) : clientFilteredCount
     property var selectedIndices: []
     signal selectionChanged(var indices)
 
@@ -27,6 +34,7 @@ ColumnLayout {
     property int filterEndMin: 9999
 
     function updatePagination() {
+        if (root.isProxyModel) return
         if (currentChunkSize <= 0 || subListView.count === 0) {
             selectedChunkStart = -1
             selectedChunkEnd = -1
@@ -40,6 +48,16 @@ ColumnLayout {
         updateFiltersAndScroll()
     }
 
+    function applyTimeFilter() {
+        if (root.isProxyModel) {
+            subListView.model.setTimeFilter(root.isTimeFilterActive, root.filterStartMin, root.filterEndMin)
+        } else {
+            root.updateFiltersAndScroll()
+        }
+        subListView.positionViewAtIndex(0, ListView.Beginning)
+        subListView.contentY = 0
+    }
+
     function updateFiltersAndScroll() {
         updateFilteredCount()
         subListView.positionViewAtIndex(0, ListView.Beginning)
@@ -47,17 +65,18 @@ ColumnLayout {
     }
 
     function updateFilteredCount() {
+        if (root.isProxyModel) return
         if (!subListView.model) {
-            filteredCount = 0
+            clientFilteredCount = 0
             return
         }
         if (!root.isTimeFilterActive && root.searchQuery === "" && root.currentFilter === "ALL" && root.currentChunkSize <= 0) {
-            filteredCount = subListView.count
+            clientFilteredCount = subListView.count
             return
         }
         var all = (typeof subtitleModel !== "undefined" && subtitleModel) ? subtitleModel.get_all_data() : []
         if (!all || all.length === 0) {
-            filteredCount = 0
+            clientFilteredCount = 0
             return
         }
         var count = 0
@@ -92,7 +111,7 @@ ColumnLayout {
             }
             count++
         }
-        filteredCount = count
+        clientFilteredCount = count
     }
 
     // Header controls
@@ -132,7 +151,13 @@ ColumnLayout {
                 }
                 onTextChanged: {
                     root.searchQuery = text.toLowerCase()
-                    root.updateFiltersAndScroll()
+                    if (root.isProxyModel) {
+                        subListView.model.setSearchQuery(text)
+                    } else {
+                        root.updateFiltersAndScroll()
+                    }
+                    subListView.positionViewAtIndex(0, ListView.Beginning)
+                    subListView.contentY = 0
                 }
             }
 
@@ -153,13 +178,16 @@ ColumnLayout {
                     "Hiển thị 50 câu / trang"
                 ]
                 onCurrentIndexChanged: {
-                    if (currentIndex === 0) root.currentChunkSize = 0
-                    else if (currentIndex === 1) root.currentChunkSize = 5
-                    else if (currentIndex === 2) root.currentChunkSize = 10
-                    else if (currentIndex === 3) root.currentChunkSize = 20
-                    else if (currentIndex === 4) root.currentChunkSize = 50
+                    var sizes = [0, 5, 10, 20, 50]
+                    root.currentChunkSize = sizes[currentIndex]
                     root.currentPage = 1
-                    root.updatePagination()
+                    if (root.isProxyModel) {
+                        subListView.model.setPageSize(sizes[currentIndex])
+                    } else {
+                        root.updatePagination()
+                    }
+                    subListView.positionViewAtIndex(0, ListView.Beginning)
+                    subListView.contentY = 0
                 }
 
                 contentItem: Text {
@@ -240,7 +268,13 @@ ColumnLayout {
                 onCurrentIndexChanged: {
                     const filters = ["ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"]
                     root.currentFilter = filters[currentIndex]
-                    root.updateFiltersAndScroll()
+                    if (root.isProxyModel) {
+                        subListView.model.setStatusFilter(filters[currentIndex])
+                    } else {
+                        root.updateFiltersAndScroll()
+                    }
+                    subListView.positionViewAtIndex(0, ListView.Beginning)
+                    subListView.contentY = 0
                 }
 
                 contentItem: Text {
@@ -325,7 +359,7 @@ ColumnLayout {
                     ToolTip.visible: hovered
                     onCheckedChanged: {
                         root.isTimeFilterActive = checked
-                        root.updateFiltersAndScroll()
+                        root.applyTimeFilter()
                     }
                     indicator: Rectangle {
                         implicitWidth: 16
@@ -369,7 +403,7 @@ ColumnLayout {
                     inputMethodHints: Qt.ImhDigitsOnly
                     onTextChanged: {
                         root.filterStartMin = isNaN(parseInt(text, 10)) ? 0 : parseInt(text, 10)
-                        root.updateFiltersAndScroll()
+                        root.applyTimeFilter()
                     }
                     background: Rectangle {
                         color: Theme.bgSurface
@@ -400,7 +434,7 @@ ColumnLayout {
                     inputMethodHints: Qt.ImhDigitsOnly
                     onTextChanged: {
                         root.filterEndMin = isNaN(parseInt(text, 10)) ? 9999 : parseInt(text, 10)
-                        root.updateFiltersAndScroll()
+                        root.applyTimeFilter()
                     }
                     background: Rectangle {
                         color: Theme.bgSurface
@@ -422,13 +456,13 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         clip: true
-        model: typeof subtitleModel !== "undefined" ? subtitleModel : null
+        model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : (typeof subtitleModel !== "undefined" ? subtitleModel : null)
         currentIndex: -1
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar { active: true }
 
         Component.onCompleted: {
-            if (count > 0) translationController.loadSubtitle(0)
+            if (count > 0) translationController.loadSubtitle(root.currentRawIndex >= 0 ? root.currentRawIndex : 0)
             root.updateFilteredCount()
         }
         onCountChanged: {
@@ -439,31 +473,39 @@ ColumnLayout {
                 root.selectedIndices = []
                 root.selectionChanged([])
             }
-            root.updatePagination()
+            if (!root.isProxyModel) {
+                root.updatePagination()
+            }
         }
-        onCurrentIndexChanged: { if (currentIndex >= 0) translationController.loadSubtitle(currentIndex) }
+        onCurrentIndexChanged: {
+            var raw = (root.isProxyModel && subListView.model && typeof subListView.model.getRawIndex === "function")
+                      ? subListView.model.getRawIndex(currentIndex)
+                      : currentIndex
+            if (raw >= 0) translationController.loadSubtitle(raw)
+        }
 
         delegate: Rectangle {
-            objectName: "subtitleRow_" + index
+            objectName: "subtitleRow_" + (typeof rawIndex !== "undefined" ? rawIndex : index)
             id: delegateItem
             width: subListView.width
+            property int itemRawIndex: root.isProxyModel ? (typeof rawIndex !== "undefined" ? rawIndex : (subListView.model.getRawIndex ? subListView.model.getRawIndex(index) : index)) : index
             property string normalizedStatus: typeof status !== "undefined" ? (status === "Translating" ? "TRANSLATING" : status) : "PENDING"
-            property bool matchSearch: root.searchQuery === "" ||
+            property bool matchSearch: root.isProxyModel ? true : (root.searchQuery === "" ||
                                        (typeof originalText !== "undefined" && originalText.toLowerCase().indexOf(root.searchQuery) !== -1) ||
-                                       (typeof translationText !== "undefined" && translationText.toLowerCase().indexOf(root.searchQuery) !== -1)
-            property bool matchFilter: root.currentFilter === "ALL" ||
+                                       (typeof translationText !== "undefined" && translationText.toLowerCase().indexOf(root.searchQuery) !== -1))
+            property bool matchFilter: root.isProxyModel ? true : (root.currentFilter === "ALL" ||
                                        (root.currentFilter === "PENDING" && (normalizedStatus === "PENDING" || normalizedStatus === "")) ||
-                                       normalizedStatus === root.currentFilter
+                                       normalizedStatus === root.currentFilter)
             property int subStartMin: {
                 if (!startTime || startTime.length < 5) return 0;
                 return (parseInt(startTime.substring(0, 2), 10) || 0) * 60 + (parseInt(startTime.substring(3, 5), 10) || 0);
             }
-            property bool matchTime: !root.isTimeFilterActive ||
-                                     (subStartMin >= root.filterStartMin && subStartMin <= root.filterEndMin)
-            property bool matchChunk: root.selectedChunkStart < 0 ||
+            property bool matchTime: root.isProxyModel ? true : (!root.isTimeFilterActive ||
+                                     (subStartMin >= root.filterStartMin && subStartMin <= root.filterEndMin))
+            property bool matchChunk: root.isProxyModel ? true : (root.selectedChunkStart < 0 ||
                                       root.isTimeFilterActive ||
-                                      (index >= root.selectedChunkStart && index <= root.selectedChunkEnd)
-            property bool isSelected: (root.selectedIndices.indexOf(index) !== -1) || (root.selectedIndices.length <= 1 && ListView.isCurrentItem)
+                                      (index >= root.selectedChunkStart && index <= root.selectedChunkEnd))
+            property bool isSelected: (root.selectedIndices.indexOf(itemRawIndex) !== -1) || (root.selectedIndices.length <= 1 && ListView.isCurrentItem)
             property bool hasTranslation: typeof translationText !== "undefined" && String(translationText).trim().length > 0
             
             property string durationStr: {
@@ -477,7 +519,7 @@ ColumnLayout {
                 return d > 0 ? d.toFixed(1) + "s" : ""
             }
 
-            visible: matchSearch && matchFilter && matchChunk && matchTime
+            visible: root.isProxyModel ? true : (matchSearch && matchFilter && matchChunk && matchTime)
             height: visible ? (hasTranslation ? 82 : 62) : 0
             
             color: isSelected ? Theme.bgSurfaceElevated : (mouseArea.containsMouse ? Theme.bgSurfaceSoft : "transparent")
@@ -496,22 +538,23 @@ ColumnLayout {
                 onClicked: function(mouse) {
                     var list = []
                     if (mouse.modifiers & Qt.ControlModifier) {
-                        list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (subListView.currentIndex >= 0 ? [subListView.currentIndex] : [])
-                        var pos = list.indexOf(index)
+                        list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (root.currentRawIndex >= 0 ? [root.currentRawIndex] : [])
+                        var pos = list.indexOf(delegateItem.itemRawIndex)
                         if (pos !== -1) {
                             list.splice(pos, 1)
                         } else {
-                            list.push(index)
+                            list.push(delegateItem.itemRawIndex)
                         }
                     } else if (mouse.modifiers & Qt.ShiftModifier) {
                         var start = (subListView.currentIndex >= 0) ? subListView.currentIndex : index
                         var minIdx = Math.min(start, index)
                         var maxIdx = Math.max(start, index)
                         for (var i = minIdx; i <= maxIdx; i++) {
-                            list.push(i)
+                            var rIdx = root.isProxyModel ? subListView.model.getRawIndex(i) : i
+                            list.push(rIdx)
                         }
                     } else {
-                        list = [index]
+                        list = [delegateItem.itemRawIndex]
                     }
                     root.selectedIndices = list
                     root.selectionChanged(list)
@@ -626,7 +669,8 @@ ColumnLayout {
         id: paginationBar
         Layout.fillWidth: true
         Layout.preferredHeight: 34
-        visible: root.currentChunkSize > 0 && subListView.count > 0 && !root.isTimeFilterActive
+        visible: root.isProxyModel ? (subListView.model && subListView.model.pageSize > 0 && subListView.model.filteredCount > 0)
+                                   : (root.currentChunkSize > 0 && subListView.count > 0 && !root.isTimeFilterActive)
         color: Theme.bgSurface
         border.color: Theme.border
         border.width: 1
@@ -642,18 +686,24 @@ ColumnLayout {
                 text: "◀"
                 implicitWidth: 32
                 implicitHeight: 26
-                enabled: root.currentPage > 1
+                enabled: root.isProxyModel ? (subListView.model && subListView.model.hasPrevPage) : (root.currentPage > 1)
                 onClicked: {
-                    if (root.currentPage > 1) {
+                    if (root.isProxyModel) {
+                        subListView.model.prevPage()
+                    } else if (root.currentPage > 1) {
                         root.currentPage--
                         root.updatePagination()
                     }
+                    subListView.positionViewAtIndex(0, ListView.Beginning)
+                    subListView.contentY = 0
                 }
             }
 
             Text {
                 objectName: "paginationText"
-                text: "Trang " + root.currentPage + " / " + Math.max(1, Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1)))
+                text: root.isProxyModel
+                      ? (subListView.model ? ("Trang " + subListView.model.currentPage + " / " + subListView.model.totalPages) : "")
+                      : ("Trang " + root.currentPage + " / " + Math.max(1, Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1))))
                 color: Theme.textPrimary
                 font.pixelSize: 12
                 Layout.fillWidth: true
@@ -666,12 +716,16 @@ ColumnLayout {
                 text: "▶"
                 implicitWidth: 32
                 implicitHeight: 26
-                enabled: root.currentPage < Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1))
+                enabled: root.isProxyModel ? (subListView.model && subListView.model.hasNextPage) : (root.currentPage < Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1)))
                 onClicked: {
-                    if (root.currentPage < Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1))) {
+                    if (root.isProxyModel) {
+                        subListView.model.nextPage()
+                    } else if (root.currentPage < Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1))) {
                         root.currentPage++
                         root.updatePagination()
                     }
+                    subListView.positionViewAtIndex(0, ListView.Beginning)
+                    subListView.contentY = 0
                 }
             }
         }
@@ -686,7 +740,8 @@ ColumnLayout {
         border.width: 1
         Text {
             anchors.centerIn: parent
-            text: root.filteredCount + " / " + subListView.count + " câu"
+            text: root.isProxyModel ? (subListView.model ? (subListView.model.filteredCount + " / " + subListView.model.totalCount + " câu") : "0 câu")
+                                   : (root.filteredCount + " / " + subListView.count + " câu")
             color: Theme.textMuted
             font.pixelSize: 11
         }
