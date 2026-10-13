@@ -5,6 +5,7 @@ import "../theme"
 
 ColumnLayout {
     id: root
+    objectName: "subtitleListView"
     spacing: 0
 
     property alias model: subListView.model
@@ -21,6 +22,10 @@ ColumnLayout {
     property int selectedChunkStart: -1
     property int selectedChunkEnd: -1
 
+    property bool isTimeFilterActive: false
+    property int filterStartMin: 0
+    property int filterEndMin: 9999
+
     function updatePagination() {
         if (currentChunkSize <= 0 || subListView.count === 0) {
             selectedChunkStart = -1
@@ -32,13 +37,69 @@ ColumnLayout {
             selectedChunkStart = (currentPage - 1) * currentChunkSize
             selectedChunkEnd = Math.min(currentPage * currentChunkSize - 1, subListView.count - 1)
         }
-        subListView.updateFilteredCount()
+        updateFiltersAndScroll()
+    }
+
+    function updateFiltersAndScroll() {
+        updateFilteredCount()
+        subListView.positionViewAtIndex(0, ListView.Beginning)
+        subListView.contentY = 0
+    }
+
+    function updateFilteredCount() {
+        if (!subListView.model) {
+            filteredCount = 0
+            return
+        }
+        if (!root.isTimeFilterActive && root.searchQuery === "" && root.currentFilter === "ALL" && root.currentChunkSize <= 0) {
+            filteredCount = subListView.count
+            return
+        }
+        var all = (typeof subtitleModel !== "undefined" && subtitleModel) ? subtitleModel.get_all_data() : []
+        if (!all || all.length === 0) {
+            filteredCount = 0
+            return
+        }
+        var count = 0
+        var sq = root.searchQuery
+        var cf = root.currentFilter
+        var tf = root.isTimeFilterActive
+        var sMin = root.filterStartMin
+        var eMin = root.filterEndMin
+        var cSize = root.currentChunkSize
+        var cStart = root.selectedChunkStart
+        var cEnd = root.selectedChunkEnd
+
+        for (var i = 0; i < all.length; i++) {
+            var item = all[i]
+            if (sq !== "") {
+                var orig = (item.original || "").toLowerCase()
+                var trans = (item.translation || "").toLowerCase()
+                if (orig.indexOf(sq) === -1 && trans.indexOf(sq) === -1) continue
+            }
+            if (cf !== "ALL") {
+                var st = (item.status || "PENDING").toUpperCase()
+                if (cf === "PENDING" && st !== "PENDING" && st !== "") continue
+                else if (cf !== "PENDING" && st !== cf) continue
+            }
+            if (tf) {
+                var tStr = item.start_time || ""
+                var subM = (parseInt(tStr.substring(0, 2), 10) || 0) * 60 + (parseInt(tStr.substring(3, 5), 10) || 0)
+                if (subM < sMin || subM > eMin) continue
+            }
+            if (!tf && cSize > 0 && cStart >= 0) {
+                if (i < cStart || i > cEnd) continue
+            }
+            count++
+        }
+        filteredCount = count
     }
 
     // Header controls
     Rectangle {
         Layout.fillWidth: true
-        implicitHeight: headerControlsColumn.implicitHeight + (Theme.spaceSmall * 2)
+        Layout.preferredHeight: headerControlsColumn.implicitHeight + (Theme.spaceSmall * 2)
+        implicitHeight: Layout.preferredHeight
         color: Theme.bgApp
         border.color: Theme.border
         border.width: 1
@@ -69,7 +130,10 @@ ColumnLayout {
                     radius: Theme.radius
                     border.color: searchInput.activeFocus ? Theme.accentCyan : Theme.border
                 }
-                onTextChanged: root.searchQuery = text.toLowerCase()
+                onTextChanged: {
+                    root.searchQuery = text.toLowerCase()
+                    root.updateFiltersAndScroll()
+                }
             }
 
             // Chunk Filter Combo
@@ -176,6 +240,7 @@ ColumnLayout {
                 onCurrentIndexChanged: {
                     const filters = ["ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"]
                     root.currentFilter = filters[currentIndex]
+                    root.updateFiltersAndScroll()
                 }
 
                 contentItem: Text {
@@ -251,9 +316,6 @@ ColumnLayout {
                 Layout.minimumWidth: 0
                 spacing: Theme.spaceXs
 
-                property int parsedStartMin: isNaN(parseInt(startMinInput.text, 10)) ? 0 : parseInt(startMinInput.text, 10)
-                property int parsedEndMin: isNaN(parseInt(endMinInput.text, 10)) ? 9999 : parseInt(endMinInput.text, 10)
-
                 CheckBox {
                     objectName: "timeFilterCheck"
                     id: timeFilterCheck
@@ -261,6 +323,29 @@ ColumnLayout {
                     Layout.minimumWidth: 0
                     ToolTip.text: "Lọc hiển thị theo phút bắt đầu. Trình dịch AI sẽ chạy tuần tự từ câu đang chọn."
                     ToolTip.visible: hovered
+                    onCheckedChanged: {
+                        root.isTimeFilterActive = checked
+                        root.updateFiltersAndScroll()
+                    }
+                    indicator: Rectangle {
+                        implicitWidth: 16
+                        implicitHeight: 16
+                        x: timeFilterCheck.leftPadding
+                        anchors.verticalCenter: parent.verticalCenter
+                        radius: 3
+                        color: timeFilterCheck.checked ? Theme.accentCyan : Theme.bgSurface
+                        border.color: timeFilterCheck.checked ? Theme.accentCyan : Theme.border
+                        border.width: 1
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "✓"
+                            color: Theme.bgApp
+                            font.pixelSize: 10
+                            font.bold: true
+                            visible: timeFilterCheck.checked
+                        }
+                    }
                     contentItem: Text {
                         text: timeFilterCheck.text
                         font.pixelSize: 11
@@ -282,6 +367,10 @@ ColumnLayout {
                     enabled: timeFilterCheck.checked
                     validator: IntValidator { bottom: 0; top: 9999 }
                     inputMethodHints: Qt.ImhDigitsOnly
+                    onTextChanged: {
+                        root.filterStartMin = isNaN(parseInt(text, 10)) ? 0 : parseInt(text, 10)
+                        root.updateFiltersAndScroll()
+                    }
                     background: Rectangle {
                         color: Theme.bgSurface
                         radius: Theme.radius
@@ -309,6 +398,10 @@ ColumnLayout {
                     enabled: timeFilterCheck.checked
                     validator: IntValidator { bottom: 0; top: 9999 }
                     inputMethodHints: Qt.ImhDigitsOnly
+                    onTextChanged: {
+                        root.filterEndMin = isNaN(parseInt(text, 10)) ? 9999 : parseInt(text, 10)
+                        root.updateFiltersAndScroll()
+                    }
                     background: Rectangle {
                         color: Theme.bgSurface
                         radius: Theme.radius
@@ -334,10 +427,9 @@ ColumnLayout {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar { active: true }
 
-        onContentHeightChanged: updateFilteredCount()
         Component.onCompleted: {
             if (count > 0) translationController.loadSubtitle(0)
-            updateFilteredCount()
+            root.updateFilteredCount()
         }
         onCountChanged: {
             if (count > 0 && currentIndex < 0) {
@@ -350,8 +442,6 @@ ColumnLayout {
             root.updatePagination()
         }
         onCurrentIndexChanged: { if (currentIndex >= 0) translationController.loadSubtitle(currentIndex) }
-
-        function updateFilteredCount() { filteredCount = Math.round(contentHeight / 64) }
 
         delegate: Rectangle {
             objectName: "subtitleRow_" + index
@@ -368,10 +458,10 @@ ColumnLayout {
                 if (!startTime || startTime.length < 5) return 0;
                 return (parseInt(startTime.substring(0, 2), 10) || 0) * 60 + (parseInt(startTime.substring(3, 5), 10) || 0);
             }
-            property bool matchTime: !timeFilterCheck.checked ||
-                                     (subStartMin >= timeFilterLayout.parsedStartMin && subStartMin <= timeFilterLayout.parsedEndMin)
+            property bool matchTime: !root.isTimeFilterActive ||
+                                     (subStartMin >= root.filterStartMin && subStartMin <= root.filterEndMin)
             property bool matchChunk: root.selectedChunkStart < 0 ||
-                                      timeFilterCheck.checked ||
+                                      root.isTimeFilterActive ||
                                       (index >= root.selectedChunkStart && index <= root.selectedChunkEnd)
             property bool isSelected: (root.selectedIndices.indexOf(index) !== -1) || (root.selectedIndices.length <= 1 && ListView.isCurrentItem)
             property bool hasTranslation: typeof translationText !== "undefined" && String(translationText).trim().length > 0
@@ -536,7 +626,7 @@ ColumnLayout {
         id: paginationBar
         Layout.fillWidth: true
         Layout.preferredHeight: 34
-        visible: root.currentChunkSize > 0 && subListView.count > 0 && !timeFilterCheck.checked
+        visible: root.currentChunkSize > 0 && subListView.count > 0 && !root.isTimeFilterActive
         color: Theme.bgSurface
         border.color: Theme.border
         border.width: 1

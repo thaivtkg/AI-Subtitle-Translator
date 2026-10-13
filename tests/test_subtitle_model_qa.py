@@ -59,3 +59,32 @@ def test_subtitle_model_qa_reactivity():
     model.update_translation(0, "Ngắn", "EDITED")
     assert model.data(idx, SubtitleModel.QaSeverityRole) == ""
     assert data[0]["_qa_severity"] == ""
+
+def test_subtitle_model_get_all_data_slot_qml_accessible():
+    from PySide6.QtCore import QCoreApplication
+    from PySide6.QtQml import QQmlEngine, QQmlComponent
+
+    model = SubtitleModel()
+    model.load_data([
+        {"index": 1, "start_time": "00:01:00,000", "end_time": "00:01:02,000", "original": "First", "translation": "", "status": "PENDING"},
+        {"index": 2, "start_time": "00:02:00,000", "end_time": "00:02:02,000", "original": "Second", "translation": "", "status": "PENDING"}
+    ])
+
+    app = QCoreApplication.instance() or QCoreApplication([])
+    engine = QQmlEngine()
+    engine.rootContext().setContextProperty("subtitleModel", model)
+
+    component = QQmlComponent(engine)
+    qml = b"""
+    import QtQuick 2.15
+    QtObject {
+        property var allSubs: subtitleModel.get_all_data()
+        property int subCount: allSubs ? allSubs.length : -1
+    }
+    """
+    component.setData(qml, "")
+    assert not component.isError(), [e.toString() for e in component.errors()]
+    obj = component.create()
+    assert obj is not None
+    assert obj.property("subCount") == 2
+

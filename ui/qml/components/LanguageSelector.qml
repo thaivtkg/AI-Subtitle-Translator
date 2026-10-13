@@ -8,25 +8,27 @@ RowLayout {
     property alias sourceLang: sourceCombo.currentText
     property bool compact: false
 
+    Layout.minimumWidth: 0
     spacing: root.compact ? Theme.spaceXs : Theme.spaceMedium
 
-    Text { text: "SOURCE"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
+    Text { text: "SOURCE"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true; visible: !root.compact }
 
     ComboBox {
         objectName: "sourceLanguageCombo"
         id: sourceCombo
         model: ["English", "Japanese", "Chinese (Simplified)", "Chinese (Traditional)", "Korean", "Spanish", "French", "German", "Russian"]
-        font.pixelSize: 14
-        Layout.minimumWidth: 110
-        Layout.preferredWidth: 160
-        Layout.maximumWidth: 180
+        font.pixelSize: root.compact ? 12 : 14
+        Layout.minimumWidth: root.compact ? 75 : 110
+        Layout.preferredWidth: root.compact ? 95 : 160
+        Layout.maximumWidth: root.compact ? 120 : 180
         Layout.fillWidth: true
         contentItem: Text {
             text: sourceCombo.currentText
             color: Theme.textPrimary
-            font.pixelSize: 14
+            font.pixelSize: root.compact ? 12 : 14
             verticalAlignment: Text.AlignVCenter
-            leftPadding: Theme.spaceSmall
+            leftPadding: root.compact ? 4 : Theme.spaceSmall
+            rightPadding: sourceCombo.indicator.width + (root.compact ? 4 : Theme.spaceSmall)
             elide: Text.ElideRight
         }
         
@@ -82,25 +84,25 @@ RowLayout {
         }
     }
 
-    Text { text: root.compact ? "→" : " ➔ "; color: Theme.textMuted; font.pixelSize: 16; font.bold: true }
+    Text { text: root.compact ? "→" : " ➔ "; color: Theme.textMuted; font.pixelSize: root.compact ? 13 : 16; font.bold: true }
 
-    Text { text: "TARGET"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
+    Text { text: "TARGET"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true; visible: !root.compact }
 
     ComboBox {
         id: targetCombo
         model: ["Vietnamese"]
-        font.pixelSize: 14
-        Layout.minimumWidth: 95
-        Layout.preferredWidth: 120
-        Layout.maximumWidth: 140
+        font.pixelSize: root.compact ? 12 : 14
+        Layout.minimumWidth: root.compact ? 75 : 95
+        Layout.preferredWidth: root.compact ? 95 : 120
+        Layout.maximumWidth: root.compact ? 110 : 140
         Layout.fillWidth: true
         contentItem: Text {
             text: targetCombo.currentText
             color: Theme.textSecondary
-            font.pixelSize: 14
+            font.pixelSize: root.compact ? 12 : 14
             verticalAlignment: Text.AlignVCenter
-            leftPadding: Theme.spaceSmall
-            rightPadding: targetIndicator.width + Theme.spaceSmall
+            leftPadding: root.compact ? 4 : Theme.spaceSmall
+            rightPadding: targetIndicator.width + (root.compact ? 4 : Theme.spaceSmall)
             elide: Text.ElideRight
         }
         indicator: Text {

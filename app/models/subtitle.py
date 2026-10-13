@@ -72,8 +72,9 @@ class SubtitleModel(QAbstractListModel):
         self._subtitles = data_list
         self.endResetModel()
 
+    @Slot(result="QVariantList")
     def get_all_data(self):
-        """Trả về toàn bộ danh sách subtitle để Context Engine xử lý"""
+        """Trả về toàn bộ danh sách subtitle để Context Engine và QML xử lý"""
         for sub in self._subtitles:
             self._normalize_translation_state(sub)
         return self._subtitles

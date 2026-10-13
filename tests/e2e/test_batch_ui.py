@@ -214,3 +214,49 @@ def test_tc_p3a7_multi_selection_ui_interaction_and_execution():
     finally:
         harness.close()
 
+
+def test_tc_p3a7_time_filter_and_language_selector_responsiveness():
+    harness = AppHarness(FIXTURE, worker_factory=DeterministicWorkerFactory("fast"))
+    try:
+        from PySide6.QtTest import QTest
+
+        # 1. Verify initial state: 3 items, filteredCount == 3
+        sub_list = harness.driver.find("subtitleList")
+        assert sub_list.property("count") == 3
+        nav = harness.driver.find("subtitleListView")
+        assert nav.property("filteredCount") == 3
+
+        # 2. Activate time filter 1..5 (regression.srt items are all in minute 0)
+        time_check = harness.driver.find("timeFilterCheck")
+        start_input = harness.driver.find("startMinInput")
+        end_input = harness.driver.find("endMinInput")
+        assert time_check is not None
+
+        start_input.setProperty("text", "1")
+        end_input.setProperty("text", "5")
+        time_check.setProperty("checked", True)
+        QTest.qWait(50)
+
+        # Count should now be 0 since all are minute 0
+        assert nav.property("filteredCount") == 0
+
+        # 3. Change filter to 0..1 (covers minute 0)
+        start_input.setProperty("text", "0")
+        end_input.setProperty("text", "1")
+        QTest.qWait(50)
+        assert nav.property("filteredCount") == 3
+
+        # 4. Uncheck time filter
+        time_check.setProperty("checked", False)
+        QTest.qWait(50)
+        assert nav.property("filteredCount") == 3
+
+        # 5. Check LanguageSelector compactness on narrow window
+        lang_selector = harness.driver.find("sourceLangCombo")
+        assert lang_selector is not None
+        harness.window.setWidth(1024)
+        QTest.qWait(50)
+        assert lang_selector.property("compact") is True
+    finally:
+        harness.close()
+

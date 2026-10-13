@@ -38,12 +38,14 @@ Item {
         // Status & Original header
         RowLayout {
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             spacing: Theme.spaceSmall
             
             Text {
                 text: "Trạng thái:"
                 color: Theme.textMuted
                 font.pixelSize: 12
+                visible: workspace.width >= 420
             }
             Rectangle {
                 implicitWidth: statusBadge.implicitWidth + 16
@@ -71,10 +73,15 @@ Item {
                     font.bold: true
                 }
             }
-            Item { Layout.fillWidth: true }
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
             LanguageSelector {
                 id: langSelector
                 objectName: "sourceLangCombo"
+                compact: workspace.width < 580
+                Layout.alignment: Qt.AlignRight
             }
         }
         
