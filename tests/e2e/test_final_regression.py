@@ -283,3 +283,69 @@ def test_tc15_16_chunk_filter():
         harness.close()
 
 
+def test_tc15_17_time_range_filter():
+    harness = AppHarness(None)
+    try:
+        time_check = harness.driver.find("timeFilterCheck")
+        start_input = harness.driver.find("startMinInput")
+        end_input = harness.driver.find("endMinInput")
+        chunk_combo = harness.driver.find("chunkFilterCombo")
+        pagination_bar = harness.driver.find("paginationBar")
+
+        assert time_check is not None
+        assert start_input is not None
+        assert end_input is not None
+        assert not time_check.property("checked")
+        assert not start_input.property("enabled")
+        assert not end_input.property("enabled")
+
+        # Load 4 subtitles across different minutes
+        data = [
+            {"index": 1, "start_time": "00:02:15,000", "end_time": "00:02:18,000", "original": "Min 2", "status": "PENDING", "translation": ""},
+            {"index": 2, "start_time": "00:07:30,000", "end_time": "00:07:35,000", "original": "Min 7", "status": "PENDING", "translation": ""},
+            {"index": 3, "start_time": "00:15:45,000", "end_time": "00:15:50,000", "original": "Min 15", "status": "PENDING", "translation": ""},
+            {"index": 4, "start_time": "00:25:00,000", "end_time": "00:25:05,000", "original": "Min 25", "status": "PENDING", "translation": ""},
+        ]
+        harness.model.load_data(data)
+        harness.app.processEvents()
+
+        # All 4 items visible initially
+        row0 = harness.driver.find("subtitleRow_0")
+        row1 = harness.driver.find("subtitleRow_1")
+        row2 = harness.driver.find("subtitleRow_2")
+        row3 = harness.driver.find("subtitleRow_3")
+        assert row0.property("visible") is True
+        assert row1.property("visible") is True
+        assert row2.property("visible") is True
+        assert row3.property("visible") is True
+
+        # Activate time filter: Min 5 to 20
+        time_check.setProperty("checked", True)
+        harness.app.processEvents()
+        assert start_input.property("enabled") is True
+        assert end_input.property("enabled") is True
+
+        start_input.setProperty("text", "5")
+        end_input.setProperty("text", "20")
+        harness.app.processEvents()
+
+        # Row 0 (min 2) and Row 3 (min 25) are hidden; Row 1 (min 7) and Row 2 (min 15) are visible
+        assert row0.property("visible") is False
+        assert row1.property("visible") is True
+        assert row2.property("visible") is True
+        assert row3.property("visible") is False
+
+        # Verify Chunking Bypass: selecting a chunk size does not hide items or show paginationBar while time filter is active
+        chunk_combo.setProperty("currentIndex", 1)  # "Hiển thị 5 câu / trang"
+        harness.app.processEvents()
+        assert not pagination_bar.property("visible")
+        assert row1.property("visible") is True
+        assert row2.property("visible") is True
+
+        # Deactivate time filter -> Pagination bar restored, chunking restored without losing chunk combo state
+        time_check.setProperty("checked", False)
+        harness.app.processEvents()
+        assert pagination_bar.property("visible") is True
+        assert chunk_combo.property("currentIndex") == 1
+    finally:
+        harness.close()

@@ -38,18 +38,22 @@ ColumnLayout {
     // Header controls
     Rectangle {
         Layout.fillWidth: true
-        implicitHeight: searchLayout.implicitHeight + (Theme.spaceSmall * 2)
+        implicitHeight: headerControlsColumn.implicitHeight + (Theme.spaceSmall * 2)
         color: Theme.bgApp
         border.color: Theme.border
         border.width: 1
 
-        RowLayout {
-            id: searchLayout
+        ColumnLayout {
+            id: headerControlsColumn
             anchors.fill: parent
             anchors.margins: Theme.spaceSmall
-            spacing: Theme.spaceSmall
-            Layout.fillWidth: true
-            Layout.minimumWidth: 0
+            spacing: Theme.spaceXs
+
+            RowLayout {
+                id: searchLayout
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                spacing: Theme.spaceSmall
 
             // Search
             TextField {
@@ -237,8 +241,85 @@ ColumnLayout {
                         radius: Theme.radius
                     }
                 }
+            } // filterCombo
+        } // searchLayout
+
+            // Time Filter Row
+            RowLayout {
+                id: timeFilterLayout
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                spacing: Theme.spaceXs
+
+                property int parsedStartMin: isNaN(parseInt(startMinInput.text, 10)) ? 0 : parseInt(startMinInput.text, 10)
+                property int parsedEndMin: isNaN(parseInt(endMinInput.text, 10)) ? 9999 : parseInt(endMinInput.text, 10)
+
+                CheckBox {
+                    objectName: "timeFilterCheck"
+                    id: timeFilterCheck
+                    text: "Lọc phút:"
+                    Layout.minimumWidth: 0
+                    ToolTip.text: "Lọc hiển thị theo phút bắt đầu. Trình dịch AI sẽ chạy tuần tự từ câu đang chọn."
+                    ToolTip.visible: hovered
+                    contentItem: Text {
+                        text: timeFilterCheck.text
+                        font.pixelSize: 11
+                        color: timeFilterCheck.checked ? Theme.accentCyan : Theme.textSecondary
+                        verticalAlignment: Text.AlignVCenter
+                        leftPadding: timeFilterCheck.indicator.width + Theme.spaceXs
+                    }
+                }
+
+                TextField {
+                    objectName: "startMinInput"
+                    id: startMinInput
+                    placeholderText: "Từ"
+                    Layout.preferredWidth: 46
+                    Layout.minimumWidth: 35
+                    Layout.preferredHeight: 28
+                    font.pixelSize: 12
+                    color: Theme.textPrimary
+                    enabled: timeFilterCheck.checked
+                    validator: IntValidator { bottom: 0; top: 9999 }
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    background: Rectangle {
+                        color: Theme.bgSurface
+                        radius: Theme.radius
+                        border.color: startMinInput.activeFocus ? Theme.accentCyan : Theme.border
+                        border.width: 1
+                    }
+                }
+
+                Text {
+                    text: "➔"
+                    color: Theme.textSecondary
+                    font.pixelSize: 11
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                TextField {
+                    objectName: "endMinInput"
+                    id: endMinInput
+                    placeholderText: "Đến"
+                    Layout.preferredWidth: 46
+                    Layout.minimumWidth: 35
+                    Layout.preferredHeight: 28
+                    font.pixelSize: 12
+                    color: Theme.textPrimary
+                    enabled: timeFilterCheck.checked
+                    validator: IntValidator { bottom: 0; top: 9999 }
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    background: Rectangle {
+                        color: Theme.bgSurface
+                        radius: Theme.radius
+                        border.color: endMinInput.activeFocus ? Theme.accentCyan : Theme.border
+                        border.width: 1
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
             }
-        }
+        } // headerControlsColumn
     }
 
     // List View
@@ -283,7 +364,15 @@ ColumnLayout {
             property bool matchFilter: root.currentFilter === "ALL" ||
                                        (root.currentFilter === "PENDING" && (normalizedStatus === "PENDING" || normalizedStatus === "")) ||
                                        normalizedStatus === root.currentFilter
-            property bool matchChunk: root.selectedChunkStart < 0 || (index >= root.selectedChunkStart && index <= root.selectedChunkEnd)
+            property int subStartMin: {
+                if (!startTime || startTime.length < 5) return 0;
+                return (parseInt(startTime.substring(0, 2), 10) || 0) * 60 + (parseInt(startTime.substring(3, 5), 10) || 0);
+            }
+            property bool matchTime: !timeFilterCheck.checked ||
+                                     (subStartMin >= timeFilterLayout.parsedStartMin && subStartMin <= timeFilterLayout.parsedEndMin)
+            property bool matchChunk: root.selectedChunkStart < 0 ||
+                                      timeFilterCheck.checked ||
+                                      (index >= root.selectedChunkStart && index <= root.selectedChunkEnd)
             property bool isSelected: (root.selectedIndices.indexOf(index) !== -1) || (root.selectedIndices.length <= 1 && ListView.isCurrentItem)
             property bool hasTranslation: typeof translationText !== "undefined" && String(translationText).trim().length > 0
             
@@ -298,7 +387,7 @@ ColumnLayout {
                 return d > 0 ? d.toFixed(1) + "s" : ""
             }
 
-            visible: matchSearch && matchFilter && matchChunk
+            visible: matchSearch && matchFilter && matchChunk && matchTime
             height: visible ? (hasTranslation ? 82 : 62) : 0
             
             color: isSelected ? Theme.bgSurfaceElevated : (mouseArea.containsMouse ? Theme.bgSurfaceSoft : "transparent")
@@ -447,7 +536,7 @@ ColumnLayout {
         id: paginationBar
         Layout.fillWidth: true
         Layout.preferredHeight: 34
-        visible: root.currentChunkSize > 0 && subListView.count > 0
+        visible: root.currentChunkSize > 0 && subListView.count > 0 && !timeFilterCheck.checked
         color: Theme.bgSurface
         border.color: Theme.border
         border.width: 1
