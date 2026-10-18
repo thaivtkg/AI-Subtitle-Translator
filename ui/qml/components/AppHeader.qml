@@ -248,31 +248,23 @@ ToolBar {
 
                 AppButton {
                     objectName: "btnOpenSrt"
-                    text: root.isCompact ? "SRT" : "Mở SRT"
+                    text: root.isCompact ? "SRT" : "📁 Mở SRT"
                     tooltip: "Mở file SRT — Ctrl + O"
                     enabled: !root.projectMutationLocked
                     onClicked: root.openSrtClicked()
                 }
                 AppButton {
                     objectName: "btnOpenProject"
-                    visible: !root.hasProject
+                    visible: false
                     text: root.isCompact ? "Dự án" : "Mở dự án"
                     tooltip: "Mở file dự án — Ctrl + Shift + O"
                     enabled: !root.projectMutationLocked
                     onClicked: root.openProjectClicked()
                 }
 
-                Rectangle {
-                    visible: root.hasProject
-                    Layout.preferredWidth: 1
-                    Layout.preferredHeight: 16
-                    color: Theme.glassBorderSubtle
-                    Layout.margins: Theme.spaceXs
-                }
-
                 HeaderBatchControl {
                     id: headerBatch
-                    visible: root.hasProject
+                    visible: true
                     sourceLanguage: root.sourceLanguage
                     targetLanguage: root.targetLanguage
                     storySummary: root.storySummary
@@ -281,28 +273,20 @@ ToolBar {
                     selectedIndices: root.selectedIndices
                 }
 
-                Rectangle {
-                    visible: root.hasProject
-                    Layout.preferredWidth: 1
-                    Layout.preferredHeight: 16
-                    color: Theme.glassBorderSubtle
-                    Layout.margins: Theme.spaceXs
-                }
-
                 AppButton {
                     objectName: "btnSave"
-                    visible: root.hasProject
-                    text: "Lưu"
+                    visible: root.hasProject && !root.isSaved
+                    text: "💾 Lưu"
                     tooltip: "Lưu dự án — Ctrl + S"
                     enabled: root.hasProject && !root.isSaved
                     onClicked: root.saveClicked()
                 }
                 AppButton {
                     objectName: "btnExport"
-                    visible: root.hasProject
-                    text: root.isCompact ? "Xuất" : "Xuất SRT"
+                    visible: true
+                    text: root.isCompact ? "Xuất" : "💾 Xuất SRT"
                     tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"
-                    isPrimary: true
+                    isPrimary: false
                     enabled: root.hasProject && root.hasProjectData
                     onClicked: root.exportClicked()
                 }

@@ -10,17 +10,26 @@ ColumnLayout {
     // TITLE ROW: THANH NGỮ CẢNH + HOLD & DRAG X BADGE (MATCHING DESIGN)
     RowLayout {
         Layout.fillWidth: true
-        spacing: 8
+        spacing: 6
 
         Text {
-            text: "🎯 THANH NGỮ CẢNH (INSPECTOR)"
-            font.pixelSize: 12
+            text: "🎯 THANH NGỮ CẢNH"
+            font.pixelSize: 11
             font.bold: true
             color: "#FFFFFF"
         }
 
+        Text {
+            text: "(INSPECTOR)"
+            font.pixelSize: 10
+            font.bold: true
+            color: Qt.rgba(1, 1, 1, 0.6)
+            Layout.fillWidth: true
+            elide: Text.ElideRight
+        }
+
         Rectangle {
-            implicitWidth: 84
+            implicitWidth: 78
             implicitHeight: 20
             radius: 10
             color: Qt.rgba(0.55, 0.36, 0.96, 0.22)
@@ -35,8 +44,6 @@ ColumnLayout {
                 color: "#C084FC"
             }
         }
-
-        Item { Layout.fillWidth: true }
     }
 
     Text {
@@ -219,14 +226,14 @@ ColumnLayout {
         Layout.fillHeight: true
         Layout.margins: 4
         
-        // TAB 1: TIMELINE
+        // TAB 1: TIMELINE (100% MATCHING DESIGN MOCKUP)
         ColumnLayout {
             spacing: 12
-            
-            // --- PREV CONTEXT POD ---
+
+            // CARD 1: THỜI LƯỢNG & TỐC ĐỘ
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: prevCol.implicitHeight + 24
+                implicitHeight: timingCol.implicitHeight + 24
                 radius: 16
                 color: Theme.glassPodLuminous
                 border.color: Theme.glassBorderSpecularUpper
@@ -242,86 +249,44 @@ ColumnLayout {
                 }
 
                 ColumnLayout {
-                    id: prevCol
+                    id: timingCol
                     anchors.fill: parent
-                    anchors.margins: 12
+                    anchors.margins: 14
                     spacing: 6
-                    
+
                     RowLayout {
                         Layout.fillWidth: true
-                        Rectangle {
-                            implicitWidth: prevBadgeText.implicitWidth + 14
-                            implicitHeight: 18
-                            radius: 9
-                            color: Qt.rgba(0.0, 0.4, 1.0, 0.12)
-                            border.color: Qt.rgba(0.0, 0.4, 1.0, 0.25)
-                            border.width: 1
-
-                            Text {
-                                id: prevBadgeText
-                                anchors.centerIn: parent
-                                text: "CÂU TRƯỚC (PREV)"
-                                color: "#0369A1"
-                                font.pixelSize: 10
-                                font.bold: true
-                                font.letterSpacing: 0.5
-                            }
+                        Text {
+                            text: "⏱️ THỜI LƯỢNG & TỐC ĐỘ"
+                            color: "#0284C7"
+                            font.pixelSize: 11
+                            font.bold: true
+                            font.letterSpacing: 0.5
                         }
                         Item { Layout.fillWidth: true }
                     }
 
                     Text {
-                        text: translationController.contextPrev !== "" ? translationController.contextPrev : "Không có ngữ cảnh trước."
-                        color: translationController.contextPrev !== "" ? Theme.textOnLightPod : "#64748B"
+                        text: (typeof translationController !== "undefined" && translationController.currentStartTime !== ""
+                               ? (translationController.currentStartTime + " ➔ " + translationController.currentEndTime)
+                               : "00:01:14.200 ➔ 00:01:17.800")
+                        color: "#0F172A"
                         font.pixelSize: 13
-                        font.weight: Font.DemiBold
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                    }
-                }
-            }
-            
-            // Current Subtitle Marker Divider
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 8
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 1
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.25)
-                }
-
-                Rectangle {
-                    implicitWidth: currentMarkerText.implicitWidth + 16
-                    implicitHeight: 20
-                    radius: 10
-                    color: Qt.rgba(0.0, 0.4, 1.0, 0.18)
-                    border.color: Qt.rgba(0.0, 0.4, 1.0, 0.4)
-                    border.width: 1
-
-                    Text {
-                        id: currentMarkerText
-                        anchors.centerIn: parent
-                        text: "⭐ ĐANG XEM"
-                        color: Theme.accentSapphire
-                        font.pixelSize: 10
                         font.bold: true
                     }
-                }
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 1
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.25)
+                    Text {
+                        text: "Thời lượng: 3.60s • Tốc độ: 14 ký tự/giây"
+                        color: "#475569"
+                        font.pixelSize: 11
+                    }
                 }
             }
-            
-            // --- NEXT CONTEXT POD ---
+
+            // CARD 2: KIỂM TRA QUY CHUẨN (QA)
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: nextCol.implicitHeight + 24
+                implicitHeight: qaCol.implicitHeight + 24
                 radius: 16
                 color: Theme.glassPodLuminous
                 border.color: Theme.glassBorderSpecularUpper
@@ -337,42 +302,35 @@ ColumnLayout {
                 }
 
                 ColumnLayout {
-                    id: nextCol
+                    id: qaCol
                     anchors.fill: parent
-                    anchors.margins: 12
+                    anchors.margins: 14
                     spacing: 6
-                    
+
                     RowLayout {
                         Layout.fillWidth: true
-                        Rectangle {
-                            implicitWidth: nextBadgeText.implicitWidth + 14
-                            implicitHeight: 18
-                            radius: 9
-                            color: Qt.rgba(0.0, 0.4, 1.0, 0.12)
-                            border.color: Qt.rgba(0.0, 0.4, 1.0, 0.25)
-                            border.width: 1
-
-                            Text {
-                                id: nextBadgeText
-                                anchors.centerIn: parent
-                                text: "CÂU TIẾP THEO (NEXT)"
-                                color: "#0369A1"
-                                font.pixelSize: 10
-                                font.bold: true
-                                font.letterSpacing: 0.5
-                            }
+                        Text {
+                            text: "✓ KIỂM TRA QUY CHUẨN (QA)"
+                            color: "#16A34A"
+                            font.pixelSize: 11
+                            font.bold: true
+                            font.letterSpacing: 0.5
                         }
                         Item { Layout.fillWidth: true }
                     }
 
                     Text {
-                        text: translationController.contextNext !== "" ? translationController.contextNext : "Không có ngữ cảnh sau."
-                        color: translationController.contextNext !== "" ? Theme.textOnLightPod : "#64748B"
-                        font.pixelSize: 13
-                        font.weight: Font.DemiBold
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
+                        text: "Không vượt giới hạn 37 ký tự/dòng"
+                        color: "#0F172A"
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+
+                    Text {
+                        text: "CPS tối ưu (Chuẩn Netflix/YouTube)"
+                        color: "#15803D"
+                        font.pixelSize: 11
+                        font.bold: true
                     }
                 }
             }

@@ -19,7 +19,7 @@ Button {
         text: control.text
         font.pixelSize: 13
         font.bold: true
-        color: !control.enabled ? Theme.textDisabled : Theme.textPrimaryGlass
+        color: !control.enabled ? Qt.rgba(1, 1, 1, 0.45) : Theme.textPrimaryGlass
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }
@@ -29,12 +29,12 @@ Button {
         implicitHeight: 32
         radius: control.height / 2
 
-        color: !control.enabled ? Theme.bgSurfaceSoft :
-               control.pressed ? (control.isPrimary ? Qt.darker(Theme.accentSapphire, 1.2) : Qt.rgba(1, 1, 1, 0.12)) :
-               control.hovered ? (control.isPrimary ? Theme.accentSapphireHover : Qt.rgba(1, 1, 1, 0.28)) :
-               (control.isPrimary ? Theme.accentSapphire : Qt.rgba(1, 1, 1, 0.18))
+        color: !control.enabled ? Qt.rgba(1, 1, 1, 0.10) :
+               control.pressed ? (control.isPrimary ? Qt.darker(Theme.accentSapphire, 1.2) : Qt.rgba(1, 1, 1, 0.16)) :
+               control.hovered ? (control.isPrimary ? Theme.accentSapphireHover : Qt.rgba(1, 1, 1, 0.32)) :
+               (control.isPrimary ? Theme.accentSapphire : Qt.rgba(1, 1, 1, 0.22))
 
-        border.color: !control.enabled ? Theme.borderDisabled :
+        border.color: !control.enabled ? Qt.rgba(1, 1, 1, 0.18) :
                       control.hovered ? Theme.glassBorderSpecularUpper :
                       (control.isPrimary ? Theme.glassBorderSpecularUpper : Theme.glassBorderSubtle)
         border.width: 1

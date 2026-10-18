@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Shapes 1.15
 import "../theme"
 
 Item {
@@ -71,16 +72,6 @@ Item {
             border.color: "#FFFFFF"
             border.width: 2.5
 
-            // Top specular shine
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 1
-                color: Qt.rgba(1, 1, 1, 0.8)
-                radius: parent.radius
-            }
-
             Text {
                 anchors.centerIn: parent
                 text: "⤓"
@@ -124,12 +115,33 @@ Item {
             Layout.preferredHeight: 175
             radius: 20
             color: dropArea.containsDrag ? Qt.rgba(1.0, 1.0, 1.0, 0.55) : Qt.rgba(1.0, 1.0, 1.0, 0.38)
-            border.color: dropArea.containsDrag ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.85)
-            border.width: 2
+            border.color: "transparent"
+            border.width: 0
             clip: true
 
             Behavior on color { ColorAnimation { duration: 150 } }
-            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+            Shape {
+                anchors.fill: parent
+                layer.enabled: true
+                layer.samples: 4
+                ShapePath {
+                    strokeColor: dropArea.containsDrag ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
+                    strokeWidth: 2
+                    strokeStyle: ShapePath.DashLine
+                    dashPattern: [5, 4]
+                    fillColor: "transparent"
+                    startX: 20; startY: 0
+                    PathLine { x: dropZoneBox.width - 20; y: 0 }
+                    PathArc { x: dropZoneBox.width; y: 20; radiusX: 20; radiusY: 20 }
+                    PathLine { x: dropZoneBox.width; y: dropZoneBox.height - 20 }
+                    PathArc { x: dropZoneBox.width - 20; y: dropZoneBox.height; radiusX: 20; radiusY: 20 }
+                    PathLine { x: 20; y: dropZoneBox.height }
+                    PathArc { x: 0; y: dropZoneBox.height - 20; radiusX: 20; radiusY: 20 }
+                    PathLine { x: 0; y: 20 }
+                    PathArc { x: 20; y: 0; radiusX: 20; radiusY: 20 }
+                }
+            }
 
             ColumnLayout {
                 anchors.centerIn: parent

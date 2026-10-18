@@ -44,7 +44,7 @@ Item {
             Text {
                 text: "⚡ KHÔNG GIAN DỊCH THUẬT" + (typeof subListView !== "undefined" && subListView.currentIndex >= 0 ? (" (CÂU #" + (subListView.currentIndex + 1) + ")") : "")
                 color: "#FFFFFF"
-                font.pixelSize: 12
+                font.pixelSize: 13
                 font.bold: true
             }
 
@@ -57,29 +57,29 @@ Item {
                        translationController.status === "TRANSLATED" ? "#DBEAFE" :
                        translationController.status === "EDITED" ? "#F3E8FF" :
                        translationController.status === "TRANSLATING" ? "#CFFAFE" :
-                       Theme.badgeAmberBg
+                       "#FEF08A"
                 border.color: translationController.status === "ACCEPTED" ? Qt.rgba(0.08, 0.5, 0.24, 0.3) :
                               translationController.status === "ERROR" ? Qt.rgba(0.74, 0.07, 0.23, 0.3) :
                               translationController.status === "TRANSLATED" ? Qt.rgba(0.11, 0.31, 0.85, 0.3) :
                               translationController.status === "EDITED" ? Qt.rgba(0.43, 0.16, 0.85, 0.3) :
                               translationController.status === "TRANSLATING" ? Qt.rgba(0.05, 0.45, 0.56, 0.3) :
-                              Qt.rgba(0.71, 0.32, 0.04, 0.3)
+                              "#EAB308"
                 border.width: 1
                 
                 Text {
                     id: statusBadge
                     anchors.centerIn: parent
-                    text: translationController.status === "ACCEPTED" ? "[ ĐÃ DUYỆT ]" : 
+                    text: translationController.status === "ACCEPTED" ? "✓ ĐÃ DUYỆT" : 
                           translationController.status === "TRANSLATED" ? "ĐÃ DỊCH ✦" :
                           translationController.status === "EDITED" ? "ĐÃ SỬA ●" :
                           translationController.status === "TRANSLATING" ? "Đang dịch…" : 
-                          translationController.status === "ERROR" ? "LỖI ✕" : "CHỜ DỊCH"
+                          translationController.status === "ERROR" ? "LỖI ✕" : "⏳ CHỜ DUYỆT"
                     color: translationController.status === "ACCEPTED" ? Theme.badgeEmeraldText : 
                            translationController.status === "TRANSLATED" ? "#1D4ED8" : 
                            translationController.status === "EDITED" ? "#6D28D9" : 
                            translationController.status === "ERROR" ? "#BE123C" : 
                            translationController.status === "TRANSLATING" ? "#0E7490" : 
-                           Theme.badgeAmberText
+                           "#854D0E"
                     font.pixelSize: 10
                     font.bold: true
                 }
@@ -93,6 +93,7 @@ Item {
             LanguageSelector {
                 id: langSelector
                 objectName: "sourceLangCombo"
+                visible: false
                 compact: workspace.width < 580
                 Layout.alignment: Qt.AlignRight
             }
@@ -216,10 +217,12 @@ Item {
                             }
 
                             ScrollView {
+                                id: origScroll
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 clip: true
                                 TextArea {
+                                    width: origScroll.availableWidth
                                     text: translationController.currentOriginal
                                     color: Theme.textOnLightPod
                                     font.pixelSize: 15
@@ -283,7 +286,7 @@ Item {
                                     Text {
                                         id: transBadgeText
                                         anchors.centerIn: parent
-                                        text: "BẢN DỊCH TIẾNG VIỆT"
+                                        text: "✨ BẢN DỊCH TIẾNG VIỆT (AI)"
                                         color: "#FFFFFF"
                                         font.pixelSize: 10
                                         font.bold: true
@@ -303,7 +306,7 @@ Item {
                                     Text {
                                         id: confText
                                         anchors.centerIn: parent
-                                        text: "⚡ 98% Tin cậy"
+                                        text: "⚡ Độ tin cậy: 97%"
                                         color: Theme.badgeEmeraldText
                                         font.pixelSize: 10
                                         font.bold: true
@@ -374,6 +377,7 @@ Item {
                             }
 
                             ScrollView {
+                                id: transScroll
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 clip: true
@@ -381,6 +385,7 @@ Item {
                                 TextArea {
                                     objectName: "translationInput"
                                     id: translationInput
+                                    width: transScroll.availableWidth
                                     text: translationController.currentTranslation
                                     placeholderText: translationController.status === "TRANSLATING" ? "" : "Nhập bản dịch tiếng Việt tại đây..."
                                     placeholderTextColor: "#94A3B8"
@@ -735,50 +740,76 @@ Item {
         
         Item { Layout.fillHeight: true }
         
-        // Bottom Action Buttons
+        // Bottom Action Row (100% Matching Image 2)
         RowLayout {
             Layout.fillWidth: true
-            Layout.minimumWidth: 0
             Layout.topMargin: Theme.spaceSmall
             Layout.bottomMargin: Theme.spaceSmall
             spacing: Theme.spaceMedium
-            
-            Item {
-                Layout.fillWidth: true
-                visible: !workspace.compactActions
+
+            // Gợi ý phím tắt bên trái (Matching Design Mockup)
+            RowLayout {
+                visible: workspace.width >= 560
+                spacing: 6
+                Text {
+                    text: "Nhấn"
+                    color: Qt.rgba(1, 1, 1, 0.85)
+                    font.pixelSize: 12
+                    font.bold: true
+                }
+                Rectangle {
+                    implicitWidth: keyHintText.implicitWidth + 12
+                    implicitHeight: 22
+                    radius: 6
+                    color: Qt.rgba(1, 1, 1, 0.9)
+                    Text {
+                        id: keyHintText
+                        anchors.centerIn: parent
+                        text: "Ctrl + Enter"
+                        font.pixelSize: 11
+                        font.bold: true
+                        color: Theme.accentSapphire
+                    }
+                }
+                Text {
+                    text: "để duyệt nhanh câu kế"
+                    color: Qt.rgba(1, 1, 1, 0.85)
+                    font.pixelSize: 12
+                    font.bold: true
+                }
             }
-            
+
+            Item { Layout.fillWidth: true }
+
             AppButton {
                 objectName: "btnRetry"
-                text: "↻ Thử lại"
-                Layout.minimumWidth: 80
-                Layout.preferredWidth: workspace.compactActions ? 80 : 100
-                Layout.maximumWidth: 120
+                text: "↺ Dịch lại"
+                Layout.preferredWidth: 90
+                Layout.minimumWidth: 70
                 enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
                          ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 onClicked: translateRequested(langSelector.sourceLang)
             }
-            
+
             AppButton {
                 objectName: "btnTranslate"
+                visible: translationController.status === "PENDING" || translationController.status === "TRANSLATING"
                 text: translationController.status === "TRANSLATING" ? "◌ Đang dịch..." : "⚡ Dịch (Ctrl+T)"
-                Layout.minimumWidth: 120
-                Layout.preferredWidth: workspace.compactActions ? 120 : 140
-                Layout.maximumWidth: 160
+                Layout.preferredWidth: 120
+                Layout.minimumWidth: 80
                 isPrimary: true
                 enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
                          translationController.status !== "TRANSLATING"
                 onClicked: translateRequested(langSelector.sourceLang)
             }
-            
+
             AppButton {
                 objectName: "btnAccept"
-                text: "✓ Duyệt (Ctrl+Enter)"
-                Layout.minimumWidth: 130
-                Layout.preferredWidth: workspace.compactActions ? 130 : 160
-                Layout.maximumWidth: 180
+                text: "✓ Chấp nhận (Accept) ➔"
+                Layout.preferredWidth: 160
+                Layout.minimumWidth: 100
                 isPrimary: true
-                enabled: !workspace.executionLocked && (translationController.status === "TRANSLATED" || translationController.status === "EDITED")
+                enabled: !workspace.executionLocked && (translationController.status === "TRANSLATED" || translationController.status === "EDITED" || translationController.status === "ACCEPTED")
                 onClicked: acceptRequested(translationInput.text)
             }
         }

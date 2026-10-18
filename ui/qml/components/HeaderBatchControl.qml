@@ -71,7 +71,7 @@ Item {
                 if (root.isCompact) {
                     return root.selectedLimit === 0 ? "⚡ Toàn bộ" : ("⚡ " + root.selectedLimit + " câu")
                 }
-                return root.selectedLimit === 0 ? "⚡ Dịch toàn bộ" : ("⚡ Dịch " + root.selectedLimit + " câu")
+                return root.selectedLimit === 0 ? "⚡ Dịch hàng loạt" : ("⚡ Dịch hàng loạt (" + root.selectedLimit + " câu)")
             }
             tooltip: root.hasMultiSelection ? "Dịch các câu đã chọn (Ctrl/Shift + Click)" : "Dịch tự động phụ đề theo lô"
             isPrimary: true

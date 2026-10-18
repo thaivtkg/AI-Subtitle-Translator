@@ -67,6 +67,7 @@ def test_tc15_03_search(harness):
 
 
 def test_tc15_04_status_filter(harness):
+    harness.driver.click("btnToggleFilters")
     combo = harness.driver.find("statusFilterCombo")
     harness.driver.click("statusFilterCombo")
     harness.driver.key(Qt.Key_Home)

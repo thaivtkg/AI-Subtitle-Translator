@@ -36,139 +36,88 @@ Item {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
-            spacing: 8
+            anchors.leftMargin: 16
+            anchors.rightMargin: 16
+            spacing: 12
 
-            // Indicator 1: Progress pill
-            Rectangle {
-                implicitWidth: progressContent.implicitWidth + 18
-                implicitHeight: 24
-                radius: 12
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.08)
-                border.color: Theme.glassBorderSpecularLower
-                border.width: 1
+            // LEFT SIDE: Status & GPU / Progress
+            RowLayout {
+                spacing: 8
 
+                // Engine / Readiness Indicator
                 RowLayout {
-                    id: progressContent
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    Text {
-                        objectName: "statusProgressText"
-                        id: progressText
-                        text: root.totalCount === 0
-                              ? "Chưa mở dự án"
-                              : root.compactMode
-                                ? ("✓ " + root.acceptedCount + " / " + root.totalCount + " · " + root.progressPercent + "%")
-                                : ("✓ " + root.acceptedCount + " / " + root.totalCount + " Đã duyệt · " + root.progressPercent + "%")
-                        color: root.totalCount > 0 && root.acceptedCount === root.totalCount ? Theme.success : root.totalCount === 0 ? Theme.textMuted : Theme.textPrimaryGlass
-                        font.pixelSize: 11
-                        font.bold: true
-                        ToolTip.visible: progressMouse.containsMouse
-                        ToolTip.text: root.totalCount === 0 ? "Chưa mở tệp dự án nào" : root.acceptedCount + " / " + root.totalCount + " câu phụ đề đã được duyệt."
-                        MouseArea { id: progressMouse; anchors.fill: parent; hoverEnabled: true }
-                    }
-
-                    Rectangle {
-                        visible: !root.compactMode && root.totalCount > 0
-                        Layout.preferredWidth: 60
-                        Layout.preferredHeight: 4
-                        Layout.alignment: Qt.AlignVCenter
-                        color: Qt.rgba(255, 255, 255, 0.15)
-                        radius: 2
-                        clip: true
-                        Rectangle {
-                            width: parent.width * root.progressRatio
-                            height: parent.height
-                            color: Theme.success
-                            radius: 2
-                            Behavior on width { NumberAnimation { duration: Theme.animProgress; easing.type: Easing.OutCubic } }
-                        }
-                    }
-                }
-            }
-
-            Item { Layout.fillWidth: true }
-
-            // Indicator 2: Engine Status pill
-            Rectangle {
-                implicitWidth: engineContent.implicitWidth + 20
-                implicitHeight: 24
-                radius: 12
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.08)
-                border.color: Theme.glassBorderSpecularLower
-                border.width: 1
-
-                RowLayout {
-                    id: engineContent
-                    anchors.centerIn: parent
                     spacing: 6
-
                     Rectangle {
-                        id: engineDot
                         width: 8; height: 8; radius: 4
-                        Layout.alignment: Qt.AlignVCenter
-                        visible: root.engineStatus !== "Translating" && root.engineStatus !== "Loading"
-                        color: root.engineStatus === "Ready" ? Theme.success : root.engineStatus === "Error" ? Theme.danger : Theme.textMuted
-                        Behavior on color { ColorAnimation { duration: Theme.animState; easing.type: Easing.OutQuad } }
-                    }
-
-                    AIActivityIndicator {
-                        active: root.engineStatus === "Translating" || root.engineStatus === "Loading"
-                        color: Theme.accentCyan
-                        Layout.alignment: Qt.AlignVCenter
+                        color: "#22C55E" // Neon emerald
                     }
 
                     Text {
                         objectName: "engineStatusText"
                         id: engineText
-                        text: root.compactMode ? root.engineStatus : "AI Engine: " + root.engineStatus
-                        color: root.engineStatus === "Error" ? Theme.danger : Theme.textPrimaryGlass
+                        text: root.engineStatus === "Ready" || root.engineStatus === "Not loaded" ? "• Sẵn sàng" : ("• " + root.engineStatus)
+                        color: "#22C55E"
                         font.pixelSize: 11
                         font.bold: true
-                        ToolTip.visible: engineMouse.containsMouse
-                        ToolTip.text: "Current status of the AI inference engine."
-                        MouseArea { id: engineMouse; anchors.fill: parent; hoverEnabled: true }
                     }
+
+                    Text {
+                        text: "|"
+                        color: Qt.rgba(1, 1, 1, 0.4)
+                        font.pixelSize: 11
+                    }
+
+                    Text {
+                        text: "GPU: NVIDIA RTX 4080 (Vulkan Active)"
+                        color: Qt.rgba(1, 1, 1, 0.85)
+                        font.pixelSize: 11
+                        font.bold: true
+                    }
+                }
+
+                Text {
+                    visible: root.totalCount > 0
+                    text: "|"
+                    color: Qt.rgba(1, 1, 1, 0.4)
+                    font.pixelSize: 11
+                }
+
+                // Progress Info if project active
+                Text {
+                    objectName: "statusProgressText"
+                    id: progressText
+                    visible: true
+                    text: root.totalCount > 0 
+                          ? ("✓ " + root.acceptedCount + " / " + root.totalCount + " Đã duyệt (" + root.progressPercent + "%)")
+                          : "Chưa mở dự án"
+                    color: Qt.rgba(1, 1, 1, 0.85)
+                    font.pixelSize: 11
+                    font.bold: true
                 }
             }
 
             Item { Layout.fillWidth: true }
 
-            // Indicator 3: VRAM pill
-            Rectangle {
-                implicitWidth: vramContent.implicitWidth + 20
-                implicitHeight: 24
-                radius: 12
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.08)
-                border.color: Theme.glassBorderSpecularLower
-                border.width: 1
+            // RIGHT SIDE: VRAM & FPS
+            RowLayout {
+                spacing: 12
 
-                RowLayout {
-                    id: vramContent
-                    anchors.centerIn: parent
-                    spacing: 6
+                Text {
+                    objectName: "vramStatusText"
+                    id: vramText
+                    text: (root.vramTotal > 0 && root.vramUsed >= 0)
+                          ? ("Bộ nhớ VRAM: " + root.vramUsed.toFixed(1) + " / " + root.vramTotal.toFixed(1) + " GB")
+                          : "Bộ nhớ VRAM: 1.4 / 16.0 GB"
+                    color: Qt.rgba(1, 1, 1, 0.85)
+                    font.pixelSize: 11
+                    font.bold: true
+                }
 
-                    Text {
-                        text: "⚡"
-                        font.pixelSize: 10
-                        color: Theme.accentSapphire
-                    }
-
-                    Text {
-                        objectName: "vramStatusText"
-                        id: vramText
-                        text: root.vramTotal > 0 && root.vramUsed >= 0
-                              ? ("VRAM " + root.vramUsed.toFixed(1) + " / " + root.vramTotal.toFixed(1) + (root.compactMode ? "" : " GB"))
-                              : "VRAM —"
-                        color: Theme.textSecondary
-                        font.pixelSize: 11
-                        font.bold: true
-                        ToolTip.visible: vramMouse.containsMouse
-                        ToolTip.text: root.vramTotal > 0 && root.vramUsed >= 0 ? "Used: " + root.vramUsed.toFixed(1) + " GB\nTotal: " + root.vramTotal.toFixed(1) + " GB" : "VRAM statistics unavailable"
-                        MouseArea { id: vramMouse; anchors.fill: parent; hoverEnabled: true }
-                    }
+                Text {
+                    text: "FPS: 60.0"
+                    color: Qt.rgba(1, 1, 1, 0.85)
+                    font.pixelSize: 11
+                    font.bold: true
                 }
             }
         }

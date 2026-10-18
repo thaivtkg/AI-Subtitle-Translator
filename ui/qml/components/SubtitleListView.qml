@@ -19,6 +19,7 @@ ColumnLayout {
     }
     property string currentFilter: "ALL" // "ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"
     property string searchQuery: ""
+    property bool showAdvancedFilters: false
     property int clientFilteredCount: subListView.count
     property int filteredCount: isProxyModel ? (subListView.model ? subListView.model.filteredCount : 0) : clientFilteredCount
     property var selectedIndices: []
@@ -158,20 +159,41 @@ ColumnLayout {
                 }
 
                 Item { Layout.fillWidth: true }
+
+                // Filter expand toggle icon button
+                Rectangle {
+                    objectName: "btnToggleFilters"
+                    implicitWidth: 26
+                    implicitHeight: 20
+                    radius: 10
+                    color: root.showAdvancedFilters ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.22)
+                    border.color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
+                    border.width: 1
+                    Text {
+                        anchors.centerIn: parent
+                        text: "⚙"
+                        font.pixelSize: 11
+                        color: "#FFFFFF"
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.showAdvancedFilters = !root.showAdvancedFilters
+                    }
+                }
             }
 
+            // Search Row - 100% FULL WIDTH SPACIOUS FROSTED GLASS TUBE
             RowLayout {
                 id: searchLayout
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 spacing: Theme.spaceSmall
 
-                // Search
                 TextField {
                     objectName: "searchInput"
                     id: searchInput
                     Layout.fillWidth: true
-                    Layout.minimumWidth: 50
                     placeholderText: "🔍 Tìm kiếm nhanh..."
                     placeholderTextColor: "#64748B"
                     font.pixelSize: 12
@@ -193,6 +215,113 @@ ColumnLayout {
                         subListView.contentY = 0
                     }
                 }
+            }
+
+            // GỢI Ý KÉO THẢ VÀNG HỔ PHÁCH (100% MATCHING DESIGN MOCKUP)
+            Text {
+                visible: !root.showAdvancedFilters
+                text: "👆 Bấm hoặc Nhấn Giữ & Kéo Dọc qua các câu"
+                color: "#FEF08A"
+                font.pixelSize: 11
+                font.bold: true
+                Layout.leftMargin: 4
+            }
+
+            // ADVANCED FILTERS (COLLAPSED BY DEFAULT TO KEEP MINIMAL CLEAN UI)
+            ColumnLayout {
+                id: advancedFiltersContainer
+                Layout.fillWidth: true
+                visible: root.showAdvancedFilters
+                spacing: 6
+
+                // Filter Combo
+                ComboBox {
+                    objectName: "statusFilterCombo"
+                    id: filterCombo
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 105
+                    Layout.preferredHeight: 32
+                    font.pixelSize: 12
+                    model: ["Tất cả", "Chờ dịch", "Đang dịch", "Đã dịch", "Đã sửa", "Lỗi", "Đã duyệt"]
+                    onCurrentIndexChanged: {
+                        const filters = ["ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"]
+                        root.currentFilter = filters[currentIndex]
+                        if (root.isProxyModel) {
+                            subListView.model.setStatusFilter(filters[currentIndex])
+                        } else {
+                            root.updateFiltersAndScroll()
+                        }
+                        subListView.positionViewAtIndex(0, ListView.Beginning)
+                        subListView.contentY = 0
+                    }
+
+                    contentItem: Text {
+                        leftPadding: Theme.spaceSmall
+                        rightPadding: filterCombo.indicator.width + Theme.spaceSmall
+                        text: filterCombo.currentText
+                        font.pixelSize: 12
+                        font.bold: true
+                        color: "#0F172A"
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    indicator: Text {
+                        x: filterCombo.width - width - Theme.spaceSmall
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: statusPopup.visible ? "▴" : "▾"
+                        color: Theme.accentSapphire
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+
+                    background: Rectangle {
+                        implicitWidth: 105
+                        implicitHeight: 32
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                        radius: 12
+                        border.color: filterCombo.activeFocus || statusPopup.visible ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
+                        border.width: 1
+                    }
+                    
+                    delegate: ItemDelegate {
+                        width: filterCombo.width - (Theme.spaceXs * 2)
+                        contentItem: Text {
+                            text: modelData
+                            color: highlighted ? Theme.accentCyan : Theme.textPrimary
+                            font.pixelSize: 12
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        background: Rectangle {
+                            color: highlighted ? Theme.bgSurfaceElevated : (filterCombo.currentIndex === index ? Theme.bgSurfaceSoft : "transparent")
+                            radius: 4
+                        }
+                    }
+
+                    popup: Popup {
+                        id: statusPopup
+                        y: filterCombo.height + 4
+                        width: filterCombo.width
+                        padding: Theme.spaceXs
+                        implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 220)
+
+                        contentItem: ListView {
+                            clip: true
+                            implicitHeight: contentHeight
+                            model: statusPopup.visible ? filterCombo.delegateModel : null
+                            currentIndex: filterCombo.highlightedIndex
+                            ScrollIndicator.vertical: ScrollIndicator { }
+                        }
+
+                        background: Rectangle {
+                            color: Theme.bgSurface
+                            border.color: Theme.border
+                            border.width: 1
+                            radius: Theme.radius
+                        }
+                    }
+                } // filterCombo
 
             // Chunk Filter Combo
             ComboBox {
@@ -290,95 +419,6 @@ ColumnLayout {
                 }
             }
 
-            // Filter Combo
-            ComboBox {
-                objectName: "statusFilterCombo"
-                id: filterCombo
-                Layout.fillWidth: true
-                Layout.minimumWidth: 0
-                Layout.preferredWidth: 105
-                Layout.preferredHeight: 32
-                font.pixelSize: 12
-                model: ["Tất cả", "Chờ dịch", "Đang dịch", "Đã dịch", "Đã sửa", "Lỗi", "Đã duyệt"]
-                onCurrentIndexChanged: {
-                    const filters = ["ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"]
-                    root.currentFilter = filters[currentIndex]
-                    if (root.isProxyModel) {
-                        subListView.model.setStatusFilter(filters[currentIndex])
-                    } else {
-                        root.updateFiltersAndScroll()
-                    }
-                    subListView.positionViewAtIndex(0, ListView.Beginning)
-                    subListView.contentY = 0
-                }
-
-                contentItem: Text {
-                    leftPadding: Theme.spaceSmall
-                    rightPadding: filterCombo.indicator.width + Theme.spaceSmall
-                    text: filterCombo.currentText
-                    font.pixelSize: 12
-                    font.bold: true
-                    color: "#0F172A"
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-                }
-
-                indicator: Text {
-                    x: filterCombo.width - width - Theme.spaceSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: statusPopup.visible ? "▴" : "▾"
-                    color: Theme.accentSapphire
-                    font.pixelSize: 12
-                    font.bold: true
-                }
-
-                background: Rectangle {
-                    implicitWidth: 120
-                    implicitHeight: 32
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
-                    radius: 12
-                    border.color: filterCombo.activeFocus || statusPopup.visible ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
-                    border.width: 1
-                }
-                
-                delegate: ItemDelegate {
-                    width: filterCombo.width - (Theme.spaceXs * 2)
-                    contentItem: Text {
-                        text: modelData
-                        color: highlighted ? Theme.accentCyan : Theme.textPrimary
-                        font.pixelSize: 12
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    background: Rectangle {
-                        color: highlighted ? Theme.bgSurfaceElevated : (filterCombo.currentIndex === index ? Theme.bgSurfaceSoft : "transparent")
-                        radius: 4
-                    }
-                }
-
-                popup: Popup {
-                    id: statusPopup
-                    y: filterCombo.height + 4
-                    width: filterCombo.width
-                    padding: Theme.spaceXs
-                    implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 220)
-
-                    contentItem: ListView {
-                        clip: true
-                        implicitHeight: contentHeight
-                        model: statusPopup.visible ? filterCombo.delegateModel : null
-                        currentIndex: filterCombo.highlightedIndex
-                        ScrollIndicator.vertical: ScrollIndicator { }
-                    }
-
-                    background: Rectangle {
-                        color: Theme.bgSurface
-                        border.color: Theme.border
-                        border.width: 1
-                        radius: Theme.radius
-                    }
-                }
-            } // filterCombo
-        } // searchLayout
 
             // Time Filter Row
             RowLayout {
@@ -489,8 +529,9 @@ ColumnLayout {
 
                 Item { Layout.fillWidth: true }
             }
-        } // headerControlsColumn
-    }
+        } // advancedFiltersContainer
+    } // headerControlsColumn
+    } // header controls Rectangle
 
     // List View
     ListView {
@@ -786,22 +827,11 @@ ColumnLayout {
                             Layout.fillWidth: true
                             text: originalText
                             color: isSelected ? "#FFFFFF" : Theme.textOnLightPod
-                            font.pixelSize: hasTranslation ? 11 : 13
-                            font.bold: !hasTranslation
-                            elide: Text.ElideRight
-                            maximumLineCount: hasTranslation ? 1 : 2
-                            wrapMode: Text.Wrap
-                        }
-                        
-                        Text {
-                            visible: hasTranslation
-                            Layout.fillWidth: true
-                            text: typeof translationText !== "undefined" ? translationText : ""
-                            color: isSelected ? "#E0F2FE" : Theme.accentSapphire
                             font.pixelSize: 13
                             font.bold: true
                             elide: Text.ElideRight
-                            maximumLineCount: 1
+                            maximumLineCount: 2
+                            wrapMode: Text.Wrap
                         }
                     }
                 }
@@ -881,6 +911,7 @@ ColumnLayout {
 
     // Footer stats
     Rectangle {
+        visible: false
         Layout.fillWidth: true
         height: 24
         color: Qt.rgba(1.0, 1.0, 1.0, 0.12)

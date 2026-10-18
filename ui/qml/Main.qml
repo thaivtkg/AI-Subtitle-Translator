@@ -32,10 +32,10 @@ ApplicationWindow {
     Rectangle {
         id: windowRootContainer
         anchors.fill: parent
-        anchors.margins: (mainWindow.visibility === Window.Maximized) ? 0 : 4
+        anchors.margins: (mainWindow.visibility === Window.Maximized) ? 0 : 8
         radius: (mainWindow.visibility === Window.Maximized) ? 0 : 20
         clip: true
-        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
+        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.75)
         border.width: 1.5
 
         // LAYER 1: Fluid Liquid Mesh Wallpaper (100% 1:1 match with web design mockup)
@@ -56,6 +56,24 @@ ApplicationWindow {
                 GradientStop { position: 0.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.28) }
                 GradientStop { position: 0.5; color: Qt.rgba(1.0, 1.0, 1.0, 0.12) }
                 GradientStop { position: 1.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.20) }
+            }
+        }
+
+        // DOUBLE SPECULAR RIM HIGHLIGHT (Rounded 20px glass glow)
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: "transparent"
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.65)
+            border.width: 1.5
+            z: 20
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1
+                radius: Math.max(0, parent.radius - 1)
+                color: "transparent"
+                border.color: Qt.rgba(1.0, 1.0, 1.0, 0.35)
+                border.width: 1
             }
         }
 
