@@ -99,13 +99,6 @@ Item {
                 Layout.alignment: Qt.AlignRight
             }
         }
-
-        // Đường kẻ ngang phân cách dưới tiêu đề cột
-        Rectangle {
-            Layout.fillWidth: true
-            height: 1
-            color: Qt.rgba(1, 1, 1, 0.20)
-        }
         
         // Workspace Liquid Glide Container (Elastic transition on subtitle switch)
         Item {
@@ -163,16 +156,6 @@ Item {
                         radius: 16
                         border.color: Theme.glassBorderSpecularUpper
                         border.width: 1.5
-
-                        // Specular top highlight gleam
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: 1
-                            radius: parent.radius
-                            color: Qt.rgba(1.0, 1.0, 1.0, 0.65)
-                        }
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -259,17 +242,6 @@ Item {
                         clip: true
 
                         Behavior on border.color { ColorAnimation { duration: Theme.animFocus } }
-
-                        // Specular top highlight gleam
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: 1
-                            radius: parent.radius
-                            color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
-                            z: 2
-                        }
 
                         ColumnLayout {
                             anchors.fill: parent

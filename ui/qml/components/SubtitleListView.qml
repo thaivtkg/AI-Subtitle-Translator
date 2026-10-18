@@ -122,13 +122,6 @@ ColumnLayout {
         color: "transparent"
         border.width: 0
 
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 1
-            color: Qt.rgba(1, 1, 1, 0.20)
-        }
-
         ColumnLayout {
             id: headerControlsColumn
             anchors.fill: parent
@@ -688,16 +681,6 @@ ColumnLayout {
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
                 Behavior on color { ColorAnimation { duration: 150 } }
                 Behavior on border.color { ColorAnimation { duration: 150 } }
-
-                // Top Specular Highlight Gleam
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: 1
-                    color: Qt.rgba(1, 1, 1, 0.45)
-                    radius: parent.radius
-                }
 
                 NumberAnimation {
                     id: snapAnimation

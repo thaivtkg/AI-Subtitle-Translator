@@ -54,13 +54,6 @@ ColumnLayout {
         }
     }
 
-    // Đường kẻ ngang phân cách dưới tiêu đề cột
-    Rectangle {
-        Layout.fillWidth: true
-        height: 1
-        color: Qt.rgba(1, 1, 1, 0.20)
-    }
-
     // TAB BAR CAPSULE WITH HOLD & DRAG SLIDING PILL (D:\dichuyen.mp4)
     Rectangle {
         id: tabOuterContainer
@@ -103,16 +96,6 @@ ColumnLayout {
                     easing.type: Easing.OutBack
                     easing.overshoot: 1.25
                 }
-            }
-
-            // Top specular highlight
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 1
-                radius: parent.radius
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.45)
             }
         }
 
@@ -248,15 +231,6 @@ ColumnLayout {
                 border.color: Theme.glassBorderSpecularUpper
                 border.width: 1.5
 
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: 1
-                    radius: parent.radius
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.65)
-                }
-
                 ColumnLayout {
                     id: timingCol
                     anchors.fill: parent
@@ -300,15 +274,6 @@ ColumnLayout {
                 color: Theme.glassPodLuminous
                 border.color: Theme.glassBorderSpecularUpper
                 border.width: 1.5
-
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: 1
-                    radius: parent.radius
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.65)
-                }
 
                 ColumnLayout {
                     id: qaCol
@@ -358,15 +323,6 @@ ColumnLayout {
                 color: Theme.glassPodLuminous
                 border.color: Theme.glassBorderSpecularUpper
                 border.width: 1.5
-
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: 1
-                    radius: parent.radius
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.65)
-                }
 
                 ColumnLayout {
                     id: intelCol
@@ -448,15 +404,6 @@ ColumnLayout {
                 border.width: summaryInput.activeFocus ? 2 : 1.5
 
                 Behavior on border.color { ColorAnimation { duration: Theme.animFocus } }
-
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: 1
-                    radius: parent.radius
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
-                }
 
                 ColumnLayout {
                     anchors.fill: parent
