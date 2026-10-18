@@ -520,147 +520,194 @@ ColumnLayout {
             }
 
             visible: root.isProxyModel ? true : (matchSearch && matchFilter && matchChunk && matchTime)
-            height: visible ? (hasTranslation ? 82 : 62) : 0
-            
-            color: isSelected ? Theme.bgSurfaceElevated : (mouseArea.containsMouse ? Theme.bgSurfaceSoft : "transparent")
-            border.color: isSelected ? Theme.accentCyan : "transparent"
-            border.width: isSelected ? 1 : 0
-            radius: isSelected ? 4 : 0
+            height: visible ? 84 : 0
+            color: "transparent"
 
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: isSelected ? 0 : 0.4; visible: delegateItem.visible }
-
-            MouseArea {
-                id: mouseArea
+            // FLOATING LIQUID GLASS POD
+            Rectangle {
+                id: cardPod
                 anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                acceptedButtons: Qt.LeftButton
-                onClicked: function(mouse) {
-                    var list = []
-                    if (mouse.modifiers & Qt.ControlModifier) {
-                        list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (root.currentRawIndex >= 0 ? [root.currentRawIndex] : [])
-                        var pos = list.indexOf(delegateItem.itemRawIndex)
-                        if (pos !== -1) {
-                            list.splice(pos, 1)
-                        } else {
-                            list.push(delegateItem.itemRawIndex)
-                        }
-                    } else if (mouse.modifiers & Qt.ShiftModifier) {
-                        var start = (subListView.currentIndex >= 0) ? subListView.currentIndex : index
-                        var minIdx = Math.min(start, index)
-                        var maxIdx = Math.max(start, index)
-                        for (var i = minIdx; i <= maxIdx; i++) {
-                            var rIdx = root.isProxyModel ? subListView.model.getRawIndex(i) : i
-                            list.push(rIdx)
-                        }
-                    } else {
-                        list = [delegateItem.itemRawIndex]
-                    }
-                    root.selectedIndices = list
-                    root.selectionChanged(list)
-                    subListView.currentIndex = index
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                anchors.topMargin: 3
+                anchors.bottomMargin: 3
+                radius: 16
+                clip: true
+
+                color: isSelected ? Theme.accentSapphire : (mouseArea.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.88) : Theme.glassPodLuminous)
+                border.color: isSelected ? Theme.glassBorderSpecularUpper : (mouseArea.containsMouse ? Theme.glassBorderSpecularUpper : Theme.glassBorderSpecularLower)
+                border.width: isSelected ? 1.5 : 1
+
+                scale: mouseArea.pressed ? 0.98 : (mouseArea.containsMouse ? 1.01 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                Behavior on color { ColorAnimation { duration: 150 } }
+                Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                // Top Specular Highlight Gleam
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Qt.rgba(1, 1, 1, 0.45)
+                    radius: parent.radius
                 }
-            }
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.leftMargin: Theme.spaceMedium
-                anchors.rightMargin: Theme.spaceMedium
-                anchors.topMargin: Theme.spaceSmall
-                anchors.bottomMargin: Theme.spaceSmall
-                spacing: 2
-                visible: delegateItem.visible
+                MouseArea {
+                    id: mouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: function(mouse) {
+                        var list = []
+                        if (mouse.modifiers & Qt.ControlModifier) {
+                            list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (root.currentRawIndex >= 0 ? [root.currentRawIndex] : [])
+                            var pos = list.indexOf(delegateItem.itemRawIndex)
+                            if (pos !== -1) {
+                                list.splice(pos, 1)
+                            } else {
+                                list.push(delegateItem.itemRawIndex)
+                            }
+                        } else if (mouse.modifiers & Qt.ShiftModifier) {
+                            var start = (subListView.currentIndex >= 0) ? subListView.currentIndex : index
+                            var minIdx = Math.min(start, index)
+                            var maxIdx = Math.max(start, index)
+                            for (var i = minIdx; i <= maxIdx; i++) {
+                                var rIdx = root.isProxyModel ? subListView.model.getRawIndex(i) : i
+                                list.push(rIdx)
+                            }
+                        } else {
+                            list = [delegateItem.itemRawIndex]
+                        }
+                        root.selectedIndices = list
+                        root.selectionChanged(list)
+                        subListView.currentIndex = index
+                    }
+                }
 
-                // ROW 1
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Theme.spaceSmall
-                    
-                    Rectangle {
-                        implicitWidth: 32
-                        implicitHeight: 18
-                        radius: 4
-                        color: isSelected ? Theme.accentCyan : Theme.bgSurfaceSoft
-                        Text {
-                            anchors.centerIn: parent
-                            text: "#" + String(subIndex).padStart(3, '0')
-                            color: isSelected ? Theme.bgApp : Theme.textMuted
-                            font.pixelSize: 10
-                            font.bold: true
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    anchors.topMargin: 8
+                    anchors.bottomMargin: 8
+                    spacing: 4
+
+                    // ROW 1: Index + Timecode + Duration + Status Badge
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        
+                        Rectangle {
+                            implicitWidth: 32
+                            implicitHeight: 18
+                            radius: 9
+                            color: isSelected ? "#FEF08A" : Qt.rgba(0.0, 0.4, 1.0, 0.12)
+                            Text {
+                                anchors.centerIn: parent
+                                text: "#" + String(subIndex).padStart(3, '0')
+                                color: isSelected ? "#854D0E" : Theme.accentSapphire
+                                font.pixelSize: 10
+                                font.bold: true
+                            }
                         }
-                    }
-                    
-                    Text { text: startTime; color: Theme.textMuted; font.pixelSize: 12 }
-                    Text { text: "(" + durationStr + ")"; color: Theme.textDisabled; font.pixelSize: 11 }
-                    
-                    Item { Layout.fillWidth: true }
-                    
-                    Text {
-                        z: 2
-                        visible: typeof qaSeverity !== "undefined" && qaSeverity !== ""
-                        text: qaSeverity === "ERROR" ? "🛑" : "⚠️"
-                        font.pixelSize: 11
-                        ToolTip.visible: qaHoverArea.containsMouse
-                        ToolTip.text: typeof qaTooltip !== "undefined" ? qaTooltip : ""
-                        ToolTip.delay: 200
-                        MouseArea {
-                            id: qaHoverArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: subListView.currentIndex = index
-                        }
-                    }
-                    
-                    Rectangle {
-                        implicitWidth: statusText.implicitWidth + 12
-                        implicitHeight: 18
-                        radius: 9
-                        color: normalizedStatus === "ACCEPTED" ? Qt.rgba(Theme.success.r, Theme.success.g, Theme.success.b, 0.15) :
-                               normalizedStatus === "ERROR" ? Qt.rgba(Theme.danger.r, Theme.danger.g, Theme.danger.b, 0.15) :
-                               normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Qt.rgba(Theme.accentPurple.r, Theme.accentPurple.g, Theme.accentPurple.b, 0.15) :
-                               normalizedStatus === "TRANSLATING" ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.15) :
-                               Theme.bgSurfaceSoft
                         
                         Text {
-                            id: statusText
-                            anchors.centerIn: parent
-                            text: normalizedStatus === "ACCEPTED" ? "✓ ACCEPTED" : 
-                                  normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? "★ TRANSLATED" : 
-                                  normalizedStatus === "TRANSLATING" ? "⚡ TRANSLATING" : 
-                                  normalizedStatus === "ERROR" ? "🛑 ERROR" : "○ PENDING"
-                            color: normalizedStatus === "ACCEPTED" ? Theme.success : 
-                                   normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.accentPurple : 
-                                   normalizedStatus === "ERROR" ? Theme.danger : 
-                                   normalizedStatus === "TRANSLATING" ? Theme.accentCyan : Theme.textMuted
-                            font.pixelSize: 9
+                            text: startTime
+                            color: isSelected ? "#E0F2FE" : "#0369A1"
+                            font.pixelSize: 11
                             font.bold: true
                         }
-                    }
-                }
 
-                // ROW 2: Original Text
-                Text {
-                    Layout.fillWidth: true
-                    text: originalText
-                    color: Theme.textPrimary
-                    font.pixelSize: 13
-                    elide: Text.ElideRight
-                    maximumLineCount: 1
-                }
-                
-                // ROW 3: Translation Text (if exists)
-                Text {
-                    visible: hasTranslation
-                    Layout.fillWidth: true
-                    text: typeof translationText !== "undefined" ? translationText : ""
-                    color: Theme.accentCyan
-                    opacity: 0.8
-                    font.pixelSize: 13
-                    elide: Text.ElideRight
-                    maximumLineCount: 1
+                        Text {
+                            text: durationStr !== "" ? "(" + durationStr + ")" : ""
+                            color: isSelected ? Qt.rgba(0.88, 0.95, 1.0, 0.75) : Theme.textOnLightPodMuted
+                            font.pixelSize: 10
+                        }
+                        
+                        Item { Layout.fillWidth: true }
+                        
+                        Text {
+                            z: 2
+                            visible: typeof qaSeverity !== "undefined" && qaSeverity !== ""
+                            text: qaSeverity === "ERROR" ? "🛑" : "⚠️"
+                            font.pixelSize: 11
+                            ToolTip.visible: qaHoverArea.containsMouse
+                            ToolTip.text: typeof qaTooltip !== "undefined" ? qaTooltip : ""
+                            ToolTip.delay: 200
+                            MouseArea {
+                                id: qaHoverArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: subListView.currentIndex = index
+                            }
+                        }
+                        
+                        Rectangle {
+                            implicitWidth: statusText.implicitWidth + 14
+                            implicitHeight: 18
+                            radius: 9
+                            color: isSelected ? "#FEF08A" :
+                                   normalizedStatus === "ACCEPTED" ? Theme.badgeEmeraldBg :
+                                   normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.badgeEmeraldBg :
+                                   normalizedStatus === "ERROR" ? Qt.rgba(Theme.danger.r, Theme.danger.g, Theme.danger.b, 0.15) :
+                                   normalizedStatus === "TRANSLATING" ? Qt.rgba(0, 0.4, 1.0, 0.15) : Theme.badgeAmberBg
+                            border.color: isSelected ? "#FDE047" :
+                                          normalizedStatus === "ACCEPTED" || normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.badgeEmeraldText :
+                                          normalizedStatus === "ERROR" ? Theme.danger :
+                                          normalizedStatus === "TRANSLATING" ? Theme.accentSapphire : Theme.badgeAmberText
+                            border.width: 1
+                            
+                            Text {
+                                id: statusText
+                                anchors.centerIn: parent
+                                text: isSelected ? "⭐ ĐANG XEM" :
+                                      normalizedStatus === "ACCEPTED" ? "✓ ĐÃ DUYỆT" : 
+                                      normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? "✓ ĐÃ DỊCH" : 
+                                      normalizedStatus === "TRANSLATING" ? "⚡ ĐANG DỊCH" : 
+                                      normalizedStatus === "ERROR" ? "🛑 LỖI" : "⏳ CHỜ DUYỆT"
+                                color: isSelected ? "#854D0E" :
+                                       normalizedStatus === "ACCEPTED" || normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.badgeEmeraldText :
+                                       normalizedStatus === "ERROR" ? Theme.danger :
+                                       normalizedStatus === "TRANSLATING" ? Theme.accentSapphire : Theme.badgeAmberText
+                                font.pixelSize: 9
+                                font.bold: true
+                            }
+                        }
+                    }
+
+                    // ROW 2: Subtitle text (Obsidian black on unselected, pure white on selected)
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: originalText
+                            color: isSelected ? "#FFFFFF" : Theme.textOnLightPod
+                            font.pixelSize: hasTranslation ? 11 : 13
+                            font.bold: !hasTranslation
+                            elide: Text.ElideRight
+                            maximumLineCount: hasTranslation ? 1 : 2
+                            wrapMode: Text.Wrap
+                        }
+                        
+                        Text {
+                            visible: hasTranslation
+                            Layout.fillWidth: true
+                            text: typeof translationText !== "undefined" ? translationText : ""
+                            color: isSelected ? "#E0F2FE" : Theme.accentSapphire
+                            font.pixelSize: 13
+                            font.bold: true
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+                    }
                 }
             }
         }
+
     }
 
     // Pagination bar

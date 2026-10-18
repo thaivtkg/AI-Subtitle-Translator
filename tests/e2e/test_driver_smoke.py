@@ -75,3 +75,12 @@ def test_header_macos_controls_and_pills(harness):
     assert harness.driver.find("btnMinimize") is not None
     assert harness.driver.find("btnMaximize") is not None
     assert harness.driver.find("btnOpenSrt") is not None
+
+
+def test_subtitle_row_dimensions_and_selection(harness):
+    sub_list = harness.driver.find("subtitleList")
+    row0 = harness.driver.find("subtitleRow_0")
+    assert row0.property("height") == 84
+    harness.driver.click("subtitleRow_1")
+    assert sub_list.property("currentIndex") == 1
+
