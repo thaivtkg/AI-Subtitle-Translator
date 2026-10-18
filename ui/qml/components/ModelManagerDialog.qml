@@ -19,10 +19,20 @@ Dialog {
     padding: 0
 
     background: Rectangle {
-        color: Theme.bgSurface
-        radius: Theme.radius * 2
-        border.color: Theme.border
-        border.width: 1
+        color: Qt.rgba(0.97, 0.96, 0.99, 0.95)
+        radius: 20
+        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.9)
+        border.width: 1.5
+
+        // Top specular highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            radius: parent.radius
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.8)
+        }
     }
 
     Connections {
@@ -42,40 +52,60 @@ Dialog {
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: 52
-            color: Theme.bgSurfaceElevated
-            radius: Theme.radius * 2
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
+            radius: 20
 
             // Bo góc chỉ ở trên
             Rectangle {
                 anchors.bottom: parent.bottom
                 width: parent.width
-                height: Theme.radius * 2
-                color: Theme.bgSurfaceElevated
+                height: 20
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
             }
             Rectangle {
                 anchors.bottom: parent.bottom
                 width: parent.width
                 height: 1
-                color: Theme.border
+                color: Qt.rgba(0, 0, 0, 0.08)
             }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: Theme.spaceLarge
-                anchors.rightMargin: Theme.spaceMedium
+                anchors.leftMargin: 20
+                anchors.rightMargin: 16
                 spacing: Theme.spaceSmall
 
                 Text {
                     text: "◈ Quản Lý Mô Hình Dịch Thuật AI (LLM)"
-                    color: Theme.textPrimary
-                    font.pixelSize: 16
+                    color: "#0F172A"
+                    font.pixelSize: 15
                     font.bold: true
                     Layout.fillWidth: true
                 }
 
-                AppButton {
-                    text: "✕ Đóng"
-                    onClicked: root.close()
+                Rectangle {
+                    implicitWidth: 32
+                    implicitHeight: 28
+                    radius: 8
+                    color: closeMouse.pressed ? Qt.rgba(232, 17, 35, 0.2) : (closeMouse.containsMouse ? Qt.rgba(232, 17, 35, 0.12) : Qt.rgba(15, 23, 42, 0.06))
+                    border.color: closeMouse.containsMouse ? "#E81123" : Qt.rgba(15, 23, 42, 0.12)
+                    border.width: 1
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        color: closeMouse.containsMouse ? "#E81123" : "#0F172A"
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+
+                    MouseArea {
+                        id: closeMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
+                    }
                 }
             }
         }
@@ -85,43 +115,43 @@ Dialog {
         // ==========================================
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: hwLayout.implicitHeight + Theme.spaceMedium
-            color: Theme.bgSurfaceSoft
-            border.color: Theme.border
+            implicitHeight: hwLayout.implicitHeight + 16
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.8)
             border.width: 1
 
             RowLayout {
                 id: hwLayout
                 anchors.fill: parent
-                anchors.leftMargin: Theme.spaceLarge
-                anchors.rightMargin: Theme.spaceLarge
+                anchors.leftMargin: 20
+                anchors.rightMargin: 20
                 spacing: Theme.spaceLarge
 
                 RowLayout {
-                    spacing: Theme.spaceSmall
-                    Text { text: "🖥️ GPU:"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
+                    spacing: 6
+                    Text { text: "🖥️ GPU:"; color: "#64748B"; font.pixelSize: 12; font.bold: true }
                     Text {
                         text: root.controller && root.controller.hardwareSummary ? root.controller.hardwareSummary.gpu_name : "N/A"
-                        color: Theme.textPrimary
+                        color: "#0F172A"
                         font.pixelSize: 12
                         font.bold: true
                     }
                 }
 
                 RowLayout {
-                    spacing: Theme.spaceSmall
-                    Text { text: "⚡ VRAM:"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
+                    spacing: 6
+                    Text { text: "⚡ VRAM:"; color: "#64748B"; font.pixelSize: 12; font.bold: true }
                     Text {
                         text: root.controller && root.controller.hardwareSummary ? (root.controller.hardwareSummary.vram_gb.toFixed(1) + " GB") : "0 GB"
-                        color: Theme.accentCyan
+                        color: Theme.accentSapphire
                         font.pixelSize: 12
                         font.bold: true
                     }
                 }
 
                 RowLayout {
-                    spacing: Theme.spaceSmall
-                    Text { text: "⚙️ Backend:"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true }
+                    spacing: 6
+                    Text { text: "⚙️ Backend:"; color: "#64748B"; font.pixelSize: 12; font.bold: true }
                     Text {
                         text: root.controller && root.controller.hardwareSummary ? root.controller.hardwareSummary.backend_status : "CPU"
                         color: root.controller && root.controller.hardwareSummary && root.controller.hardwareSummary.has_cuda ? Theme.success : Theme.warning

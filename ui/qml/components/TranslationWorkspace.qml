@@ -48,6 +48,12 @@ Item {
                 font.bold: true
             }
 
+            // QUAN TRỌNG: Spacer này đẩy Badge trạng thái sang sát mép phải
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
+
             Rectangle {
                 implicitWidth: statusBadge.implicitWidth + 18
                 implicitHeight: 22
@@ -85,11 +91,6 @@ Item {
                 }
             }
 
-            Item {
-                Layout.fillWidth: true
-                Layout.minimumWidth: 0
-            }
-
             LanguageSelector {
                 id: langSelector
                 objectName: "sourceLangCombo"
@@ -97,6 +98,13 @@ Item {
                 compact: workspace.width < 580
                 Layout.alignment: Qt.AlignRight
             }
+        }
+
+        // Đường kẻ ngang phân cách dưới tiêu đề cột
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: Qt.rgba(1, 1, 1, 0.20)
         }
         
         // Workspace Liquid Glide Container (Elastic transition on subtitle switch)
@@ -242,8 +250,7 @@ Item {
                     Rectangle {
                         id: translationBox
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.minimumHeight: 130
+                        Layout.preferredHeight: 140
                         color: Theme.glassPodRaised
                         radius: 16
                         border.color: translationController.status === "TRANSLATING" ? Theme.accentCyan : 
@@ -297,17 +304,17 @@ Item {
                                 Rectangle {
                                     visible: translationController.status !== "TRANSLATING" && translationInput.text.trim().length > 0
                                     implicitWidth: confText.implicitWidth + 16
-                                    implicitHeight: 20
-                                    radius: 10
-                                    color: Theme.badgeEmeraldBg
-                                    border.color: Qt.rgba(0.08, 0.5, 0.24, 0.3)
+                                    implicitHeight: 22
+                                    radius: 11
+                                    color: "#EDE7F6"
+                                    border.color: "#D1C4E9"
                                     border.width: 1
 
                                     Text {
                                         id: confText
                                         anchors.centerIn: parent
-                                        text: "⚡ Độ tin cậy: 97%"
-                                        color: Theme.badgeEmeraldText
+                                        text: "✦ Độ tin cậy: 98%"
+                                        color: "#6A1B9A"
                                         font.pixelSize: 10
                                         font.bold: true
                                     }
@@ -533,6 +540,9 @@ Item {
                             }
                         }
                     }
+
+                    // Spacer để lộ nền kính mờ phía dưới thẻ Bản dịch
+                    Item { Layout.fillHeight: true }
                 }
             }
         }
@@ -740,90 +750,105 @@ Item {
         
         Item { Layout.fillHeight: true }
         
-        // Bottom Action Row (100% Matching Image 2)
-        RowLayout {
+        // 3. THANH FOOTER ĐÁY CỘT GIỮA (Chứa phím tắt bên trái & 2 nút bấm bên phải)
+        Rectangle {
             Layout.fillWidth: true
-            Layout.topMargin: 8
-            Layout.bottomMargin: 14
-            spacing: Theme.spaceMedium
+            Layout.preferredHeight: 52
+            color: Qt.rgba(1, 1, 1, 0.08)
+            radius: 12
 
-            // Gợi ý phím tắt bên trái (Matching Design Mockup)
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Qt.rgba(1, 1, 1, 0.20)
+            }
+
             RowLayout {
-                id: shortcutHintRow
-                Layout.alignment: Qt.AlignVCenter
-                visible: workspace.width >= 620
-                spacing: 6
-                Text {
-                    text: "Nhấn"
-                    color: Qt.rgba(1, 1, 1, 0.85)
-                    font.pixelSize: 12
-                    font.bold: true
+                anchors.fill: parent
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                spacing: 12
+
+                // Gợi ý phím tắt bên trái (Matching Design Mockup)
+                RowLayout {
+                    id: shortcutHintRow
                     Layout.alignment: Qt.AlignVCenter
-                }
-                Rectangle {
-                    implicitWidth: keyHintText.implicitWidth + 12
-                    implicitHeight: 22
-                    radius: 6
-                    color: Qt.rgba(1, 1, 1, 0.9)
-                    Layout.alignment: Qt.AlignVCenter
+                    visible: workspace.width >= 580
+                    spacing: 6
                     Text {
-                        id: keyHintText
-                        anchors.centerIn: parent
-                        text: "Ctrl + Enter"
-                        font.pixelSize: 11
+                        text: "Nhấn"
+                        color: Qt.rgba(1, 1, 1, 0.85)
+                        font.pixelSize: 12
                         font.bold: true
-                        color: Theme.accentSapphire
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                    Rectangle {
+                        implicitWidth: keyHintText.implicitWidth + 12
+                        implicitHeight: 22
+                        radius: 6
+                        color: Qt.rgba(1, 1, 1, 0.9)
+                        Layout.alignment: Qt.AlignVCenter
+                        Text {
+                            id: keyHintText
+                            anchors.centerIn: parent
+                            text: "Ctrl + Enter"
+                            font.pixelSize: 11
+                            font.bold: true
+                            color: Theme.accentSapphire
+                        }
+                    }
+                    Text {
+                        text: "để duyệt nhanh câu kế"
+                        color: Qt.rgba(1, 1, 1, 0.85)
+                        font.pixelSize: 12
+                        font.bold: true
+                        Layout.alignment: Qt.AlignVCenter
                     }
                 }
-                Text {
-                    text: "để duyệt nhanh câu kế"
-                    color: Qt.rgba(1, 1, 1, 0.85)
-                    font.pixelSize: 12
-                    font.bold: true
+
+                Item {
+                    Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
                 }
-            }
 
-            Item {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-            }
+                AppButton {
+                    objectName: "btnRetry"
+                    text: "↺ Dịch lại"
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: 95
+                    Layout.minimumWidth: 70
+                    visible: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
+                    enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
+                             ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
+                    onClicked: translateRequested(langSelector.sourceLang)
+                }
 
-            AppButton {
-                objectName: "btnRetry"
-                text: "↺ Dịch lại"
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: 90
-                Layout.minimumWidth: 70
-                visible: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
-                enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
-                         ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
-                onClicked: translateRequested(langSelector.sourceLang)
-            }
+                AppButton {
+                    objectName: "btnTranslate"
+                    visible: translationController.status === "PENDING" || translationController.status === "TRANSLATING"
+                    text: translationController.status === "TRANSLATING" ? "◌ Đang dịch..." : "⚡ Dịch (Ctrl+T)"
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: 120
+                    Layout.minimumWidth: 80
+                    isPrimary: true
+                    enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
+                             translationController.status !== "TRANSLATING"
+                    onClicked: translateRequested(langSelector.sourceLang)
+                }
 
-            AppButton {
-                objectName: "btnTranslate"
-                visible: translationController.status === "PENDING" || translationController.status === "TRANSLATING"
-                text: translationController.status === "TRANSLATING" ? "◌ Đang dịch..." : "⚡ Dịch (Ctrl+T)"
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: 120
-                Layout.minimumWidth: 80
-                isPrimary: true
-                enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
-                         translationController.status !== "TRANSLATING"
-                onClicked: translateRequested(langSelector.sourceLang)
-            }
-
-            AppButton {
-                objectName: "btnAccept"
-                text: "✓ Chấp nhận (Accept) ➔"
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: Math.max(185, implicitWidth)
-                Layout.minimumWidth: 100
-                isPrimary: true
-                visible: ["TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
-                enabled: !workspace.executionLocked && (translationController.status === "TRANSLATED" || translationController.status === "EDITED" || translationController.status === "ACCEPTED")
-                onClicked: acceptRequested(translationInput.text)
+                AppButton {
+                    objectName: "btnAccept"
+                    text: "✓ Chấp nhận (Accept) ➔"
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: Math.max(185, implicitWidth)
+                    Layout.minimumWidth: 100
+                    isPrimary: true
+                    visible: true
+                    enabled: !workspace.executionLocked && (translationController.status === "TRANSLATED" || translationController.status === "EDITED" || translationController.status === "ACCEPTED")
+                    onClicked: acceptRequested(translationInput.text)
+                }
             }
         }
     }

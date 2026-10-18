@@ -118,10 +118,16 @@ ColumnLayout {
     // Header controls
     Rectangle {
         Layout.fillWidth: true
-        Layout.preferredHeight: headerControlsColumn.implicitHeight + (Theme.spaceSmall * 2)
-        implicitHeight: Layout.preferredHeight
+        implicitHeight: headerControlsColumn.implicitHeight + (Theme.spaceSmall * 2)
         color: "transparent"
         border.width: 0
+
+        Rectangle {
+            anchors.bottom: parent.bottom
+            width: parent.width
+            height: 1
+            color: Qt.rgba(1, 1, 1, 0.20)
+        }
 
         ColumnLayout {
             id: headerControlsColumn
@@ -512,6 +518,7 @@ ColumnLayout {
         id: subListView
         Layout.fillWidth: true
         Layout.fillHeight: true
+        Layout.bottomMargin: 8
         clip: true
         model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : (typeof subtitleModel !== "undefined" ? subtitleModel : null)
         currentIndex: -1

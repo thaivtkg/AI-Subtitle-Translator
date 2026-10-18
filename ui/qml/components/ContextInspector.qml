@@ -7,26 +7,49 @@ ColumnLayout {
     id: inspectorRoot
     spacing: 8
 
-    // TITLE ROW: THANH NGỮ CẢNH + HOLD & DRAG X BADGE (MATCHING DESIGN)
-    RowLayout {
+    // HEADER CỘT PHẢI: THANH NGỮ CẢNH + SUBTITLE + HOT-L & ĐÓNG (MATCHING DESIGN)
+    ColumnLayout {
         Layout.fillWidth: true
-        spacing: 6
+        spacing: 4
 
-        Text {
-            text: "🎯 THANH NGỮ CẢNH"
-            font.pixelSize: 11
-            font.bold: true
-            color: "#FFFFFF"
-        }
-
-        Text {
-            text: "(INSPECTOR)"
-            font.pixelSize: 10
-            font.bold: true
-            color: Qt.rgba(1, 1, 1, 0.6)
+        RowLayout {
             Layout.fillWidth: true
-            elide: Text.ElideRight
+            Text {
+                text: "🟣 THANH NGỮ CẢNH (INSPECTOR)"
+                color: "#FFFFFF"
+                font.pixelSize: 13
+                font.bold: true
+            }
+            Item { Layout.fillWidth: true }
+            Rectangle {
+                radius: 8
+                color: Qt.rgba(1, 1, 1, 0.16)
+                border.color: Qt.rgba(1, 1, 1, 0.3)
+                border.width: 1
+                implicitWidth: closeLbl.implicitWidth + 14
+                implicitHeight: 24
+                Text {
+                    id: closeLbl
+                    anchors.centerIn: parent
+                    text: "Hot-L & Đóng"
+                    color: "#FFFFFF"
+                    font.pixelSize: 11
+                }
+            }
         }
+
+        Text {
+            text: "⚡ Bấm đúp để sửa nhanh Mốc Giờ & Ràng Buộc ⚙"
+            color: Qt.rgba(1, 1, 1, 0.75)
+            font.pixelSize: 11
+        }
+    }
+
+    // Đường kẻ ngang phân cách dưới tiêu đề cột
+    Rectangle {
+        Layout.fillWidth: true
+        height: 1
+        color: Qt.rgba(1, 1, 1, 0.20)
     }
 
     // TAB BAR CAPSULE WITH HOLD & DRAG SLIDING PILL (D:\dichuyen.mp4)
@@ -404,10 +427,12 @@ ColumnLayout {
         // TAB 3: SUMMARY
         ColumnLayout {
             spacing: 8
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             
             Rectangle {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: 130
                 color: Theme.glassPodRaised
                 radius: 16
                 border.color: summaryInput.activeFocus ? Theme.accentSapphire : Theme.glassBorderSpecularUpper
@@ -435,12 +460,12 @@ ColumnLayout {
                             implicitWidth: summaryBadge.implicitWidth + 14
                             implicitHeight: 20
                             radius: 10
-                            color: Theme.accentSapphire
+                            color: "#AD1457"
 
                             Text {
                                 id: summaryBadge
                                 anchors.centerIn: parent
-                                text: "TỔNG QUAN & BỐI CẢNH DỰ ÁN"
+                                text: "📌 TÓM TẮT CỐT TRUYỆN"
                                 color: "#FFFFFF"
                                 font.pixelSize: 10
                                 font.bold: true
@@ -486,6 +511,9 @@ ColumnLayout {
                     }
                 }
             }
+
+            // Đẩy thẻ Summary lên trên, giữ khoảng trống kính mờ bên dưới
+            Item { Layout.fillHeight: true }
         }
     }
 }

@@ -134,7 +134,7 @@ ApplicationWindow {
                 orientation: Qt.Horizontal
                 handle: Rectangle {
                     implicitWidth: 1
-                    color: Theme.glassBorderSubtle
+                    color: Qt.rgba(1, 1, 1, 0.24)
                 }
 
                 // PANEL 1: SUBTITLE NAVIGATOR (SEAMLESS DOCKED)
