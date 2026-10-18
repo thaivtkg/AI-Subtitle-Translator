@@ -256,16 +256,34 @@ ColumnLayout {
                     }
                     
                     delegate: ItemDelegate {
-                        width: filterCombo.width - (Theme.spaceXs * 2)
-                        contentItem: Text {
-                            text: modelData
-                            color: highlighted ? Theme.accentCyan : Theme.textPrimary
-                            font.pixelSize: 12
-                            verticalAlignment: Text.AlignVCenter
+                        width: filterCombo.width - 12
+                        implicitHeight: 34
+                        contentItem: RowLayout {
+                            spacing: 8
+                            Text {
+                                text: modelData
+                                color: "#0F172A"
+                                font.pixelSize: 12
+                                font.bold: highlighted || filterCombo.currentIndex === index
+                                verticalAlignment: Text.AlignVCenter
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                text: "✓"
+                                color: Theme.accentSapphire
+                                font.pixelSize: 12
+                                font.bold: true
+                                visible: filterCombo.currentIndex === index
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            }
                         }
                         background: Rectangle {
-                            color: highlighted ? Theme.bgSurfaceElevated : (filterCombo.currentIndex === index ? Theme.bgSurfaceSoft : "transparent")
-                            radius: 4
+                            radius: 8
+                            color: filterCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.12) :
+                                   highlighted ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                            border.color: filterCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                            border.width: 1
                         }
                     }
 
@@ -273,8 +291,8 @@ ColumnLayout {
                         id: statusPopup
                         y: filterCombo.height + 4
                         width: filterCombo.width
-                        padding: Theme.spaceXs
-                        implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 220)
+                        padding: 6
+                        implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 260)
 
                         contentItem: ListView {
                             clip: true
@@ -285,10 +303,10 @@ ColumnLayout {
                         }
 
                         background: Rectangle {
-                            color: Theme.bgSurface
-                            border.color: Theme.border
-                            border.width: 1
-                            radius: Theme.radius
+                            color: Qt.rgba(1.0, 1.0, 1.0, 0.96)
+                            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.98)
+                            border.width: 1.5
+                            radius: 14
                         }
                     }
                 } // filterCombo
@@ -350,16 +368,34 @@ ColumnLayout {
                 }
 
                 delegate: ItemDelegate {
-                    width: chunkFilterCombo.width - (Theme.spaceXs * 2)
-                    contentItem: Text {
-                        text: modelData
-                        color: highlighted ? Theme.accentCyan : Theme.textPrimary
-                        font.pixelSize: 12
-                        verticalAlignment: Text.AlignVCenter
+                    width: chunkFilterCombo.width - 12
+                    implicitHeight: 34
+                    contentItem: RowLayout {
+                        spacing: 8
+                        Text {
+                            text: modelData
+                            color: "#0F172A"
+                            font.pixelSize: 12
+                            font.bold: highlighted || chunkFilterCombo.currentIndex === index
+                            verticalAlignment: Text.AlignVCenter
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            text: "✓"
+                            color: Theme.accentSapphire
+                            font.pixelSize: 12
+                            font.bold: true
+                            visible: chunkFilterCombo.currentIndex === index
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        }
                     }
                     background: Rectangle {
-                        color: highlighted ? Theme.bgSurfaceElevated : (chunkFilterCombo.currentIndex === index ? Theme.bgSurfaceSoft : "transparent")
-                        radius: 4
+                        radius: 8
+                        color: chunkFilterCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.12) :
+                               highlighted ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                        border.color: chunkFilterCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                        border.width: 1
                     }
                 }
 
@@ -367,8 +403,8 @@ ColumnLayout {
                     id: chunkPopup
                     y: chunkFilterCombo.height + 4
                     width: chunkFilterCombo.width
-                    padding: Theme.spaceXs
-                    implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 220)
+                    padding: 6
+                    implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 260)
 
                     contentItem: ListView {
                         clip: true
@@ -379,10 +415,10 @@ ColumnLayout {
                     }
 
                     background: Rectangle {
-                        color: Theme.bgSurface
-                        border.color: Theme.border
-                        border.width: 1
-                        radius: Theme.radius
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.96)
+                        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.98)
+                        border.width: 1.5
+                        radius: 14
                     }
                 }
             }

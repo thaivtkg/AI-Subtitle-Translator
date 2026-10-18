@@ -111,32 +111,24 @@ Item {
                 id: presetMenu
                 x: -(width - parent.width)
                 y: parent.height + 6
-                width: 230
+                width: 200
                 topPadding: 6
                 bottomPadding: 6
                 leftPadding: 6
                 rightPadding: 6
 
                 background: Rectangle {
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.96)
                     border.color: Qt.rgba(1.0, 1.0, 1.0, 0.98)
                     border.width: 1.5
-                    radius: 16
-
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 1
-                        radius: parent.radius
-                        color: Qt.rgba(1.0, 1.0, 1.0, 0.8)
-                    }
+                    radius: 14
                 }
 
                 MenuItem {
                     id: mItemMulti
                     visible: root.hasMultiSelection
-                    implicitHeight: 36
+                    height: visible ? 36 : 0
+                    implicitHeight: visible ? 36 : 0
                     background: Rectangle {
                         radius: 10
                         color: mItemMulti.hovered ? Qt.rgba(0.0, 0.4, 1.0, 0.08) : Qt.rgba(0.0, 0.4, 1.0, 0.04)
