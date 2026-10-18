@@ -1,5 +1,7 @@
 import os
 import json
+import time
+from uuid import uuid4
 from PySide6.QtCore import QObject, Slot, Signal, Property, QUrl
 from app.core.srt_exporter import SRTExporter
 from app.core.srt_parser import SRTParser
@@ -155,23 +157,41 @@ class ProjectController(QObject):
                 "translation_memory": self.translation_memory.to_payload(),
             },
         }
-        for row_index, subtitle in enumerate(data["subtitles"]):
-            print(
-                f"[PROJECT_SAVE] target={row_index} "
-                f"translation_len={len(str(subtitle.get('translation', '') or ''))} "
-                f"status={subtitle.get('status', 'PENDING')} "
-                f"translation={subtitle.get('translation', '')!a}",
-                flush=True,
-            )
-        
+        # Log tổng hợp 1 dòng duy nhất thay vì vòng lặp 2.000 dòng gây đơ UI
+        print(f"[PROJECT_SAVE] Saving {len(clean_subtitles)} subtitles to {os.path.basename(file_path)}")
+
+        temp_path = f"{file_path}.{uuid4().hex[:8]}.tmp"
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                import json
+            # Bước 1: Ghi vào file tạm, ép flush + fsync xuống đĩa cứng
+            with open(temp_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+
+            # Bước 2: Đã đóng file descriptor, thực hiện atomic replace có retry chống Windows Defender lock
+            last_err = None
+            for attempt in range(3):
+                try:
+                    os.replace(temp_path, file_path)
+                    last_err = None
+                    break
+                except PermissionError as perm_err:
+                    last_err = perm_err
+                    time.sleep(0.05)
+            if last_err is not None:
+                raise last_err
+
             self._set_project_state(True, False)
             self.notify.emit("SUCCESS", f"Đã lưu dự án: {os.path.basename(file_path)}")
         except Exception as e:
             self.notify.emit("ERROR", f"Lỗi lưu dự án: {str(e)}")
+        finally:
+            # Bước 3: Dọn dẹp file .tmp rác nếu quá trình lưu gặp sự cố
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
 
     @Slot(str)
     def loadProject(self, file_url):
@@ -189,18 +209,12 @@ class ProjectController(QObject):
             loaded_entities = self._load_entities(data)
             loaded_tm = self._load_translation_memory(data)
 
-            self._subtitle_model.load_data(data.get("subtitles", []))
+            subtitles = data.get("subtitles", [])
+            self._subtitle_model.load_data(subtitles)
             self.glossary = loaded_glossary
             self.entity_dictionary = loaded_entities
             self.translation_memory = loaded_tm
-            for row_index, subtitle in enumerate(data.get("subtitles", [])):
-                print(
-                    f"[PROJECT_LOAD] target={row_index} "
-                    f"translation_len={len(str(subtitle.get('translation', '') or ''))} "
-                    f"status={subtitle.get('status', 'PENDING')} "
-                    f"translation={subtitle.get('translation', '')!a}",
-                    flush=True,
-                )
+            print(f"[PROJECT_LOAD] Loaded {len(subtitles)} subtitles from {os.path.basename(file_path)}")
             self.projectLoaded.emit(data.get("story_summary", ""))
             
             # --- ĐOẠN ĐÃ SỬA: DỌN DẸP DUPLICATE EMIT ---

@@ -90,6 +90,7 @@ Item {
             Layout.fillWidth: true
             height: 1
             color: Qt.rgba(1, 1, 1, 0.25)
+            antialiasing: false
         }
         
         // Workspace Liquid Glide Container (Elastic transition on subtitle switch)
@@ -765,6 +766,7 @@ Item {
                 anchors.right: parent.right
                 height: 1
                 color: Qt.rgba(1, 1, 1, 0.20)
+                antialiasing: false
             }
 
             RowLayout {

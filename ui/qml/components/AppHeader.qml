@@ -49,6 +49,7 @@ ToolBar {
                 anchors.right: parent.right
                 height: 1
                 color: Theme.glassBorderSubtle
+                antialiasing: false
             }
 
             MouseArea {
