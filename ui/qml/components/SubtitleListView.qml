@@ -119,9 +119,8 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: headerControlsColumn.implicitHeight + (Theme.spaceSmall * 2)
         implicitHeight: Layout.preferredHeight
-        color: Theme.bgApp
-        border.color: Theme.border
-        border.width: 1
+        color: "transparent"
+        border.width: 0
 
         ColumnLayout {
             id: headerControlsColumn
@@ -129,37 +128,71 @@ ColumnLayout {
             anchors.margins: Theme.spaceSmall
             spacing: Theme.spaceXs
 
+            // TITLE ROW: DANH SÁCH CÂU + HOLD & DRAG BADGE (MATCHING DESIGN)
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                Text {
+                    text: "📋 DANH SÁCH CÂU"
+                    font.pixelSize: 12
+                    font.bold: true
+                    color: "#FFFFFF"
+                }
+
+                Rectangle {
+                    implicitWidth: 84
+                    implicitHeight: 20
+                    radius: 10
+                    color: Qt.rgba(0.06, 0.72, 0.51, 0.22)
+                    border.color: "#10B981"
+                    border.width: 1
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Hold & Drag Y"
+                        font.pixelSize: 9
+                        font.bold: true
+                        color: "#6EE7B7"
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+            }
+
             RowLayout {
                 id: searchLayout
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 spacing: Theme.spaceSmall
 
-            // Search
-            TextField {
-                objectName: "searchInput"
-                id: searchInput
-                Layout.fillWidth: true
-                Layout.minimumWidth: 50
-                placeholderText: "Tìm kiếm..."
-                font.pixelSize: 12
-                color: Theme.textPrimary
-                background: Rectangle {
-                    color: Theme.bgSurface
-                    radius: Theme.radius
-                    border.color: searchInput.activeFocus ? Theme.accentCyan : Theme.border
-                }
-                onTextChanged: {
-                    root.searchQuery = text.toLowerCase()
-                    if (root.isProxyModel) {
-                        subListView.model.setSearchQuery(text)
-                    } else {
-                        root.updateFiltersAndScroll()
+                // Search
+                TextField {
+                    objectName: "searchInput"
+                    id: searchInput
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 50
+                    placeholderText: "🔍 Tìm kiếm nhanh..."
+                    placeholderTextColor: "#64748B"
+                    font.pixelSize: 12
+                    color: "#0F172A"
+                    background: Rectangle {
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.88)
+                        radius: 16
+                        border.color: searchInput.activeFocus ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.95)
+                        border.width: searchInput.activeFocus ? 1.5 : 1
                     }
-                    subListView.positionViewAtIndex(0, ListView.Beginning)
-                    subListView.contentY = 0
+                    onTextChanged: {
+                        root.searchQuery = text.toLowerCase()
+                        if (root.isProxyModel) {
+                            subListView.model.setSearchQuery(text)
+                        } else {
+                            root.updateFiltersAndScroll()
+                        }
+                        subListView.positionViewAtIndex(0, ListView.Beginning)
+                        subListView.contentY = 0
+                    }
                 }
-            }
 
             // Chunk Filter Combo
             ComboBox {
@@ -534,7 +567,7 @@ ColumnLayout {
                 anchors.rightMargin: 8
                 anchors.topMargin: 3
                 anchors.bottomMargin: 3
-                radius: 16
+                radius: 18
                 clip: true
                 z: isSelected ? 5 : (delegateItem.isCardDragging ? 10 : 1)
 

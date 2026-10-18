@@ -26,164 +26,206 @@ ApplicationWindow {
     // ==========================================
     // P2.5-T2: PROJECT HEADER
     // ==========================================
-    header: AppHeader {
-        projectName: "Workspace"
-        hasProject: projectController.hasProject || subListView.count > 0
-        isSaved: (projectController.hasProject || subListView.count > 0) && !projectController.isDirty
-        hasProjectData: subListView.count > 0
-        projectMutationLocked: batchController.executionLocked
-        sourceLanguage: transWorkspace.getSourceLanguage()
-        targetLanguage: "Vietnamese"
-        storySummary: mainWindow.globalStorySummary
-        currentSubtitleIndex: subListView.currentRawIndex
-        selectedIndices: mainWindow.selectedSubtitleIndices
-        onOpenSrtClicked: {
-            if (!batchController.executionLocked) importSrtDialog.open()
-        }
-        onOpenProjectClicked: {
-            if (!batchController.executionLocked) loadProjectDialog.open()
-        }
-        onSaveClicked: saveProjectDialog.open()
-        onExportClicked: {
-            if (projectController.validateBeforeExport()) {
-                exportSrtDialog.open()
-            }
-        }
-        onModelManagerClicked: modelManagerDialog.open()
-    }
-
-    footer: AppStatusBar {
-        id: appStatusBar
-        totalCount: translationController.totalSubtitleCount
-        acceptedCount: translationController.acceptedCount
-        engineStatus: {
-            return translationController.engineStatus
-        }
-        vramUsed: typeof translationController.vramUsed !== "undefined" ? translationController.vramUsed : -1.0
-        vramTotal: typeof translationController.vramTotal !== "undefined" ? translationController.vramTotal : -1.0
-    }
-
     // ==========================================
-    // S2-T2: MAIN WINDOW SHELL (3-COLUMN LAYOUT)
+    // SEAMLESS LIQUID GLASS ROOT WINDOW CONTAINER (ROUNDED & LUMINOUS)
     // ==========================================
-    // Lớp nền kính khói xuyên thấu toàn màn hình
     Rectangle {
-        id: windowBgLayer
+        id: windowRootContainer
         anchors.fill: parent
-        color: Theme.glassBackground
-        z: -2
-    }
+        anchors.margins: (mainWindow.visibility === Window.Maximized) ? 0 : 4
+        radius: (mainWindow.visibility === Window.Maximized) ? 0 : 20
+        clip: true
+        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
+        border.width: 1.5
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 0
-        spacing: 0
-
-        StudioLaunchpad {
-            id: studioLaunchpad
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: subListView.count === 0
-            onOpenSrtClicked: {
-                if (!batchController.executionLocked) importSrtDialog.open()
-            }
-            onOpenProjectClicked: {
-                if (!batchController.executionLocked) loadProjectDialog.open()
+        // LAYER 1: Radiant Horizontal Liquid Mesh Gradient (Sky Blue -> Sapphire -> Violet -> Magenta)
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "#0284C7" }   // Deep sky blue (Bottom-Left)
+                GradientStop { position: 0.28; color: "#0066FF" }  // Vibrant Sapphire blue
+                GradientStop { position: 0.65; color: "#8B5CF6" }  // Luminous violet purple
+                GradientStop { position: 1.0; color: "#EC4899" }   // Radiant magenta pink (Top-Right)
             }
         }
 
-        SplitView {
-            id: mainSplitView
-            objectName: "mainSplitView"
-            Layout.fillWidth: true
+        // LAYER 2: Warm Ambient Depth Overlay (Peach glow at top-left, rich indigo depth at bottom)
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(0.98, 0.45, 0.2, 0.28) } // Warm peach top-left
+                GradientStop { position: 0.45; color: Qt.rgba(0.0, 0.0, 0.0, 0.0) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.0, 0.2, 0.8, 0.22) }  // Deep sapphire bottom
+            }
+        }
 
-            Layout.fillHeight: true
-            visible: subListView.count > 0
-            orientation: Qt.Horizontal
-            handle: Rectangle {
-                implicitWidth: 1
-                color: Theme.glassBorderSubtle
+        // LAYER 3: Ultra-Gloss Liquid Glass Frost Veil
+        Rectangle {
+            anchors.fill: parent
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.14)
+        }
+
+        // Top Specular Gleam Highlight along the upper rounded rim
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 0
+
+            AppHeader {
+                id: appHeader
+                Layout.fillWidth: true
+                Layout.preferredHeight: 48
+                projectName: "Workspace"
+                hasProject: projectController.hasProject || subListView.count > 0
+                isSaved: (projectController.hasProject || subListView.count > 0) && !projectController.isDirty
+                hasProjectData: subListView.count > 0
+                projectMutationLocked: batchController.executionLocked
+                sourceLanguage: transWorkspace.getSourceLanguage()
+                targetLanguage: "Vietnamese"
+                storySummary: mainWindow.globalStorySummary
+                currentSubtitleIndex: subListView.currentRawIndex
+                selectedIndices: mainWindow.selectedSubtitleIndices
+                onOpenSrtClicked: {
+                    if (!batchController.executionLocked) importSrtDialog.open()
+                }
+                onOpenProjectClicked: {
+                    if (!batchController.executionLocked) loadProjectDialog.open()
+                }
+                onSaveClicked: saveProjectDialog.open()
+                onExportClicked: {
+                    if (projectController.validateBeforeExport()) {
+                        exportSrtDialog.open()
+                    }
+                }
+                onModelManagerClicked: modelManagerDialog.open()
             }
 
-            // PANEL 1: SUBTITLE NAVIGATOR (SEAMLESS DOCKED)
-            Rectangle {
-                id: subtitleIsland
-                SplitView.preferredWidth: 320
-                SplitView.minimumWidth: 260
-                SplitView.maximumWidth: 450
-                radius: 0
-                color: Theme.glassIslandSurface
-                border.color: "transparent"
-                border.width: 0
-                clip: true
-
-                SubtitleListView {
-                    id: subListView // ĐÃ FIX: Khai báo ID cho danh sách
-                    anchors.fill: parent
-                    anchors.margins: 0
-                    model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : subtitleModel
-                    selectedIndices: mainWindow.selectedSubtitleIndices
-                    onSelectionChanged: function(indices) {
-                        mainWindow.selectedSubtitleIndices = indices
-                    }
+            StudioLaunchpad {
+                id: studioLaunchpad
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                visible: subListView.count === 0
+                onOpenSrtClicked: {
+                    if (!batchController.executionLocked) importSrtDialog.open()
+                }
+                onOpenProjectClicked: {
+                    if (!batchController.executionLocked) loadProjectDialog.open()
                 }
             }
 
-            // PANEL 2: TRANSLATION WORKSPACE (SEAMLESS DOCKED)
-            Rectangle {
-                id: workspaceIsland
-                SplitView.fillWidth: true
-                SplitView.minimumWidth: 400
-                radius: 0
-                color: Theme.glassIslandSurface
-                border.color: "transparent"
-                border.width: 0
-                clip: true
+            SplitView {
+                id: mainSplitView
+                objectName: "mainSplitView"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                visible: subListView.count > 0
+                orientation: Qt.Horizontal
+                handle: Rectangle {
+                    implicitWidth: 1
+                    color: Theme.glassBorderSubtle
+                }
 
-                TranslationWorkspace {
-                    id: transWorkspace
-                    anchors.fill: parent
-                    anchors.margins: Theme.spaceMedium
-                    hasSelection: subListView.currentRawIndex >= 0
-                    totalCount: subListView.count
-                    executionLocked: batchController.executionLocked
+                // PANEL 1: SUBTITLE NAVIGATOR (SEAMLESS DOCKED)
+                Rectangle {
+                    id: subtitleIsland
+                    SplitView.preferredWidth: 320
+                    SplitView.minimumWidth: 260
+                    SplitView.maximumWidth: 450
+                    radius: 0
+                    color: Theme.glassIslandSurface
+                    border.color: "transparent"
+                    border.width: 0
+                    clip: true
 
-                    onTranslateRequested: (sourceLang) => {
-                        translationController.requestTranslation(subListView.currentRawIndex, sourceLang, "Vietnamese", globalStorySummary)
-                    }
-
-                    onAcceptRequested: (text) => {
-                        let isSuccess = translationController.acceptTranslation(subListView.currentRawIndex, text)
-                        if (isSuccess && subListView.currentIndex < subListView.count - 1) {
-                            subListView.currentIndex += 1
+                    SubtitleListView {
+                        id: subListView
+                        anchors.fill: parent
+                        anchors.margins: 0
+                        model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : subtitleModel
+                        selectedIndices: mainWindow.selectedSubtitleIndices
+                        onSelectionChanged: function(indices) {
+                            mainWindow.selectedSubtitleIndices = indices
                         }
                     }
-                    onOpenSrtRequested: {
-                        if (!batchController.executionLocked) importSrtDialog.open()
+                }
+
+                // PANEL 2: TRANSLATION WORKSPACE (SEAMLESS DOCKED)
+                Rectangle {
+                    id: workspaceIsland
+                    SplitView.fillWidth: true
+                    SplitView.minimumWidth: 400
+                    radius: 0
+                    color: Theme.glassIslandSurface
+                    border.color: "transparent"
+                    border.width: 0
+                    clip: true
+
+                    TranslationWorkspace {
+                        id: transWorkspace
+                        anchors.fill: parent
+                        anchors.margins: Theme.spaceMedium
+                        hasSelection: subListView.currentRawIndex >= 0
+                        totalCount: subListView.count
+                        executionLocked: batchController.executionLocked
+
+                        onTranslateRequested: (sourceLang) => {
+                            translationController.requestTranslation(subListView.currentRawIndex, sourceLang, "Vietnamese", globalStorySummary)
+                        }
+
+                        onAcceptRequested: (text) => {
+                            let isSuccess = translationController.acceptTranslation(subListView.currentRawIndex, text)
+                            if (isSuccess && subListView.currentIndex < subListView.count - 1) {
+                                subListView.currentIndex += 1
+                            }
+                        }
+                        onOpenSrtRequested: {
+                            if (!batchController.executionLocked) importSrtDialog.open()
+                        }
+                        onOpenProjectRequested: {
+                            if (!batchController.executionLocked) loadProjectDialog.open()
+                        }
                     }
-                    onOpenProjectRequested: {
-                        if (!batchController.executionLocked) loadProjectDialog.open()
+                }
+
+                // PANEL 3: CONTEXT INSPECTOR (SEAMLESS DOCKED)
+                Rectangle {
+                    id: contextIsland
+                    SplitView.preferredWidth: 300
+                    SplitView.minimumWidth: 280
+                    SplitView.maximumWidth: 400
+                    radius: 0
+                    color: Theme.glassIslandSurface
+                    border.color: "transparent"
+                    border.width: 0
+                    clip: true
+
+                    ContextInspector {
+                        id: contextInspector
+                        anchors.fill: parent
+                        anchors.margins: Theme.spaceMedium
                     }
                 }
             }
 
-            // PANEL 3: CONTEXT INSPECTOR (SEAMLESS DOCKED)
-            Rectangle {
-                id: contextIsland
-                SplitView.preferredWidth: 300
-                SplitView.minimumWidth: 280
-                SplitView.maximumWidth: 400
-                radius: 0
-                color: Theme.glassIslandSurface
-                border.color: "transparent"
-                border.width: 0
-                clip: true
-
-                ContextInspector {
-                    id: contextInspector
-                    anchors.fill: parent
-                    anchors.margins: Theme.spaceMedium
+            AppStatusBar {
+                id: appStatusBar
+                Layout.fillWidth: true
+                Layout.preferredHeight: 32
+                totalCount: translationController.totalSubtitleCount
+                acceptedCount: translationController.acceptedCount
+                engineStatus: {
+                    return translationController.engineStatus
                 }
+                vramUsed: typeof translationController.vramUsed !== "undefined" ? translationController.vramUsed : -1.0
+                vramTotal: typeof translationController.vramTotal !== "undefined" ? translationController.vramTotal : -1.0
             }
         }
     }

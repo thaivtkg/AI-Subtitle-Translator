@@ -11,18 +11,18 @@ QtObject {
     readonly property color borderDisabled: "#273247"
 
     // --- Ultra-Gloss Liquid Glass Surfaces (Desktop Bleed-Through) ---
-    readonly property color glassBackground: Qt.rgba(0.06, 0.10, 0.18, 0.50)      // Lớp nền kính khói xuyên thấu
-    readonly property color glassIslandSurface: Qt.rgba(0.12, 0.18, 0.28, 0.45)    // Bề mặt đảo kính nổi xuyên thấu
+    readonly property color glassBackground: Qt.rgba(1.0, 1.0, 1.0, 0.15)         // Lớp phủ kính sáng
+    readonly property color glassIslandSurface: Qt.rgba(1.0, 1.0, 1.0, 0.16)       // Bề mặt đảo kính nổi sáng xuyên thấu
     readonly property color glassIslandActive: Qt.rgba(0.0, 0.40, 1.0, 0.35)       // Vùng chọn nổi bật
-    readonly property color glassPodLuminous: Qt.rgba(1.0, 1.0, 1.0, 0.75)        // Hộp thẻ kính mờ trắng sáng câu gốc
-    readonly property color glassPodRaised: Qt.rgba(1.0, 1.0, 1.0, 0.82)          // Hộp nổi bật câu dịch
+    readonly property color glassPodLuminous: Qt.rgba(1.0, 1.0, 1.0, 0.85)         // Hộp thẻ kính mờ trắng sáng câu gốc
+    readonly property color glassPodRaised: Qt.rgba(1.0, 1.0, 1.0, 0.90)           // Hộp nổi bật câu dịch
 
     // --- Specular Bevels & Refractive Rims ---
     readonly property color glassBorderSpecularUpper: Qt.rgba(1.0, 1.0, 1.0, 0.95) // Viền bóng mép kính trên (Double Specular Rim)
     readonly property color glassBorderSpecularLower: Qt.rgba(1.0, 1.0, 1.0, 0.45) // Viền mép dưới
-    readonly property color glassBorderSubtle: Qt.rgba(1.0, 1.0, 1.0, 0.25)        // Viền mờ phụ
-    readonly property color glassBevelInner: Qt.rgba(0.0, 0.0, 0.0, 0.15)          // Đổ bóng lồi mép kính 3D
-    readonly property color glassGleamWhite: Qt.rgba(1.0, 1.0, 1.0, 0.25)          // Vệt sáng lóa bề mặt (Specular Gleam)
+    readonly property color glassBorderSubtle: Qt.rgba(1.0, 1.0, 1.0, 0.30)        // Viền mờ phụ
+    readonly property color glassBevelInner: Qt.rgba(0.0, 0.0, 0.0, 0.08)          // Đổ bóng lồi mép kính 3D
+    readonly property color glassGleamWhite: Qt.rgba(1.0, 1.0, 1.0, 0.55)          // Vệt sáng lóa bề mặt (Specular Gleam)
 
     // --- Sapphire Blue Theme Accents ---
     readonly property color accentSapphire: "#0066FF"

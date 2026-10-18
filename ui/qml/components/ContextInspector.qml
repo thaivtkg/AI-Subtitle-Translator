@@ -5,8 +5,46 @@ import "../theme"
 
 ColumnLayout {
     id: inspectorRoot
-    spacing: 12
-    
+    spacing: 8
+
+    // TITLE ROW: THANH NGỮ CẢNH + HOLD & DRAG X BADGE (MATCHING DESIGN)
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 8
+
+        Text {
+            text: "🎯 THANH NGỮ CẢNH (INSPECTOR)"
+            font.pixelSize: 12
+            font.bold: true
+            color: "#FFFFFF"
+        }
+
+        Rectangle {
+            implicitWidth: 84
+            implicitHeight: 20
+            radius: 10
+            color: Qt.rgba(0.55, 0.36, 0.96, 0.22)
+            border.color: "#8B5CF6"
+            border.width: 1
+
+            Text {
+                anchors.centerIn: parent
+                text: "Hold & Drag X"
+                font.pixelSize: 9
+                font.bold: true
+                color: "#C084FC"
+            }
+        }
+
+        Item { Layout.fillWidth: true }
+    }
+
+    Text {
+        text: "👉 Bấm chuột để chọn hoặc Nhấn Giữ & Kéo Ngang tự do"
+        font.pixelSize: 10
+        color: Qt.rgba(1.0, 1.0, 1.0, 0.88)
+    }
+
     // TAB BAR CAPSULE WITH HOLD & DRAG SLIDING PILL (D:\dichuyen.mp4)
     Rectangle {
         id: tabOuterContainer
@@ -14,7 +52,7 @@ ColumnLayout {
         Layout.minimumWidth: 0
         implicitHeight: 38
         radius: 14
-        color: Qt.rgba(1.0, 1.0, 1.0, 0.10)
+        color: Qt.rgba(1.0, 1.0, 1.0, 0.16)
         border.color: Theme.glassBorderSpecularLower
         border.width: 1
 

@@ -16,8 +16,8 @@ ToolBar {
     property string storySummary: ""
     property int currentSubtitleIndex: 0
     property var selectedIndices: []
-    readonly property bool isCompact: width < 1280
-    readonly property bool isMinimum: width < 1100
+    readonly property bool isCompact: width < 1180
+    readonly property bool isMinimum: width < 1050
 
     signal openSrtClicked()
     signal openProjectClicked()
@@ -38,7 +38,7 @@ ToolBar {
             id: headerCapsule
             anchors.fill: parent
             radius: 0
-            color: Theme.glassIslandSurface
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.18)
             border.color: "transparent"
             clip: true
 

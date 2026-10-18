@@ -42,11 +42,10 @@ Item {
             spacing: Theme.spaceSmall
             
             Text {
-                text: "Trạng thái:"
-                color: Theme.textSecondary
+                text: "⚡ KHÔNG GIAN DỊCH THUẬT" + (typeof subListView !== "undefined" && subListView.currentIndex >= 0 ? (" (CÂU #" + (subListView.currentIndex + 1) + ")") : "")
+                color: "#FFFFFF"
                 font.pixelSize: 12
                 font.bold: true
-                visible: workspace.width >= 420
             }
 
             Rectangle {
