@@ -70,3 +70,8 @@ def test_main_window_transparency_and_islands(harness):
     assert split_view is not None
 
 
+def test_header_macos_controls_and_pills(harness):
+    assert harness.driver.find("btnClose") is not None
+    assert harness.driver.find("btnMinimize") is not None
+    assert harness.driver.find("btnMaximize") is not None
+    assert harness.driver.find("btnOpenSrt") is not None

@@ -17,27 +17,41 @@ Button {
 
     contentItem: Text {
         text: control.text
-        font.pixelSize: 14
-        font.bold: control.isPrimary
-        color: !control.enabled ? Theme.textDisabled : (control.isPrimary ? Theme.bgApp : Theme.textPrimary)
+        font.pixelSize: 13
+        font.bold: true
+        color: !control.enabled ? Theme.textDisabled : Theme.textPrimaryGlass
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }
 
     background: Rectangle {
         implicitWidth: 100
-        implicitHeight: 36
-        radius: Theme.radius
+        implicitHeight: 32
+        radius: control.height / 2
 
         color: !control.enabled ? Theme.bgSurfaceSoft :
-               control.pressed ? (control.isPrimary ? Qt.darker(Theme.accentCyan, 1.2) : Theme.bgSurfaceSoft) :
-               control.hovered ? (control.isPrimary ? Qt.lighter(Theme.accentCyan, 1.1) : Theme.bgSurfaceElevated) :
-               (control.isPrimary ? Theme.accentCyan : "transparent")
+               control.pressed ? (control.isPrimary ? Qt.darker(Theme.accentSapphire, 1.2) : Qt.rgba(1, 1, 1, 0.12)) :
+               control.hovered ? (control.isPrimary ? Theme.accentSapphireHover : Qt.rgba(1, 1, 1, 0.28)) :
+               (control.isPrimary ? Theme.accentSapphire : Qt.rgba(1, 1, 1, 0.18))
 
-        border.color: !control.enabled ? Theme.borderDisabled : (control.isPrimary ? "transparent" : Theme.border)
+        border.color: !control.enabled ? Theme.borderDisabled :
+                      control.hovered ? Theme.glassBorderSpecularUpper :
+                      (control.isPrimary ? Theme.glassBorderSpecularUpper : Theme.glassBorderSubtle)
         border.width: 1
+
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: 1
+            height: 1
+            color: Qt.rgba(1, 1, 1, 0.35)
+            radius: parent.radius
+            visible: control.enabled
+        }
 
         Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
         Behavior on border.color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
     }
 }
+
