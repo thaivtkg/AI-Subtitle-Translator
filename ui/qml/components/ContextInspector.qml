@@ -58,6 +58,7 @@ ColumnLayout {
     // TAB BAR CAPSULE WITH HOLD & DRAG SLIDING PILL (D:\dichuyen.mp4)
     Rectangle {
         id: tabOuterContainer
+        objectName: "tabOuterContainer"
         Layout.fillWidth: true
         Layout.minimumWidth: 0
         implicitHeight: 38
@@ -70,43 +71,55 @@ ColumnLayout {
         readonly property real tabWidth: Math.floor((tabOuterContainer.width - 6) / tabCount)
         property bool isDragging: false
         property real pillDragX: 0
+        property real fluidScaleX: 1.0
+        property real fluidScaleY: 1.0
+        property real fluidOriginX: tabWidth / 2
 
-        // SLIDING LIQUID PILL (D:\dichuyen.mp4)
+        Behavior on fluidScaleX { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+        Behavior on fluidScaleY { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+
+        // SLIDING LIQUID PILL (D:\Liquid Effect.mp4)
         Rectangle {
             id: slidingPill
+            objectName: "slidingPill"
             y: 3
             width: tabOuterContainer.tabWidth
             height: tabOuterContainer.height - 6
             radius: 10
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "#2563EB" }
-                GradientStop { position: 1.0; color: "#0284C7" }
+                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.55, 1.0, 0.88) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.05, 0.75, 1.0, 0.85) }
             }
             border.color: Theme.glassBorderSpecularUpper
-            border.width: 1
+            border.width: 1.5
             z: 1
 
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: Qt.rgba(0.0, 0.4, 1.0, 0.4)
-                shadowBlur: 0.3
+                shadowColor: Qt.rgba(0.0, 0.60, 1.0, 0.65)
+                shadowBlur: 0.75
+                shadowVerticalOffset: 3
             }
 
             x: tabOuterContainer.isDragging
                ? tabOuterContainer.pillDragX
                : (3 + contextTabs.currentIndex * tabOuterContainer.tabWidth)
 
-            scale: tabOuterContainer.isDragging ? 0.95 : 1.0
-            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+            transform: Scale {
+                origin.x: tabOuterContainer.fluidOriginX
+                origin.y: slidingPill.height / 2
+                xScale: tabOuterContainer.fluidScaleX
+                yScale: tabOuterContainer.fluidScaleY
+            }
 
             Behavior on x {
                 enabled: !tabOuterContainer.isDragging
-                NumberAnimation {
-                    duration: 280
-                    easing.type: Easing.OutBack
-                    easing.overshoot: 1.25
+                SpringAnimation {
+                    spring: 3.5
+                    damping: 0.32
+                    epsilon: 0.25
                 }
             }
         }
@@ -170,7 +183,7 @@ ColumnLayout {
             }
         }
 
-        // MOUSE AREA FOR PRESS-AND-HOLD & HORIZONTAL DRAG PHYSICS (D:\dichuyen.mp4)
+        // MOUSE AREA FOR PRESS-AND-HOLD & HORIZONTAL DRAG PHYSICS (D:\Liquid Effect.mp4)
         MouseArea {
             id: tabDragArea
             anchors.fill: parent
@@ -180,19 +193,26 @@ ColumnLayout {
             acceptedButtons: Qt.LeftButton
 
             property real startMouseX: 0
+            property real lastMouseX: 0
             property real initialPillX: 0
             property bool hasMoved: false
 
             onPressed: function(mouse) {
                 startMouseX = mouse.x
+                lastMouseX = mouse.x
                 initialPillX = slidingPill.x
                 tabOuterContainer.pillDragX = initialPillX
+                tabOuterContainer.fluidScaleX = 1.0
+                tabOuterContainer.fluidScaleY = 1.0
                 hasMoved = false
             }
 
             onPositionChanged: function(mouse) {
                 if (pressed) {
                     var dx = mouse.x - startMouseX
+                    var deltaX = mouse.x - lastMouseX
+                    lastMouseX = mouse.x
+
                     if (!tabOuterContainer.isDragging && Math.abs(dx) > 4) {
                         tabOuterContainer.isDragging = true
                     }
@@ -204,11 +224,20 @@ ColumnLayout {
                         if (rawX < minX) rawX = minX - (minX - rawX) * 0.3
                         else if (rawX > maxX) rawX = maxX + (rawX - maxX) * 0.3
                         tabOuterContainer.pillDragX = rawX
+
+                        // Fluid Elongation: stretch on X, squeeze on Y, anchor to trailing edge
+                        tabOuterContainer.fluidOriginX = deltaX >= 0 ? 0 : tabOuterContainer.tabWidth
+                        tabOuterContainer.fluidScaleX = 1.0 + Math.min(Math.abs(deltaX) * 0.04, 0.35)
+                        tabOuterContainer.fluidScaleY = Math.max(0.75, 1.0 - (tabOuterContainer.fluidScaleX - 1.0) * 0.5)
                     }
                 }
             }
 
             onReleased: function(mouse) {
+                tabOuterContainer.fluidScaleX = 1.0
+                tabOuterContainer.fluidScaleY = 1.0
+                tabOuterContainer.fluidOriginX = tabOuterContainer.tabWidth / 2
+
                 if (tabOuterContainer.isDragging) {
                     tabOuterContainer.isDragging = false
                     var pillCenter = tabOuterContainer.pillDragX + tabOuterContainer.tabWidth / 2

@@ -647,13 +647,24 @@ ColumnLayout {
             height: subListView.currentItem ? (subListView.currentItem.hasTranslation ? 74 : 54) : 54
             visible: subListView.count > 0 && subListView.currentIndex >= 0 && subListView.currentItem !== null
 
-            scale: root.isDraggingLens ? 0.97 : 1.0
-            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+            property real fluidScaleX: 1.0
+            property real fluidScaleY: 1.0
+            property real fluidOriginY: height / 2
+
+            Behavior on fluidScaleX { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+            Behavior on fluidScaleY { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+
+            transform: Scale {
+                origin.x: subDropletLens.width / 2
+                origin.y: subDropletLens.fluidOriginY
+                xScale: subDropletLens.fluidScaleX
+                yScale: subDropletLens.fluidScaleY
+            }
 
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.42, 1.0, 0.82) }
-                GradientStop { position: 1.0; color: Qt.rgba(0.01, 0.52, 0.88, 0.85) }
+                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.55, 1.0, 0.88) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.05, 0.75, 1.0, 0.85) }
             }
 
             border.color: Theme.glassBorderSpecularUpper
@@ -662,17 +673,17 @@ ColumnLayout {
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: root.isDraggingLens ? Qt.rgba(0.0, 0.45, 1.0, 0.65) : Qt.rgba(0.0, 0.38, 1.0, 0.42)
-                shadowBlur: root.isDraggingLens ? 0.70 : 0.55
+                shadowColor: root.isDraggingLens ? Qt.rgba(0.0, 0.60, 1.0, 0.75) : Qt.rgba(0.0, 0.55, 1.0, 0.50)
+                shadowBlur: root.isDraggingLens ? 0.75 : 0.60
                 shadowVerticalOffset: root.isDraggingLens ? 6 : 4
             }
 
             Behavior on y {
                 enabled: !subListView.moving && !subListView.flicking && !root.isDraggingLens
-                NumberAnimation {
-                    duration: 220
-                    easing.type: Easing.OutBack
-                    easing.overshoot: 1.25
+                SpringAnimation {
+                    spring: 3.2
+                    damping: 0.30
+                    epsilon: 0.25
                 }
             }
 
@@ -815,6 +826,7 @@ ColumnLayout {
                 z: 20
 
                 property real startPressY: 0
+                property real lastPressY: 0
                 property real initialLensY: 0
                 property bool dragCandidate: false
                 property bool hasDragged: false
@@ -822,15 +834,21 @@ ColumnLayout {
                 onPressed: function(mouse) {
                     subListView.forceActiveFocus()
                     startPressY = mouse.y
+                    lastPressY = mouse.y
                     hasDragged = false
                     root.dragHoverIndex = -1
                     dragCandidate = delegateItem.isPrimarySelected
                     initialLensY = subDropletLens.y
+                    subDropletLens.fluidScaleX = 1.0
+                    subDropletLens.fluidScaleY = 1.0
                 }
 
                 onPositionChanged: function(mouse) {
                     if (pressed && dragCandidate) {
                         var dy = mouse.y - startPressY
+                        var deltaY = mouse.y - lastPressY
+                        lastPressY = mouse.y
+
                         if (!root.isDraggingLens && Math.abs(dy) > 8) {
                             root.isDraggingLens = true
                             mouseArea.preventStealing = true
@@ -838,6 +856,11 @@ ColumnLayout {
                         if (root.isDraggingLens) {
                             hasDragged = true
                             subDropletLens.y = initialLensY + dy
+
+                            // Fluid Elongation: stretch on Y, squeeze on X, anchor to trailing edge
+                            subDropletLens.fluidOriginY = deltaY >= 0 ? 0 : subDropletLens.height
+                            subDropletLens.fluidScaleY = 1.0 + Math.min(Math.abs(deltaY) * 0.03, 0.28)
+                            subDropletLens.fluidScaleX = Math.max(0.85, 1.0 - (subDropletLens.fluidScaleY - 1.0) * 0.4)
 
                             var hoverCenterY = subDropletLens.y + subDropletLens.height / 2
                             var hoverTarget = subListView.indexAt(subListView.width / 2, hoverCenterY)
@@ -849,6 +872,10 @@ ColumnLayout {
                 }
 
                 onReleased: function(mouse) {
+                    subDropletLens.fluidScaleX = 1.0
+                    subDropletLens.fluidScaleY = 1.0
+                    subDropletLens.fluidOriginY = subDropletLens.height / 2
+
                     if (root.isDraggingLens) {
                         root.isDraggingLens = false
                         root.dragHoverIndex = -1
