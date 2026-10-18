@@ -141,23 +141,6 @@ ColumnLayout {
                     color: "#FFFFFF"
                 }
 
-                Rectangle {
-                    implicitWidth: 84
-                    implicitHeight: 20
-                    radius: 10
-                    color: Qt.rgba(0.06, 0.72, 0.51, 0.22)
-                    border.color: "#10B981"
-                    border.width: 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Hold & Drag Y"
-                        font.pixelSize: 9
-                        font.bold: true
-                        color: "#6EE7B7"
-                    }
-                }
-
                 Item { Layout.fillWidth: true }
 
                 // Filter expand toggle icon button
@@ -215,16 +198,6 @@ ColumnLayout {
                         subListView.contentY = 0
                     }
                 }
-            }
-
-            // GỢI Ý KÉO THẢ VÀNG HỔ PHÁCH (100% MATCHING DESIGN MOCKUP)
-            Text {
-                visible: !root.showAdvancedFilters
-                text: "👆 Bấm hoặc Nhấn Giữ & Kéo Dọc qua các câu"
-                color: "#FEF08A"
-                font.pixelSize: 11
-                font.bold: true
-                Layout.leftMargin: 4
             }
 
             // ADVANCED FILTERS (COLLAPSED BY DEFAULT TO KEEP MINIMAL CLEAN UI)

@@ -79,12 +79,39 @@ Item {
                 border.color: "#FFFFFF"
                 border.width: 2.5
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "⤓"
-                    font.pixelSize: 30
-                    font.bold: true
-                    color: "#FFFFFF"
+                Canvas {
+                    anchors.fill: parent
+                    renderTarget: Canvas.FramebufferObject
+                    onPaint: {
+                        var ctx = getContext("2d");
+                        ctx.reset();
+                        ctx.strokeStyle = "#FFFFFF";
+                        ctx.lineWidth = 3;
+                        ctx.lineCap = "round";
+                        ctx.lineJoin = "round";
+
+                        var cx = width / 2;
+                        var cy = height / 2;
+
+                        // Downward arrow stem: (cx, cy - 12) -> (cx, cy + 4)
+                        ctx.beginPath();
+                        ctx.moveTo(cx, cy - 12);
+                        ctx.lineTo(cx, cy + 4);
+                        ctx.stroke();
+
+                        // Downward arrow head: (cx - 7, cy - 3) -> (cx, cy + 4) -> (cx + 7, cy - 3)
+                        ctx.beginPath();
+                        ctx.moveTo(cx - 7, cy - 3);
+                        ctx.lineTo(cx, cy + 4);
+                        ctx.lineTo(cx + 7, cy - 3);
+                        ctx.stroke();
+
+                        // Bottom tray: (cx - 10, cy + 12) -> (cx + 10, cy + 12)
+                        ctx.beginPath();
+                        ctx.moveTo(cx - 10, cy + 12);
+                        ctx.lineTo(cx + 10, cy + 12);
+                        ctx.stroke();
+                    }
                 }
             }
         }

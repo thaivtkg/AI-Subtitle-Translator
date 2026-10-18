@@ -27,29 +27,6 @@ ColumnLayout {
             Layout.fillWidth: true
             elide: Text.ElideRight
         }
-
-        Rectangle {
-            implicitWidth: 78
-            implicitHeight: 20
-            radius: 10
-            color: Qt.rgba(0.55, 0.36, 0.96, 0.22)
-            border.color: "#8B5CF6"
-            border.width: 1
-
-            Text {
-                anchors.centerIn: parent
-                text: "Hold & Drag X"
-                font.pixelSize: 9
-                font.bold: true
-                color: "#C084FC"
-            }
-        }
-    }
-
-    Text {
-        text: "👉 Bấm chuột để chọn hoặc Nhấn Giữ & Kéo Ngang tự do"
-        font.pixelSize: 10
-        color: Qt.rgba(1.0, 1.0, 1.0, 0.88)
     }
 
     // TAB BAR CAPSULE WITH HOLD & DRAG SLIDING PILL (D:\dichuyen.mp4)
