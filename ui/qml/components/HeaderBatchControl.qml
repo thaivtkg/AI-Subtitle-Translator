@@ -62,8 +62,12 @@ Item {
             Layout.alignment: Qt.AlignVCenter
         }
 
-        AppButton {
-            objectName: "btnBatchStart"
+        RowLayout {
+            spacing: 2
+            visible: ["IDLE", "COMPLETED", "CANCELLED", "FAILED"].indexOf(root.controller.state) >= 0
+
+            AppButton {
+                objectName: "btnBatchStart"
             text: {
                 if (root.hasMultiSelection) {
                     return root.isCompact ? ("⚡ Chọn (" + root.selectedIndices.length + ")") : ("⚡ Dịch đã chọn (" + root.selectedIndices.length + " câu)")
@@ -310,6 +314,7 @@ Item {
                 }
             }
         }
+    }
 
         AppButton {
             objectName: "btnBatchPause"

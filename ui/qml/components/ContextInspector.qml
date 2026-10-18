@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Effects
 import "../theme"
 
 ColumnLayout {
@@ -77,10 +78,21 @@ ColumnLayout {
             width: tabOuterContainer.tabWidth
             height: tabOuterContainer.height - 6
             radius: 10
-            color: Theme.accentSapphire
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "#2563EB" }
+                GradientStop { position: 1.0; color: "#0284C7" }
+            }
             border.color: Theme.glassBorderSpecularUpper
             border.width: 1
             z: 1
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0.0, 0.4, 1.0, 0.4)
+                shadowBlur: 0.3
+            }
 
             x: tabOuterContainer.isDragging
                ? tabOuterContainer.pillDragX
@@ -117,7 +129,7 @@ ColumnLayout {
                     text: parent.text
                     font.pixelSize: 11
                     font.bold: true
-                    color: contextTabs.currentIndex === 0 ? "#FFFFFF" : Theme.textSecondary
+                    color: contextTabs.currentIndex === 0 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.85)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
@@ -133,7 +145,7 @@ ColumnLayout {
                     text: parent.text
                     font.pixelSize: 11
                     font.bold: true
-                    color: contextTabs.currentIndex === 1 ? "#FFFFFF" : Theme.textSecondary
+                    color: contextTabs.currentIndex === 1 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.85)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
@@ -149,7 +161,7 @@ ColumnLayout {
                     text: parent.text
                     font.pixelSize: 11
                     font.bold: true
-                    color: contextTabs.currentIndex === 2 ? "#FFFFFF" : Theme.textSecondary
+                    color: contextTabs.currentIndex === 2 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.85)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
@@ -231,6 +243,25 @@ ColumnLayout {
                 border.color: Theme.glassBorderSpecularUpper
                 border.width: 1.5
 
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0.08, 0.04, 0.22, 0.14)
+                    shadowBlur: 0.4
+                    shadowVerticalOffset: 3
+                }
+
+                // Vệt sáng 3D mép trên
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 1
+                    height: 1
+                    radius: parent.radius
+                    color: Qt.rgba(1, 1, 1, 0.90)
+                }
+
                 ColumnLayout {
                     id: timingCol
                     anchors.fill: parent
@@ -274,6 +305,25 @@ ColumnLayout {
                 color: Theme.glassPodLuminous
                 border.color: Theme.glassBorderSpecularUpper
                 border.width: 1.5
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0.08, 0.04, 0.22, 0.14)
+                    shadowBlur: 0.4
+                    shadowVerticalOffset: 3
+                }
+
+                // Vệt sáng 3D mép trên
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 1
+                    height: 1
+                    radius: parent.radius
+                    color: Qt.rgba(1, 1, 1, 0.90)
+                }
 
                 ColumnLayout {
                     id: qaCol

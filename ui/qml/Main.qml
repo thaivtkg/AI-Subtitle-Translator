@@ -72,9 +72,9 @@ ApplicationWindow {
             anchors.fill: parent
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.28) }
-                GradientStop { position: 0.5; color: Qt.rgba(1.0, 1.0, 1.0, 0.12) }
-                GradientStop { position: 1.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.20) }
+                GradientStop { position: 0.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.12) } // Giảm từ 0.28 xuống 0.12
+                GradientStop { position: 0.5; color: Qt.rgba(1.0, 1.0, 1.0, 0.03) } // Giảm từ 0.12 xuống 0.03
+                GradientStop { position: 1.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.08) } // Giảm từ 0.20 xuống 0.08
             }
         }
 
@@ -134,7 +134,7 @@ ApplicationWindow {
                 orientation: Qt.Horizontal
                 handle: Rectangle {
                     implicitWidth: 1
-                    color: Qt.rgba(1, 1, 1, 0.24)
+                    color: Qt.rgba(1, 1, 1, 0.32) // Tăng từ 0.24 lên 0.32 cho sắc nét như bản mẫu
                 }
 
                 // PANEL 1: SUBTITLE NAVIGATOR (SEAMLESS DOCKED)

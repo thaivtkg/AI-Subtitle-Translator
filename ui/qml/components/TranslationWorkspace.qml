@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Effects
 import "../theme"
 
 Item {
@@ -58,34 +59,18 @@ Item {
                 implicitWidth: statusBadge.implicitWidth + 18
                 implicitHeight: 22
                 radius: 11
-                color: translationController.status === "ACCEPTED" ? Theme.badgeEmeraldBg :
-                       translationController.status === "ERROR" ? "#FFE4E6" :
-                       translationController.status === "TRANSLATED" ? "#DBEAFE" :
-                       translationController.status === "EDITED" ? "#F3E8FF" :
-                       translationController.status === "TRANSLATING" ? "#CFFAFE" :
-                       "#FEF08A"
-                border.color: translationController.status === "ACCEPTED" ? Qt.rgba(0.08, 0.5, 0.24, 0.3) :
-                              translationController.status === "ERROR" ? Qt.rgba(0.74, 0.07, 0.23, 0.3) :
-                              translationController.status === "TRANSLATED" ? Qt.rgba(0.11, 0.31, 0.85, 0.3) :
-                              translationController.status === "EDITED" ? Qt.rgba(0.43, 0.16, 0.85, 0.3) :
-                              translationController.status === "TRANSLATING" ? Qt.rgba(0.05, 0.45, 0.56, 0.3) :
-                              "#EAB308"
-                border.width: 1
-                
+                color: (translationController.status === "ACCEPTED" || translationController.status === "TRANSLATED") ? Theme.badgeSolidEmerald :
+                       translationController.status === "ERROR" ? "#FFE4E6" : "#FEF08A"
+                border.color: Qt.rgba(1, 1, 1, 0.65)
+                border.width: 1.5
+
                 Text {
                     id: statusBadge
                     anchors.centerIn: parent
-                    text: translationController.status === "ACCEPTED" ? "✓ ĐÃ DUYỆT" : 
-                          translationController.status === "TRANSLATED" ? "ĐÃ DỊCH ✦" :
-                          translationController.status === "EDITED" ? "ĐÃ SỬA ●" :
-                          translationController.status === "TRANSLATING" ? "Đang dịch…" : 
-                          translationController.status === "ERROR" ? "LỖI ✕" : "⏳ CHỜ DUYỆT"
-                    color: translationController.status === "ACCEPTED" ? Theme.badgeEmeraldText : 
-                           translationController.status === "TRANSLATED" ? "#1D4ED8" : 
-                           translationController.status === "EDITED" ? "#6D28D9" : 
-                           translationController.status === "ERROR" ? "#BE123C" : 
-                           translationController.status === "TRANSLATING" ? "#0E7490" : 
-                           "#854D0E"
+                    text: (translationController.status === "ACCEPTED" || translationController.status === "TRANSLATED") ? "✓ ĐÃ DỊCH" :
+                          translationController.status === "TRANSLATING" ? "⚡ ĐANG DỊCH" :
+                          translationController.status === "ERROR" ? "🛑 LỖI" : "⏳ CHỜ DUYỆT"
+                    color: (translationController.status === "ACCEPTED" || translationController.status === "TRANSLATED") ? "#FFFFFF" : "#854D0E"
                     font.pixelSize: 10
                     font.bold: true
                 }
@@ -98,6 +83,13 @@ Item {
                 compact: workspace.width < 580
                 Layout.alignment: Qt.AlignRight
             }
+        }
+
+        // Vách ngăn kính dưới Header Cột Giữa
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: Qt.rgba(1, 1, 1, 0.25)
         }
         
         // Workspace Liquid Glide Container (Elastic transition on subtitle switch)
@@ -156,6 +148,25 @@ Item {
                         radius: 16
                         border.color: Theme.glassBorderSpecularUpper
                         border.width: 1.5
+
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: Qt.rgba(0.08, 0.04, 0.22, 0.16)
+                            shadowBlur: 0.45
+                            shadowVerticalOffset: 4
+                        }
+
+                        // Vệt sáng 3D mép trên của hộp kính
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.margins: 1
+                            height: 1
+                            radius: parent.radius
+                            color: Qt.rgba(1, 1, 1, 0.90)
+                        }
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -243,6 +254,25 @@ Item {
 
                         Behavior on border.color { ColorAnimation { duration: Theme.animFocus } }
 
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: Qt.rgba(0.08, 0.04, 0.22, 0.16)
+                            shadowBlur: 0.45
+                            shadowVerticalOffset: 4
+                        }
+
+                        // Vệt sáng 3D mép trên của hộp kính
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.margins: 1
+                            height: 1
+                            radius: parent.radius
+                            color: Qt.rgba(1, 1, 1, 0.90)
+                        }
+
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 14
@@ -272,6 +302,8 @@ Item {
                                         font.letterSpacing: 0.5
                                     }
                                 }
+
+                                Item { Layout.fillWidth: true }
 
                                 Rectangle {
                                     visible: translationController.status !== "TRANSLATING" && translationInput.text.trim().length > 0
@@ -321,8 +353,6 @@ Item {
                                         NumberAnimation { from: 0.4; to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
                                     }
                                 }
-
-                                Item { Layout.fillWidth: true }
 
                                 RowLayout {
                                     spacing: 6
@@ -791,6 +821,7 @@ Item {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredWidth: 95
                     Layout.minimumWidth: 70
+                    isDarkGlass: true
                     visible: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                     enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
                              ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0

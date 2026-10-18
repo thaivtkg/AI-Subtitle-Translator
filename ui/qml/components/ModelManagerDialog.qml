@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Effects
 import "../theme"
 
 Dialog {
@@ -19,10 +20,17 @@ Dialog {
     padding: 0
 
     background: Rectangle {
-        color: Qt.rgba(0.97, 0.96, 0.99, 0.95)
+        color: Qt.rgba(0.97, 0.96, 0.99, 0.84)
         radius: 20
         border.color: Qt.rgba(1.0, 1.0, 1.0, 0.9)
         border.width: 1.5
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowBlur: 0.8
+            shadowColor: Qt.rgba(0, 0, 0, 0.35)
+        }
 
         // Top specular highlight
         Rectangle {

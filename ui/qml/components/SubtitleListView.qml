@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Effects
 import "../theme"
 
 ColumnLayout {
@@ -141,6 +142,24 @@ ColumnLayout {
                 }
 
                 Item { Layout.fillWidth: true }
+
+                // Total count pill
+                Rectangle {
+                    implicitWidth: countBadgeText.implicitWidth + 14
+                    implicitHeight: 20
+                    radius: 10
+                    color: Theme.badgeEmeraldBg
+                    border.color: Theme.badgeEmeraldText
+                    border.width: 1
+                    Text {
+                        id: countBadgeText
+                        anchors.centerIn: parent
+                        text: (subListView.count > 0 ? subListView.count : (typeof subtitleModel !== "undefined" && subtitleModel ? subtitleModel.rowCount() : 0)) + " câu"
+                        color: Theme.badgeEmeraldText
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+                }
 
                 // Filter expand toggle icon button
                 Rectangle {
@@ -697,11 +716,11 @@ ColumnLayout {
             Rectangle {
                 id: cardPod
                 anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 8
-                anchors.topMargin: 3
-                anchors.bottomMargin: 3
-                radius: 18
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                anchors.topMargin: 4
+                anchors.bottomMargin: 4
+                radius: 16
                 clip: true
                 z: isSelected ? 5 : (delegateItem.isCardDragging ? 10 : 1)
 
@@ -709,13 +728,44 @@ ColumnLayout {
                     y: delegateItem.dragOffsetY
                 }
 
-                color: isSelected ? Theme.accentSapphire : (mouseArea.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.88) : Theme.glassPodLuminous)
-                border.color: isSelected ? Theme.glassBorderSpecularUpper : (mouseArea.containsMouse ? Theme.glassBorderSpecularUpper : Theme.glassBorderSpecularLower)
+                // Đổ bóng nổi khối 3D cho từng thẻ phụ đề
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: isSelected ? Qt.rgba(0.0, 0.38, 1.0, 0.42) : Qt.rgba(0.08, 0.04, 0.20, 0.14)
+                    shadowBlur: isSelected ? 0.55 : 0.35
+                    shadowVerticalOffset: isSelected ? 4 : 2
+                }
+
+                // Chuyển sang Gradient kính lỏng khi được chọn
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop {
+                        position: 0.0
+                        color: isSelected ? "#0066FF" : (mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.88) : Theme.glassPodLuminous)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: isSelected ? "#0284C7" : (mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.82) : Theme.glassPodLuminous)
+                    }
+                }
+
+                border.color: isSelected ? "#7DD3FC" : Theme.glassBorderSpecularUpper
                 border.width: isSelected ? 1.5 : 1
+
+                // Vệt hắt sáng Specular 1px ở cạnh trên thẻ
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 1
+                    height: 1
+                    radius: parent.radius
+                    color: Qt.rgba(1, 1, 1, isSelected ? 0.55 : 0.85)
+                }
 
                 scale: delegateItem.isCardDragging ? 0.96 : (mouseArea.pressed ? 0.98 : (mouseArea.containsMouse ? 1.01 : 1.0))
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
-                Behavior on color { ColorAnimation { duration: 150 } }
                 Behavior on border.color { ColorAnimation { duration: 150 } }
 
                 NumberAnimation {
@@ -740,23 +790,9 @@ ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 6
                         
-                        Rectangle {
-                            implicitWidth: 32
-                            implicitHeight: 18
-                            radius: 9
-                            color: isSelected ? "#FEF08A" : Qt.rgba(0.0, 0.4, 1.0, 0.12)
-                            Text {
-                                anchors.centerIn: parent
-                                text: "#" + String(subIndex).padStart(3, '0')
-                                color: isSelected ? "#854D0E" : Theme.accentSapphire
-                                font.pixelSize: 10
-                                font.bold: true
-                            }
-                        }
-                        
                         Text {
-                            text: startTime
-                            color: isSelected ? "#E0F2FE" : "#0369A1"
+                            text: "#" + String(subIndex).padStart(3, '0') + " • " + startTime
+                            color: isSelected ? "#FFFFFF" : "#0369A1"
                             font.pixelSize: 11
                             font.bold: true
                         }

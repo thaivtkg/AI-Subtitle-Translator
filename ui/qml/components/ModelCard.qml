@@ -35,7 +35,7 @@ Rectangle {
     signal deleteClicked(string modelId)
 
     implicitHeight: mainLayout.implicitHeight + Theme.spaceLarge
-    color: root.isActive ? Qt.rgba(0.92, 0.96, 1.0, 0.95) : Qt.rgba(1.0, 1.0, 1.0, 0.75)
+    color: root.isActive ? Qt.rgba(0.92, 0.96, 1.0, 0.95) : Qt.rgba(1.0, 1.0, 1.0, 0.68)
     radius: 16
     border.color: root.isActive ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.85)
     border.width: root.isActive ? 2 : 1.5

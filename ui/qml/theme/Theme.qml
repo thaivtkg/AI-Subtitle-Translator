@@ -12,10 +12,13 @@ QtObject {
 
     // --- Ultra-Gloss Liquid Glass Surfaces (Desktop Bleed-Through) ---
     readonly property color glassBackground: Qt.rgba(1.0, 1.0, 1.0, 0.15)         // Lớp phủ kính sáng
-    readonly property color glassIslandSurface: Qt.rgba(1.0, 1.0, 1.0, 0.16)       // Bề mặt đảo kính nổi sáng xuyên thấu
+    readonly property color glassIslandSurface: Qt.rgba(1.0, 1.0, 1.0, 0.10)       // Giảm từ 0.16 xuống 0.10 để nền rực rỡ hơn
     readonly property color glassIslandActive: Qt.rgba(0.0, 0.40, 1.0, 0.35)       // Vùng chọn nổi bật
-    readonly property color glassPodLuminous: Qt.rgba(1.0, 1.0, 1.0, 0.85)         // Hộp thẻ kính mờ trắng sáng câu gốc
-    readonly property color glassPodRaised: Qt.rgba(1.0, 1.0, 1.0, 0.90)           // Hộp nổi bật câu dịch
+    readonly property color glassPodLuminous: Qt.rgba(0.98, 0.97, 1.0, 0.74)       // Giảm từ 0.85 xuống 0.74 để xuyên sáng nền
+    readonly property color glassPodRaised: Qt.rgba(0.99, 0.98, 1.0, 0.82)         // Giảm từ 0.90 xuống 0.82
+    readonly property color glassDarkPill: Qt.rgba(0.11, 0.10, 0.24, 0.68)         // Kính tối cho nút Dịch lại & Xuất SRT
+    readonly property color glassDarkPillHover: Qt.rgba(0.16, 0.14, 0.34, 0.82)
+    readonly property color badgeSolidEmerald: "#10B981"
 
     // --- Specular Bevels & Refractive Rims ---
     readonly property color glassBorderSpecularUpper: Qt.rgba(1.0, 1.0, 1.0, 0.95) // Viền bóng mép kính trên (Double Specular Rim)

@@ -281,6 +281,7 @@ ToolBar {
                     text: root.isCompact ? "Xuất" : "💾 Xuất SRT"
                     tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"
                     isPrimary: false
+                    isDarkGlass: true
                     enabled: root.hasProject && root.hasProjectData
                     onClicked: root.exportClicked()
                 }
