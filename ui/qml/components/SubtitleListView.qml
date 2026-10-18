@@ -26,6 +26,39 @@ ColumnLayout {
     property var selectedIndices: []
     signal selectionChanged(var indices)
 
+    property int activeTranslationTarget: {
+        if (typeof batchController !== "undefined" && batchController && batchController.activeIndex >= 0) {
+            return batchController.activeIndex;
+        }
+        if (typeof translationController !== "undefined" && translationController && translationController.activeTranslationIndex >= 0) {
+            return translationController.activeTranslationIndex;
+        }
+        return -1;
+    }
+
+    function scrollToActiveItem() {
+        var target = root.activeTranslationTarget >= 0 ? root.activeTranslationTarget : root.currentRawIndex;
+        if (target < 0) return;
+        var vIdx = -1;
+        if (root.isProxyModel && subListView.model) {
+            if (typeof subListView.model.ensureRawIndexVisible === "function") {
+                vIdx = subListView.model.ensureRawIndexVisible(target);
+            } else if (typeof subListView.model.getViewIndex === "function") {
+                vIdx = subListView.model.getViewIndex(target);
+            }
+        } else {
+            vIdx = target;
+        }
+        if (vIdx >= 0 && vIdx < subListView.count) {
+            subListView.currentIndex = vIdx;
+            subListView.positionViewAtIndex(vIdx, ListView.Center);
+            subListView.forceActiveFocus();
+            var rIdx = root.isProxyModel ? subListView.model.getRawIndex(vIdx) : vIdx;
+            root.selectedIndices = [rIdx];
+            root.selectionChanged(root.selectedIndices);
+        }
+    }
+
     property int currentChunkSize: 0 // 0 = Tất cả câu
     property int currentPage: 1
     property int selectedChunkStart: -1
@@ -226,6 +259,16 @@ ColumnLayout {
                         }
                         subListView.positionViewAtIndex(0, ListView.Beginning)
                         subListView.contentY = 0
+                    }
+                    Keys.onEscapePressed: function(event) {
+                        subListView.forceActiveFocus()
+                        event.accepted = true
+                    }
+                    Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Escape) {
+                            subListView.forceActiveFocus()
+                            event.accepted = true
+                        }
                     }
                 }
             }
@@ -572,41 +615,96 @@ ColumnLayout {
     } // headerControlsColumn
     } // headerControlsWrapper
 
-    // List View
-    ListView {
-        objectName: "subtitleList"
-        id: subListView
+    // List View Container (supports FAB Floating Action Button above list without colliding with paginationBar)
+    Item {
+        id: listViewContainer
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.bottomMargin: 8
+        Layout.minimumWidth: 0
         clip: true
-        model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : (typeof subtitleModel !== "undefined" ? subtitleModel : null)
-        currentIndex: -1
-        boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar { active: true }
 
-        Component.onCompleted: {
-            if (count > 0) translationController.loadSubtitle(root.currentRawIndex >= 0 ? root.currentRawIndex : 0)
-            root.updateFilteredCount()
+        MouseArea {
+            anchors.fill: parent
+            z: 0
+            onClicked: subListView.forceActiveFocus()
         }
-        onCountChanged: {
-            if (count > 0 && currentIndex < 0) {
-                currentIndex = 0
+
+        ListView {
+            objectName: "subtitleList"
+            id: subListView
+            anchors.fill: parent
+            anchors.bottomMargin: 8
+            clip: true
+            focus: true
+            keyNavigationEnabled: true
+            model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : (typeof subtitleModel !== "undefined" ? subtitleModel : null)
+            currentIndex: -1
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar { active: true }
+
+            Keys.onPressed: function(event) {
+                if (count <= 0) return;
+                if (event.key === Qt.Key_Home) {
+                    currentIndex = 0;
+                    positionViewAtIndex(0, ListView.Beginning);
+                    var r0 = root.isProxyModel ? subListView.model.getRawIndex(0) : 0;
+                    root.selectedIndices = [r0];
+                    root.selectionChanged(root.selectedIndices);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_End) {
+                    currentIndex = count - 1;
+                    positionViewAtIndex(count - 1, ListView.End);
+                    var rEnd = root.isProxyModel ? subListView.model.getRawIndex(count - 1) : count - 1;
+                    root.selectedIndices = [rEnd];
+                    root.selectionChanged(root.selectedIndices);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_PageDown) {
+                    var nextIdx = Math.min(count - 1, (currentIndex >= 0 ? currentIndex : 0) + 10);
+                    currentIndex = nextIdx;
+                    positionViewAtIndex(nextIdx, ListView.Contain);
+                    var rNext = root.isProxyModel ? subListView.model.getRawIndex(nextIdx) : nextIdx;
+                    root.selectedIndices = [rNext];
+                    root.selectionChanged(root.selectedIndices);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_PageUp) {
+                    var prevIdx = Math.max(0, (currentIndex >= 0 ? currentIndex : 0) - 10);
+                    currentIndex = prevIdx;
+                    positionViewAtIndex(prevIdx, ListView.Contain);
+                    var rPrev = root.isProxyModel ? subListView.model.getRawIndex(prevIdx) : prevIdx;
+                    root.selectedIndices = [rPrev];
+                    root.selectionChanged(root.selectedIndices);
+                    event.accepted = true;
+                }
             }
-            if (count === 0) {
-                root.selectedIndices = []
-                root.selectionChanged([])
+
+            Component.onCompleted: {
+                if (count > 0) translationController.loadSubtitle(root.currentRawIndex >= 0 ? root.currentRawIndex : 0)
+                root.updateFilteredCount()
             }
-            if (!root.isProxyModel) {
-                root.updatePagination()
+            onCountChanged: {
+                if (count > 0 && currentIndex < 0) {
+                    currentIndex = 0
+                }
+                if (count === 0) {
+                    root.selectedIndices = []
+                    root.selectionChanged([])
+                }
+                if (!root.isProxyModel) {
+                    root.updatePagination()
+                }
             }
-        }
-        onCurrentIndexChanged: {
-            var raw = (root.isProxyModel && subListView.model && typeof subListView.model.getRawIndex === "function")
-                      ? subListView.model.getRawIndex(currentIndex)
-                      : currentIndex
-            if (raw >= 0) translationController.loadSubtitle(raw)
-        }
+            onCurrentIndexChanged: {
+                var raw = (root.isProxyModel && subListView.model && typeof subListView.model.getRawIndex === "function")
+                          ? subListView.model.getRawIndex(currentIndex)
+                          : currentIndex
+                if (raw >= 0) {
+                    translationController.loadSubtitle(raw)
+                    if (!root.selectedIndices || root.selectedIndices.length <= 1) {
+                        root.selectedIndices = [raw]
+                        root.selectionChanged(root.selectedIndices)
+                    }
+                }
+            }
 
         delegate: Rectangle {
             objectName: "subtitleRow_" + (typeof rawIndex !== "undefined" ? rawIndex : index)
@@ -666,6 +764,7 @@ ColumnLayout {
                 property real startPressY: 0
 
                 onPressed: function(mouse) {
+                    subListView.forceActiveFocus()
                     startPressY = mouse.y
                     delegateItem.dragOffsetY = 0
                 }
@@ -701,6 +800,7 @@ ColumnLayout {
                 }
 
                 onClicked: function(mouse) {
+                    subListView.forceActiveFocus()
                     if (delegateItem.isCardDragging) return
                     var list = []
                     if (mouse.modifiers & Qt.ControlModifier) {
@@ -900,7 +1000,100 @@ ColumnLayout {
             }
         }
 
+    } // subListView
+
+    // FLOATING ACTION PILL: "👇 Cuộn tới câu đang dịch" (AC-02)
+    Rectangle {
+        id: scrollToActivePill
+        objectName: "btnScrollToActive"
+        z: 50
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 14
+        anchors.horizontalCenter: parent.horizontalCenter
+        implicitHeight: 30
+        implicitWidth: pillRow.implicitWidth + 24
+        radius: 15
+        color: Qt.rgba(15/255, 23/255, 42/255, 0.88)
+        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.35)
+        border.width: 1
+
+        property bool shouldShow: {
+            if (subListView.count <= 0) return false;
+            var target = root.activeTranslationTarget;
+            if (target >= 0) {
+                var vIdx = root.isProxyModel && subListView.model && typeof subListView.model.getViewIndex === "function"
+                           ? subListView.model.getViewIndex(target)
+                           : target;
+                if (vIdx < 0 || vIdx >= subListView.count) return true;
+                var item = subListView.itemAtIndex(vIdx);
+                if (!item) return true;
+                var itemTop = item.y - subListView.contentY;
+                var itemBottom = itemTop + item.height;
+                return (itemBottom < 0 || itemTop > subListView.height);
+            }
+            if (subListView.currentIndex >= 0 && subListView.count > 10) {
+                var curItem = subListView.itemAtIndex(subListView.currentIndex);
+                if (!curItem) return true;
+                var curTop = curItem.y - subListView.contentY;
+                var curBottom = curTop + curItem.height;
+                return (curBottom < 0 || curTop > subListView.height);
+            }
+            return false;
+        }
+
+        visible: shouldShow
+        opacity: shouldShow ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+
+        scale: pillMouseArea.pressed ? 0.94 : (pillMouseArea.containsMouse ? 1.05 : 1.0)
+        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: "#60000000"
+            shadowBlur: 0.6
+            shadowVerticalOffset: 3
+        }
+
+        // Top specular sheen
+        Rectangle {
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width - 16
+            height: 1
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.45)
+        }
+
+        RowLayout {
+            id: pillRow
+            anchors.centerIn: parent
+            spacing: 6
+
+            Text {
+                text: root.activeTranslationTarget >= 0 ? "⚡" : "👇"
+                font.pixelSize: 11
+            }
+
+            Text {
+                text: root.activeTranslationTarget >= 0
+                      ? ("Cuộn tới câu đang dịch (#" + (root.activeTranslationTarget + 1) + ")")
+                      : ("Cuộn tới câu đang chọn (#" + (root.currentRawIndex + 1) + ")")
+                color: "#FFFFFF"
+                font.pixelSize: 11
+                font.bold: true
+            }
+        }
+
+        MouseArea {
+            id: pillMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.scrollToActiveItem()
+        }
     }
+} // listViewContainer
 
     // Pagination bar
     Rectangle {

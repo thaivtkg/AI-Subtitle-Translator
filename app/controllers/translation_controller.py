@@ -86,6 +86,14 @@ class TranslationController(QObject):
     @Property(str, notify=statusChanged)
     def status(self): return self._status
 
+    @Property(int, notify=statusChanged)
+    def activeTranslationIndex(self):
+        return self._active_translation_index
+
+    @Property(int, notify=statusChanged)
+    def currentSubtitleIndex(self):
+        return self._current_index
+
     @Property(str, notify=translationUpdated)
     def currentTranslation(self): return self._current_translation
 
