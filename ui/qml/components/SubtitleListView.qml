@@ -611,6 +611,83 @@ ColumnLayout {
             height: visible ? 84 : 0
             color: "transparent"
 
+            MouseArea {
+                id: mouseArea
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                anchors.topMargin: 3
+                anchors.bottomMargin: 3
+                hoverEnabled: true
+                cursorShape: delegateItem.isCardDragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                acceptedButtons: Qt.LeftButton
+                z: 20
+
+                property real startPressY: 0
+
+                onPressed: function(mouse) {
+                    startPressY = mouse.y
+                    delegateItem.dragOffsetY = 0
+                }
+
+                onPositionChanged: function(mouse) {
+                    if (pressed) {
+                        var dy = mouse.y - startPressY
+                        if (!delegateItem.isCardDragging && Math.abs(dy) > 6) {
+                            delegateItem.isCardDragging = true
+                        }
+                        if (delegateItem.isCardDragging) {
+                            delegateItem.dragOffsetY = dy
+                        }
+                    }
+                }
+
+                onReleased: function(mouse) {
+                    if (delegateItem.isCardDragging) {
+                        delegateItem.isCardDragging = false
+                        var stepShift = Math.round(delegateItem.dragOffsetY / 84)
+                        var targetIndex = Math.max(0, Math.min(subListView.count - 1, index + stepShift))
+
+                        snapAnimation.to = 0
+                        snapAnimation.start()
+
+                        if (targetIndex !== subListView.currentIndex) {
+                            subListView.currentIndex = targetIndex
+                            var rIdx = root.isProxyModel ? subListView.model.getRawIndex(targetIndex) : targetIndex
+                            root.selectedIndices = [rIdx]
+                            root.selectionChanged(root.selectedIndices)
+                        }
+                    }
+                }
+
+                onClicked: function(mouse) {
+                    if (delegateItem.isCardDragging) return
+                    var list = []
+                    if (mouse.modifiers & Qt.ControlModifier) {
+                        list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (root.currentRawIndex >= 0 ? [root.currentRawIndex] : [])
+                        var pos = list.indexOf(delegateItem.itemRawIndex)
+                        if (pos !== -1) {
+                            list.splice(pos, 1)
+                        } else {
+                            list.push(delegateItem.itemRawIndex)
+                        }
+                    } else if (mouse.modifiers & Qt.ShiftModifier) {
+                        var start = (subListView.currentIndex >= 0) ? subListView.currentIndex : index
+                        var minIdx = Math.min(start, index)
+                        var maxIdx = Math.max(start, index)
+                        for (var i = minIdx; i <= maxIdx; i++) {
+                            var rIdx = root.isProxyModel ? subListView.model.getRawIndex(i) : i
+                            list.push(rIdx)
+                        }
+                    } else {
+                        list = [delegateItem.itemRawIndex]
+                    }
+                    root.selectedIndices = list
+                    root.selectionChanged(list)
+                    subListView.currentIndex = index
+                }
+            }
+
             // FLOATING LIQUID GLASS POD (WITH HOLD & DRAG D:\dichuyen.mp4)
             Rectangle {
                 id: cardPod
@@ -644,78 +721,6 @@ ColumnLayout {
                     height: 1
                     color: Qt.rgba(1, 1, 1, 0.45)
                     radius: parent.radius
-                }
-
-                MouseArea {
-                    id: mouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: delegateItem.isCardDragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
-                    acceptedButtons: Qt.LeftButton
-
-                    property real startPressY: 0
-
-                    onPressed: function(mouse) {
-                        startPressY = mouse.y
-                        delegateItem.dragOffsetY = 0
-                    }
-
-                    onPositionChanged: function(mouse) {
-                        if (pressed) {
-                            var dy = mouse.y - startPressY
-                            if (!delegateItem.isCardDragging && Math.abs(dy) > 6) {
-                                delegateItem.isCardDragging = true
-                            }
-                            if (delegateItem.isCardDragging) {
-                                delegateItem.dragOffsetY = dy
-                            }
-                        }
-                    }
-
-                    onReleased: function(mouse) {
-                        if (delegateItem.isCardDragging) {
-                            delegateItem.isCardDragging = false
-                            var stepShift = Math.round(delegateItem.dragOffsetY / 84)
-                            var targetIndex = Math.max(0, Math.min(subListView.count - 1, index + stepShift))
-
-                            snapAnimation.to = 0
-                            snapAnimation.start()
-
-                            if (targetIndex !== subListView.currentIndex) {
-                                subListView.currentIndex = targetIndex
-                                var rIdx = root.isProxyModel ? subListView.model.getRawIndex(targetIndex) : targetIndex
-                                root.selectedIndices = [rIdx]
-                                root.selectionChanged(root.selectedIndices)
-                            }
-                        }
-                    }
-
-                    onClicked: function(mouse) {
-                        if (delegateItem.isCardDragging) return
-                        var list = []
-                        if (mouse.modifiers & Qt.ControlModifier) {
-                            list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (root.currentRawIndex >= 0 ? [root.currentRawIndex] : [])
-                            var pos = list.indexOf(delegateItem.itemRawIndex)
-                            if (pos !== -1) {
-                                list.splice(pos, 1)
-                            } else {
-                                list.push(delegateItem.itemRawIndex)
-                            }
-                        } else if (mouse.modifiers & Qt.ShiftModifier) {
-                            var start = (subListView.currentIndex >= 0) ? subListView.currentIndex : index
-                            var minIdx = Math.min(start, index)
-                            var maxIdx = Math.max(start, index)
-                            for (var i = minIdx; i <= maxIdx; i++) {
-                                var rIdx = root.isProxyModel ? subListView.model.getRawIndex(i) : i
-                                list.push(rIdx)
-                            }
-                        } else {
-                            list = [delegateItem.itemRawIndex]
-                        }
-                        root.selectedIndices = list
-                        root.selectionChanged(list)
-                        subListView.currentIndex = index
-                    }
                 }
 
                 NumberAnimation {

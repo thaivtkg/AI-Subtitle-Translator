@@ -3,6 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
 import QtQuick.Dialogs
+import QtQuick.Effects
 import "theme"
 import "components"
 
@@ -23,6 +24,19 @@ ApplicationWindow {
     // P2.5-T13-D0: manual responsive acceptance only.
     property bool responsiveTestToolsEnabled: Qt.application.arguments.indexOf("--dev-tools") >= 0
 
+    // Mask for rounded liquid glass window frame
+    Item {
+        id: windowMaskContainer
+        anchors.fill: windowRootContainer
+        layer.enabled: true
+        visible: false
+        Rectangle {
+            anchors.fill: parent
+            radius: windowRootContainer.radius
+            color: "white"
+        }
+    }
+
     // ==========================================
     // P2.5-T2: PROJECT HEADER
     // ==========================================
@@ -37,6 +51,11 @@ ApplicationWindow {
         clip: true
         border.color: Qt.rgba(1.0, 1.0, 1.0, 0.75)
         border.width: 1.5
+        layer.enabled: mainWindow.visibility !== Window.Maximized
+        layer.effect: MultiEffect {
+            maskEnabled: true
+            maskSource: windowMaskContainer
+        }
 
         // LAYER 1: Fluid Liquid Mesh Wallpaper (100% 1:1 match with web design mockup)
         Image {
@@ -77,14 +96,6 @@ ApplicationWindow {
             }
         }
 
-        // Top Specular Gleam Highlight along the upper rounded rim
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
-        }
 
         ColumnLayout {
             anchors.fill: parent

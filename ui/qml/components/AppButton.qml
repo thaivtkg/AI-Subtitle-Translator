@@ -22,6 +22,7 @@ Button {
         color: !control.enabled ? Qt.rgba(1, 1, 1, 0.45) : Theme.textPrimaryGlass
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
+        elide: Text.ElideRight
     }
 
     background: Rectangle {

@@ -59,25 +59,33 @@ Item {
         spacing: 16
 
         // 1. TOP CIRCULAR ICON (BLUE-PURPLE GRADIENT WITH WHITE ARROW ⤓)
-        Rectangle {
+        Item {
             Layout.alignment: Qt.AlignHCenter
-            width: 72
-            height: 72
-            radius: 36
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "#6366F1" }
-                GradientStop { position: 1.0; color: "#A855F7" }
-            }
-            border.color: "#FFFFFF"
-            border.width: 2.5
+            Layout.preferredWidth: 68
+            Layout.preferredHeight: 68
+            width: 68
+            height: 68
 
-            Text {
+            Rectangle {
                 anchors.centerIn: parent
-                text: "⤓"
-                font.pixelSize: 32
-                font.bold: true
-                color: "#FFFFFF"
+                width: 68
+                height: 68
+                radius: 34
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "#6366F1" }
+                    GradientStop { position: 1.0; color: "#A855F7" }
+                }
+                border.color: "#FFFFFF"
+                border.width: 2.5
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "⤓"
+                    font.pixelSize: 30
+                    font.bold: true
+                    color: "#FFFFFF"
+                }
             }
         }
 

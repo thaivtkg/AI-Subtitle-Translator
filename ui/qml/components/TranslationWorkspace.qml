@@ -743,13 +743,13 @@ Item {
         // Bottom Action Row (100% Matching Image 2)
         RowLayout {
             Layout.fillWidth: true
-            Layout.topMargin: Theme.spaceSmall
-            Layout.bottomMargin: Theme.spaceSmall
+            Layout.topMargin: 8
+            Layout.bottomMargin: 14
             spacing: Theme.spaceMedium
 
             // Gợi ý phím tắt bên trái (Matching Design Mockup)
             RowLayout {
-                visible: workspace.width >= 560
+                visible: workspace.width >= 620
                 spacing: 6
                 Text {
                     text: "Nhấn"
@@ -786,6 +786,7 @@ Item {
                 text: "↺ Dịch lại"
                 Layout.preferredWidth: 90
                 Layout.minimumWidth: 70
+                visible: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 enabled: !workspace.executionLocked && translationController.engineStatus !== "Translating" &&
                          ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 onClicked: translateRequested(langSelector.sourceLang)
@@ -806,9 +807,10 @@ Item {
             AppButton {
                 objectName: "btnAccept"
                 text: "✓ Chấp nhận (Accept) ➔"
-                Layout.preferredWidth: 160
+                Layout.preferredWidth: Math.max(185, implicitWidth)
                 Layout.minimumWidth: 100
                 isPrimary: true
+                visible: ["TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                 enabled: !workspace.executionLocked && (translationController.status === "TRANSLATED" || translationController.status === "EDITED" || translationController.status === "ACCEPTED")
                 onClicked: acceptRequested(translationInput.text)
             }

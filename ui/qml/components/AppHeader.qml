@@ -51,15 +51,6 @@ ToolBar {
                 color: Theme.glassBorderSubtle
             }
 
-            // Top specular gleam highlight
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 1
-                color: Theme.glassGleamWhite
-            }
-
             MouseArea {
                 anchors.fill: parent
                 z: -1
@@ -160,16 +151,16 @@ ToolBar {
                 id: windowControlsRow
                 objectName: "windowControlsRow"
                 anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                spacing: 0
+                anchors.rightMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
                 z: 5
 
                 Button {
                     id: btnMinimize
                     objectName: "btnMinimize"
-                    implicitWidth: 46
-                    implicitHeight: parent.height
+                    implicitWidth: 36
+                    implicitHeight: 28
                     padding: 0
                     ToolTip.visible: hovered
                     ToolTip.text: "Thu nhỏ"
@@ -181,6 +172,7 @@ ToolBar {
                         verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
+                        radius: 8
                         color: btnMinimize.pressed ? Qt.rgba(1, 1, 1, 0.25) : (btnMinimize.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent")
                         Behavior on color { ColorAnimation { duration: 100 } }
                     }
@@ -190,8 +182,8 @@ ToolBar {
                 Button {
                     id: btnMaximize
                     objectName: "btnMaximize"
-                    implicitWidth: 46
-                    implicitHeight: parent.height
+                    implicitWidth: 36
+                    implicitHeight: 28
                     padding: 0
                     ToolTip.visible: hovered
                     ToolTip.text: Window.window.visibility === Window.Maximized ? "Khôi phục" : "Phóng to"
@@ -203,6 +195,7 @@ ToolBar {
                         verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
+                        radius: 8
                         color: btnMaximize.pressed ? Qt.rgba(1, 1, 1, 0.25) : (btnMaximize.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent")
                         Behavior on color { ColorAnimation { duration: 100 } }
                     }
@@ -215,8 +208,8 @@ ToolBar {
                 Button {
                     id: btnClose
                     objectName: "btnClose"
-                    implicitWidth: 46
-                    implicitHeight: parent.height
+                    implicitWidth: 36
+                    implicitHeight: 28
                     padding: 0
                     ToolTip.visible: hovered
                     ToolTip.text: "Đóng"
@@ -229,6 +222,7 @@ ToolBar {
                         verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
+                        radius: 8
                         color: btnClose.pressed ? "#C42B1C" : (btnClose.hovered ? "#E81123" : "transparent")
                         Behavior on color { ColorAnimation { duration: 100 } }
                     }
@@ -275,7 +269,7 @@ ToolBar {
 
                 AppButton {
                     objectName: "btnSave"
-                    visible: root.hasProject && !root.isSaved
+                    visible: false
                     text: "💾 Lưu"
                     tooltip: "Lưu dự án — Ctrl + S"
                     enabled: root.hasProject && !root.isSaved
@@ -296,9 +290,9 @@ ToolBar {
             Item {
                 id: centerCluster
                 anchors.left: leftBrandingRow.right
-                anchors.leftMargin: Theme.spaceSmall
+                anchors.leftMargin: 4
                 anchors.right: rightActionsRow.left
-                anchors.rightMargin: Theme.spaceSmall
+                anchors.rightMargin: 4
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 clip: true
