@@ -25,7 +25,7 @@ ToolBar {
     signal exportClicked()
     signal modelManagerClicked()
 
-    implicitHeight: 52
+    implicitHeight: 48
     padding: 0
 
     background: Rectangle {
@@ -33,28 +33,31 @@ ToolBar {
     }
 
     contentItem: Item {
-        // FLOATING LIQUID GLASS CAPSULE SHELL
+        // SEAMLESS LIQUID GLASS HEADER BAR
         Rectangle {
             id: headerCapsule
             anchors.fill: parent
-            anchors.leftMargin: Theme.windowPadding
-            anchors.rightMargin: Theme.windowPadding
-            anchors.topMargin: 4
-            anchors.bottomMargin: 4
-            radius: 22
+            radius: 0
             color: Theme.glassIslandSurface
-            border.color: Theme.glassBorderSpecularUpper
-            border.width: 1
+            border.color: "transparent"
             clip: true
 
-            // Specular Gleam Highlight along the upper bevel
+            // Bottom 1px glass divider line
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Theme.glassBorderSubtle
+            }
+
+            // Top specular gleam highlight
             Rectangle {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
                 height: 1
                 color: Theme.glassGleamWhite
-                radius: parent.radius
             }
 
             MouseArea {
@@ -62,94 +65,9 @@ ToolBar {
                 z: -1
                 acceptedButtons: Qt.LeftButton
                 onPressed: Window.window.startSystemMove()
-            }
-
-            // MACOS GLASS GEMS (WINDOW CONTROLS ANCHORED LEFT)
-            RowLayout {
-                id: windowControlsRow
-                objectName: "windowControlsRow"
-                anchors.left: parent.left
-                anchors.leftMargin: 16
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
-                z: 3
-
-                Button {
-                    id: btnClose
-                    objectName: "btnClose"
-                    implicitWidth: 14
-                    implicitHeight: 14
-                    padding: 0
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Đóng"
-                    contentItem: Text {
-                        text: "✕"
-                        color: btnClose.hovered ? "#FFFFFF" : "transparent"
-                        font.pixelSize: 8
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    background: Rectangle {
-                        radius: 7
-                        color: btnClose.pressed ? "#CC2D24" : (btnClose.hovered ? "#FF453A" : "#FF5F56")
-                        border.color: "#E0443E"
-                        border.width: 1
-                    }
-                    onClicked: Window.window.close()
-                }
-
-                Button {
-                    id: btnMinimize
-                    objectName: "btnMinimize"
-                    implicitWidth: 14
-                    implicitHeight: 14
-                    padding: 0
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Thu nhỏ"
-                    contentItem: Text {
-                        text: "—"
-                        color: btnMinimize.hovered ? "#5F3E00" : "transparent"
-                        font.pixelSize: 8
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    background: Rectangle {
-                        radius: 7
-                        color: btnMinimize.pressed ? "#CCA024" : (btnMinimize.hovered ? "#FF9F0A" : "#FFBD2E")
-                        border.color: "#DEA123"
-                        border.width: 1
-                    }
-                    onClicked: Window.window.showMinimized()
-                }
-
-                Button {
-                    id: btnMaximize
-                    objectName: "btnMaximize"
-                    implicitWidth: 14
-                    implicitHeight: 14
-                    padding: 0
-                    ToolTip.visible: hovered
-                    ToolTip.text: Window.window.visibility === Window.Maximized ? "Khôi phục" : "Phóng to"
-                    contentItem: Text {
-                        text: "+"
-                        color: btnMaximize.hovered ? "#0A4E1B" : "transparent"
-                        font.pixelSize: 10
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    background: Rectangle {
-                        radius: 7
-                        color: btnMaximize.pressed ? "#209E38" : (btnMaximize.hovered ? "#30D158" : "#27C93F")
-                        border.color: "#1AAB29"
-                        border.width: 1
-                    }
-                    onClicked: {
-                        if (Window.window.visibility === Window.Maximized) Window.window.showNormal()
-                        else Window.window.showMaximized()
-                    }
+                onDoubleClicked: {
+                    if (Window.window.visibility === Window.Maximized) Window.window.showNormal()
+                    else Window.window.showMaximized()
                 }
             }
 
@@ -157,8 +75,8 @@ ToolBar {
             RowLayout {
                 id: leftBrandingRow
                 objectName: "leftBrandingRow"
-                anchors.left: windowControlsRow.right
-                anchors.leftMargin: 14
+                anchors.left: parent.left
+                anchors.leftMargin: 16
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spaceSmall
 
@@ -237,11 +155,92 @@ ToolBar {
                 }
             }
 
-            // CỤM PHẢI: CÁC THAO TÁC CHÍNH (DẠNG VIÊN THUỐC)
+            // CỤM NÚT ĐIỀU KHIỂN CỬA SỔ WINDOWS 11 (ANCHORED TOP-RIGHT)
+            RowLayout {
+                id: windowControlsRow
+                objectName: "windowControlsRow"
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                spacing: 0
+                z: 5
+
+                Button {
+                    id: btnMinimize
+                    objectName: "btnMinimize"
+                    implicitWidth: 46
+                    implicitHeight: parent.height
+                    padding: 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Thu nhỏ"
+                    contentItem: Text {
+                        text: "—"
+                        color: Theme.textPrimaryGlass
+                        font.pixelSize: 11
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        color: btnMinimize.pressed ? Qt.rgba(1, 1, 1, 0.25) : (btnMinimize.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent")
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                    }
+                    onClicked: Window.window.showMinimized()
+                }
+
+                Button {
+                    id: btnMaximize
+                    objectName: "btnMaximize"
+                    implicitWidth: 46
+                    implicitHeight: parent.height
+                    padding: 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: Window.window.visibility === Window.Maximized ? "Khôi phục" : "Phóng to"
+                    contentItem: Text {
+                        text: Window.window.visibility === Window.Maximized ? "🗗" : "🗖"
+                        color: Theme.textPrimaryGlass
+                        font.pixelSize: 11
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        color: btnMaximize.pressed ? Qt.rgba(1, 1, 1, 0.25) : (btnMaximize.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent")
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                    }
+                    onClicked: {
+                        if (Window.window.visibility === Window.Maximized) Window.window.showNormal()
+                        else Window.window.showMaximized()
+                    }
+                }
+
+                Button {
+                    id: btnClose
+                    objectName: "btnClose"
+                    implicitWidth: 46
+                    implicitHeight: parent.height
+                    padding: 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Đóng"
+                    contentItem: Text {
+                        text: "✕"
+                        color: btnClose.hovered ? "#FFFFFF" : Theme.textPrimaryGlass
+                        font.pixelSize: 12
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        color: btnClose.pressed ? "#C42B1C" : (btnClose.hovered ? "#E81123" : "transparent")
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                    }
+                    onClicked: Window.window.close()
+                }
+            }
+
+            // CỤM PHẢI: CÁC THAO TÁC CHÍNH (DẠNG VIÊN THUỐC ĐẶT CẠNH WINDOW CONTROLS)
             RowLayout {
                 id: rightActionsRow
                 objectName: "rightActionsRow"
-                anchors.right: parent.right
+                anchors.right: windowControlsRow.left
                 anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall

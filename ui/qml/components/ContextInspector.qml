@@ -7,8 +7,9 @@ ColumnLayout {
     id: inspectorRoot
     spacing: 12
     
-    // TAB BAR CAPSULE
+    // TAB BAR CAPSULE WITH HOLD & DRAG SLIDING PILL (D:\dichuyen.mp4)
     Rectangle {
+        id: tabOuterContainer
         Layout.fillWidth: true
         Layout.minimumWidth: 0
         implicitHeight: 38
@@ -17,110 +18,158 @@ ColumnLayout {
         border.color: Theme.glassBorderSpecularLower
         border.width: 1
 
+        readonly property int tabCount: 3
+        readonly property real tabWidth: Math.floor((tabOuterContainer.width - 6) / tabCount)
+        property bool isDragging: false
+        property real pillDragX: 0
+
+        // SLIDING LIQUID PILL (D:\dichuyen.mp4)
+        Rectangle {
+            id: slidingPill
+            y: 3
+            width: tabOuterContainer.tabWidth
+            height: tabOuterContainer.height - 6
+            radius: 10
+            color: Theme.accentSapphire
+            border.color: Theme.glassBorderSpecularUpper
+            border.width: 1
+            z: 1
+
+            x: tabOuterContainer.isDragging
+               ? tabOuterContainer.pillDragX
+               : (3 + contextTabs.currentIndex * tabOuterContainer.tabWidth)
+
+            scale: tabOuterContainer.isDragging ? 0.95 : 1.0
+            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+
+            Behavior on x {
+                enabled: !tabOuterContainer.isDragging
+                NumberAnimation {
+                    duration: 280
+                    easing.type: Easing.OutBack
+                    easing.overshoot: 1.25
+                }
+            }
+
+            // Top specular highlight
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                radius: parent.radius
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.45)
+            }
+        }
+
         TabBar {
             id: contextTabs
             objectName: "contextTabs"
             anchors.fill: parent
             anchors.margins: 3
-            spacing: 4
+            spacing: 0
+            implicitWidth: tabOuterContainer.width
             background: Item {}
-            
+            z: 2
+
             TabButton {
                 id: tabTimeline
                 text: "TIMELINE"
-                width: Math.floor(contextTabs.width / 3)
+                implicitWidth: tabOuterContainer.tabWidth
                 contentItem: Text {
                     text: parent.text
                     font.pixelSize: 11
                     font.bold: true
-                    color: parent.checked ? "#FFFFFF" : Theme.textSecondary
+                    color: contextTabs.currentIndex === 0 ? "#FFFFFF" : Theme.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
                 }
-                background: Rectangle {
-                    radius: 10
-                    color: parent.checked ? Theme.accentSapphire : "transparent"
-                    border.color: parent.checked ? Theme.glassBorderSpecularUpper : "transparent"
-                    border.width: parent.checked ? 1 : 0
-                    
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 1
-                        radius: parent.radius
-                        color: Qt.rgba(1.0, 1.0, 1.0, 0.4)
-                        visible: parent.parent.checked
-                    }
-
-                    Behavior on color { ColorAnimation { duration: Theme.animHover } }
-                }
+                background: Item {}
             }
 
             TabButton {
                 id: tabIntelligence
                 text: "INTELLIGENCE"
-                width: Math.floor(contextTabs.width / 3)
+                implicitWidth: tabOuterContainer.tabWidth
                 contentItem: Text {
                     text: parent.text
                     font.pixelSize: 11
                     font.bold: true
-                    color: parent.checked ? "#FFFFFF" : Theme.textSecondary
+                    color: contextTabs.currentIndex === 1 ? "#FFFFFF" : Theme.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
                 }
-                background: Rectangle {
-                    radius: 10
-                    color: parent.checked ? Theme.accentSapphire : "transparent"
-                    border.color: parent.checked ? Theme.glassBorderSpecularUpper : "transparent"
-                    border.width: parent.checked ? 1 : 0
-                    
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 1
-                        radius: parent.radius
-                        color: Qt.rgba(1.0, 1.0, 1.0, 0.4)
-                        visible: parent.parent.checked
-                    }
-
-                    Behavior on color { ColorAnimation { duration: Theme.animHover } }
-                }
+                background: Item {}
             }
 
             TabButton {
                 id: tabSummary
                 text: "SUMMARY"
-                width: Math.floor(contextTabs.width / 3)
+                implicitWidth: tabOuterContainer.tabWidth
                 contentItem: Text {
                     text: parent.text
                     font.pixelSize: 11
                     font.bold: true
-                    color: parent.checked ? "#FFFFFF" : Theme.textSecondary
+                    color: contextTabs.currentIndex === 2 ? "#FFFFFF" : Theme.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
                 }
-                background: Rectangle {
-                    radius: 10
-                    color: parent.checked ? Theme.accentSapphire : "transparent"
-                    border.color: parent.checked ? Theme.glassBorderSpecularUpper : "transparent"
-                    border.width: parent.checked ? 1 : 0
-                    
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 1
-                        radius: parent.radius
-                        color: Qt.rgba(1.0, 1.0, 1.0, 0.4)
-                        visible: parent.parent.checked
-                    }
+                background: Item {}
+            }
+        }
 
-                    Behavior on color { ColorAnimation { duration: Theme.animHover } }
+        // MOUSE AREA FOR PRESS-AND-HOLD & HORIZONTAL DRAG PHYSICS (D:\dichuyen.mp4)
+        MouseArea {
+            id: tabDragArea
+            anchors.fill: parent
+            z: 3
+            hoverEnabled: true
+            cursorShape: tabOuterContainer.isDragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+            acceptedButtons: Qt.LeftButton
+
+            property real startMouseX: 0
+            property real initialPillX: 0
+            property bool hasMoved: false
+
+            onPressed: function(mouse) {
+                startMouseX = mouse.x
+                initialPillX = slidingPill.x
+                tabOuterContainer.pillDragX = initialPillX
+                hasMoved = false
+            }
+
+            onPositionChanged: function(mouse) {
+                if (pressed) {
+                    var dx = mouse.x - startMouseX
+                    if (!tabOuterContainer.isDragging && Math.abs(dx) > 4) {
+                        tabOuterContainer.isDragging = true
+                    }
+                    if (tabOuterContainer.isDragging) {
+                        hasMoved = true
+                        var minX = 3
+                        var maxX = tabOuterContainer.width - 3 - tabOuterContainer.tabWidth
+                        var rawX = initialPillX + dx
+                        if (rawX < minX) rawX = minX - (minX - rawX) * 0.3
+                        else if (rawX > maxX) rawX = maxX + (rawX - maxX) * 0.3
+                        tabOuterContainer.pillDragX = rawX
+                    }
+                }
+            }
+
+            onReleased: function(mouse) {
+                if (tabOuterContainer.isDragging) {
+                    tabOuterContainer.isDragging = false
+                    var pillCenter = tabOuterContainer.pillDragX + tabOuterContainer.tabWidth / 2
+                    var targetIndex = Math.floor((pillCenter - 3) / tabOuterContainer.tabWidth)
+                    targetIndex = Math.max(0, Math.min(tabOuterContainer.tabCount - 1, targetIndex))
+                    contextTabs.currentIndex = targetIndex
+                } else if (!hasMoved) {
+                    var clickIndex = Math.floor((mouse.x - 3) / tabOuterContainer.tabWidth)
+                    clickIndex = Math.max(0, Math.min(tabOuterContainer.tabCount - 1, clickIndex))
+                    contextTabs.currentIndex = clickIndex
                 }
             }
         }

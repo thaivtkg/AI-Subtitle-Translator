@@ -76,8 +76,8 @@ ApplicationWindow {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.windowPadding
-        spacing: Theme.islandSpacing
+        anchors.margins: 0
+        spacing: 0
 
         StudioLaunchpad {
             id: studioLaunchpad
@@ -100,27 +100,27 @@ ApplicationWindow {
             Layout.fillHeight: true
             visible: subListView.count > 0
             orientation: Qt.Horizontal
-            handle: Item {
-                implicitWidth: Theme.islandSpacing
-                // Khoảng hở trong suốt 12px giữa 3 đảo kính nổi
+            handle: Rectangle {
+                implicitWidth: 1
+                color: Theme.glassBorderSubtle
             }
 
-            // ĐẢO 1: SUBTITLE NAVIGATOR
+            // PANEL 1: SUBTITLE NAVIGATOR (SEAMLESS DOCKED)
             Rectangle {
                 id: subtitleIsland
                 SplitView.preferredWidth: 320
                 SplitView.minimumWidth: 260
                 SplitView.maximumWidth: 450
-                radius: Theme.radiusIsland
+                radius: 0
                 color: Theme.glassIslandSurface
-                border.color: Theme.glassBorderSpecularUpper
-                border.width: 1
+                border.color: "transparent"
+                border.width: 0
                 clip: true
 
                 SubtitleListView {
                     id: subListView // ĐÃ FIX: Khai báo ID cho danh sách
                     anchors.fill: parent
-                    anchors.margins: 8
+                    anchors.margins: 0
                     model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : subtitleModel
                     selectedIndices: mainWindow.selectedSubtitleIndices
                     onSelectionChanged: function(indices) {
@@ -129,15 +129,15 @@ ApplicationWindow {
                 }
             }
 
-            // ĐẢO 2: TRANSLATION WORKSPACE
+            // PANEL 2: TRANSLATION WORKSPACE (SEAMLESS DOCKED)
             Rectangle {
                 id: workspaceIsland
                 SplitView.fillWidth: true
                 SplitView.minimumWidth: 400
-                radius: Theme.radiusIsland
+                radius: 0
                 color: Theme.glassIslandSurface
-                border.color: Theme.glassBorderSpecularUpper
-                border.width: 1
+                border.color: "transparent"
+                border.width: 0
                 clip: true
 
                 TranslationWorkspace {
@@ -167,16 +167,16 @@ ApplicationWindow {
                 }
             }
 
-            // ĐẢO 3: CONTEXT INSPECTOR (Giữ chỗ cho S2-T8)
+            // PANEL 3: CONTEXT INSPECTOR (SEAMLESS DOCKED)
             Rectangle {
                 id: contextIsland
                 SplitView.preferredWidth: 300
                 SplitView.minimumWidth: 280
                 SplitView.maximumWidth: 400
-                radius: Theme.radiusIsland
+                radius: 0
                 color: Theme.glassIslandSurface
-                border.color: Theme.glassBorderSpecularUpper
-                border.width: 1
+                border.color: "transparent"
+                border.width: 0
                 clip: true
 
                 ContextInspector {

@@ -5,7 +5,7 @@ import "../theme"
 
 Item {
     id: root
-    implicitHeight: 40
+    implicitHeight: 32
 
     property int acceptedCount: 0
     property int totalCount: 0
@@ -17,28 +17,21 @@ Item {
     property real progressRatio: totalCount > 0 ? acceptedCount / totalCount : 0
     property int progressPercent: Math.round(progressRatio * 100)
 
-    // Floating Translucent Capsule Bar
+    // Seamless Bottom Bar
     Rectangle {
         id: capsuleBar
         anchors.fill: parent
-        anchors.leftMargin: Theme.windowPadding
-        anchors.rightMargin: Theme.windowPadding
-        anchors.bottomMargin: 4
-        anchors.topMargin: 2
-        radius: Theme.radiusPill
+        radius: 0
         color: Theme.glassIslandSurface
-        border.color: Theme.glassBorderSpecularUpper
-        border.width: 1
+        border.color: "transparent"
 
-        // Top specular gleam
+        // Top 1px glass divider line
         Rectangle {
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.margins: 1
             height: 1
-            radius: parent.radius
-            color: Qt.rgba(1.0, 1.0, 1.0, 0.45)
+            color: Theme.glassBorderSubtle
         }
 
         RowLayout {

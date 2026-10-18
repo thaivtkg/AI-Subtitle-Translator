@@ -55,12 +55,23 @@ Item {
         anchors.centerIn: parent
         width: Math.min(launchpadRoot.width * 0.88, 640)
         implicitHeight: cardLayout.implicitHeight + Theme.spaceXl * 2
-        radius: 16
+        radius: 20
         color: dropArea.containsDrag
-               ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.08)
-               : Theme.bgSurfaceElevated
-        border.color: dropArea.containsDrag ? Theme.accentCyan : Theme.border
+               ? Qt.rgba(0.0, 0.4, 1.0, 0.18)
+               : Theme.glassPodLuminous
+        border.color: dropArea.containsDrag ? Theme.accentSapphire : Theme.glassBorderSpecularUpper
         border.width: dropArea.containsDrag ? 2 : 1
+        clip: true
+
+        // Top specular gleam highlight
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: Theme.glassGleamWhite
+            radius: parent.radius
+        }
 
         Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
         Behavior on border.color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
@@ -78,9 +89,9 @@ Item {
                 height: 68
                 radius: 34
                 color: dropArea.containsDrag
-                       ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.2)
-                       : Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.1)
-                border.color: Theme.accentCyan
+                       ? Qt.rgba(0.0, 0.4, 1.0, 0.22)
+                       : Qt.rgba(0.0, 0.4, 1.0, 0.10)
+                border.color: Theme.accentSapphire
                 border.width: 1
 
                 Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
@@ -90,7 +101,7 @@ Item {
                     text: dropArea.containsDrag ? "📥" : "⤓"
                     font.pixelSize: dropArea.containsDrag ? 32 : 30
                     font.bold: true
-                    color: Theme.accentCyan
+                    color: Theme.accentSapphire
                 }
             }
 
@@ -103,7 +114,7 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: dropArea.containsDrag ? "Thả tệp vào đây để mở ngay lập tức" : "Kéo & thả file phụ đề vào đây"
-                    color: Theme.textPrimary
+                    color: Theme.textOnLightPod
                     font.pixelSize: 20
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
@@ -112,7 +123,7 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: "Hỗ trợ tệp phụ đề gốc (.srt) và tệp dự án hoàn chỉnh (.aisrt)"
-                    color: Theme.textMuted
+                    color: Theme.textOnLightPodMuted
                     font.pixelSize: 13
                     horizontalAlignment: Text.AlignHCenter
                 }
