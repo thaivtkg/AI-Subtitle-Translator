@@ -61,3 +61,12 @@ def test_alpha_buffer_enabled():
     import main
     assert QQuickWindow.hasDefaultAlphaBuffer() is True
 
+
+def test_main_window_transparency_and_islands(harness):
+    window = harness.window
+    color = window.property("color")
+    assert color.name() == "#00000000" or color.alpha() == 0 or color.alpha() < 0.1
+    split_view = harness.driver.find("mainSplitView")
+    assert split_view is not None
+
+

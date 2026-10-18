@@ -15,7 +15,7 @@ ApplicationWindow {
     minimumHeight: 600
     flags: Qt.FramelessWindowHint | Qt.Window
     title: "AI Subtitle Translator - Professional Workspace"
-    color: Theme.bgApp
+    color: "transparent"
 
     // THÊM MỚI: Biến toàn cục hứng Story Summary (đặt ở cấp cao nhất)
     property string globalStorySummary: ""
@@ -66,9 +66,18 @@ ApplicationWindow {
     // ==========================================
     // S2-T2: MAIN WINDOW SHELL (3-COLUMN LAYOUT)
     // ==========================================
+    // Lớp nền kính khói xuyên thấu toàn màn hình
+    Rectangle {
+        id: windowBgLayer
+        anchors.fill: parent
+        color: Theme.glassBackground
+        z: -2
+    }
+
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: Theme.windowPadding
+        spacing: Theme.islandSpacing
 
         StudioLaunchpad {
             id: studioLaunchpad
@@ -85,81 +94,100 @@ ApplicationWindow {
 
         SplitView {
             id: mainSplitView
+            objectName: "mainSplitView"
             Layout.fillWidth: true
+
             Layout.fillHeight: true
             visible: subListView.count > 0
             orientation: Qt.Horizontal
-        handle: Rectangle {
-            implicitWidth: 1
-            color: SplitHandle.pressed ? Theme.accentCyan : (SplitHandle.hovered ? Theme.textMuted : Theme.border)
-            Behavior on color { ColorAnimation { duration: Theme.animDuration } }
-        }
-
-        // CỘT 1: SUBTITLE NAVIGATOR
-        Rectangle {
-            SplitView.preferredWidth: 320
-            SplitView.minimumWidth: 260
-            SplitView.maximumWidth: 450
-            color: Theme.bgSurface
-
-            SubtitleListView {
-                id: subListView // ĐÃ FIX: Khai báo ID cho danh sách
-                anchors.fill: parent
-                model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : subtitleModel
-                selectedIndices: mainWindow.selectedSubtitleIndices
-                onSelectionChanged: function(indices) {
-                    mainWindow.selectedSubtitleIndices = indices
-                }
+            handle: Item {
+                implicitWidth: Theme.islandSpacing
+                // Khoảng hở trong suốt 12px giữa 3 đảo kính nổi
             }
-        }
 
-        // CỘT 2: TRANSLATION WORKSPACE
-        Rectangle {
-            SplitView.fillWidth: true
-            SplitView.minimumWidth: 400
-            color: Theme.bgApp
+            // ĐẢO 1: SUBTITLE NAVIGATOR
+            Rectangle {
+                id: subtitleIsland
+                SplitView.preferredWidth: 320
+                SplitView.minimumWidth: 260
+                SplitView.maximumWidth: 450
+                radius: Theme.radiusIsland
+                color: Theme.glassIslandSurface
+                border.color: Theme.glassBorderSpecularUpper
+                border.width: 1
+                clip: true
 
-            TranslationWorkspace {
-                id: transWorkspace
-                anchors.fill: parent
-                anchors.margins: Theme.spaceMedium
-                hasSelection: subListView.currentRawIndex >= 0
-                totalCount: subListView.count
-                executionLocked: batchController.executionLocked
-
-                onTranslateRequested: (sourceLang) => {
-                    translationController.requestTranslation(subListView.currentRawIndex, sourceLang, "Vietnamese", globalStorySummary)
-                }
-
-                onAcceptRequested: (text) => {
-                    let isSuccess = translationController.acceptTranslation(subListView.currentRawIndex, text)
-                    if (isSuccess && subListView.currentIndex < subListView.count - 1) {
-                        subListView.currentIndex += 1
+                SubtitleListView {
+                    id: subListView // ĐÃ FIX: Khai báo ID cho danh sách
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : subtitleModel
+                    selectedIndices: mainWindow.selectedSubtitleIndices
+                    onSelectionChanged: function(indices) {
+                        mainWindow.selectedSubtitleIndices = indices
                     }
                 }
-                onOpenSrtRequested: {
-                    if (!batchController.executionLocked) importSrtDialog.open()
+            }
+
+            // ĐẢO 2: TRANSLATION WORKSPACE
+            Rectangle {
+                id: workspaceIsland
+                SplitView.fillWidth: true
+                SplitView.minimumWidth: 400
+                radius: Theme.radiusIsland
+                color: Theme.glassIslandSurface
+                border.color: Theme.glassBorderSpecularUpper
+                border.width: 1
+                clip: true
+
+                TranslationWorkspace {
+                    id: transWorkspace
+                    anchors.fill: parent
+                    anchors.margins: Theme.spaceMedium
+                    hasSelection: subListView.currentRawIndex >= 0
+                    totalCount: subListView.count
+                    executionLocked: batchController.executionLocked
+
+                    onTranslateRequested: (sourceLang) => {
+                        translationController.requestTranslation(subListView.currentRawIndex, sourceLang, "Vietnamese", globalStorySummary)
+                    }
+
+                    onAcceptRequested: (text) => {
+                        let isSuccess = translationController.acceptTranslation(subListView.currentRawIndex, text)
+                        if (isSuccess && subListView.currentIndex < subListView.count - 1) {
+                            subListView.currentIndex += 1
+                        }
+                    }
+                    onOpenSrtRequested: {
+                        if (!batchController.executionLocked) importSrtDialog.open()
+                    }
+                    onOpenProjectRequested: {
+                        if (!batchController.executionLocked) loadProjectDialog.open()
+                    }
                 }
-                onOpenProjectRequested: {
-                    if (!batchController.executionLocked) loadProjectDialog.open()
+            }
+
+            // ĐẢO 3: CONTEXT INSPECTOR (Giữ chỗ cho S2-T8)
+            Rectangle {
+                id: contextIsland
+                SplitView.preferredWidth: 300
+                SplitView.minimumWidth: 280
+                SplitView.maximumWidth: 400
+                radius: Theme.radiusIsland
+                color: Theme.glassIslandSurface
+                border.color: Theme.glassBorderSpecularUpper
+                border.width: 1
+                clip: true
+
+                ContextInspector {
+                    id: contextInspector
+                    anchors.fill: parent
+                    anchors.margins: Theme.spaceMedium
                 }
             }
         }
-
-        // CỘT 3: CONTEXT INSPECTOR (Giữ chỗ cho S2-T8)
-        Rectangle {
-            SplitView.preferredWidth: 300
-            SplitView.minimumWidth: 280
-            SplitView.maximumWidth: 400
-            color: Theme.bgSurface
-
-            ContextInspector {
-                anchors.fill: parent
-                anchors.margins: Theme.spaceMedium
-            }
-        }
     }
-    }
+
 
     // ==========================================
     // DIALOGS & CONNECTIONS
