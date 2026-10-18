@@ -369,3 +369,30 @@ def test_tc_mm_12_zero_blocking_ui_during_download(qapp, monkeypatch):
 
         dm.cancel_download("bg_model")
         assert dm.is_downloading("bg_model") is False
+
+
+# ==========================================
+# TC-MM-13: DOWNLOAD ERROR THREAD SAFETY
+# ==========================================
+def test_tc_mm_13_download_error_thread_safety(qapp, monkeypatch):
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        target_file = os.path.join(tmp_dir, "error_model.gguf")
+
+        import urllib.request
+        def mock_error_urlopen(req, timeout=30):
+            raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
+
+        monkeypatch.setattr(urllib.request, "urlopen", mock_error_urlopen)
+
+        dm = DownloadManager()
+        spy_failed = SignalSpy(dm.downloadFailed)
+
+        dm.start_download("error_model", "http://mock.test/404", target_file, expected_size_bytes=100)
+        spy_failed.wait(1000)
+
+        assert len(spy_failed) == 1
+        assert spy_failed[0][0] == "error_model"
+        assert "404" in spy_failed[0][1]
+        assert dm.is_downloading("error_model") is False
+        assert not os.path.exists(target_file)
+        assert not os.path.exists(target_file + ".part")

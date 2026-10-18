@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Shapes 1.15
 import "../theme"
 
 Item {
@@ -21,7 +22,7 @@ Item {
             var hasValid = false
             for (var i = 0; i < drag.urls.length; i++) {
                 var url = drag.urls[i].toString().toLowerCase()
-                if (url.endsWith(".srt") || url.endsWith(".aisrt")) {
+                if (url.endsWith(".srt") || url.endsWith(".aisrt") || url.endsWith(".mp4")) {
                     hasValid = true
                     break
                 }
@@ -50,178 +51,246 @@ Item {
         }
     }
 
-    Rectangle {
-        id: dropCard
+    // MAIN CONTENT CENTERED IN VIEW (100% MATCHING DESIGN MOCKUP)
+    ColumnLayout {
+        id: centerContent
         anchors.centerIn: parent
-        width: Math.min(launchpadRoot.width * 0.88, 640)
-        implicitHeight: cardLayout.implicitHeight + Theme.spaceXl * 2
-        radius: 16
-        color: dropArea.containsDrag
-               ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.08)
-               : Theme.bgSurfaceElevated
-        border.color: dropArea.containsDrag ? Theme.accentCyan : Theme.border
-        border.width: dropArea.containsDrag ? 2 : 1
+        width: Math.min(launchpadRoot.width * 0.90, 680)
+        spacing: 16
 
-        Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
-        Behavior on border.color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
+        // 1. TOP CIRCULAR ICON (BLUE-PURPLE GRADIENT WITH WHITE ARROW ⤓)
+        Item {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: 68
+            Layout.preferredHeight: 68
+            width: 68
+            height: 68
 
-        ColumnLayout {
-            id: cardLayout
-            anchors.centerIn: parent
-            width: parent.width - Theme.spaceXl * 2
-            spacing: Theme.spaceMedium
-
-            // Modern Icon Badge
             Rectangle {
-                Layout.alignment: Qt.AlignHCenter
+                anchors.centerIn: parent
                 width: 68
                 height: 68
                 radius: 34
-                color: dropArea.containsDrag
-                       ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.2)
-                       : Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.1)
-                border.color: Theme.accentCyan
-                border.width: 1
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "#6366F1" }
+                    GradientStop { position: 1.0; color: "#A855F7" }
+                }
+                border.color: "#FFFFFF"
+                border.width: 2.5
 
-                Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
+                Canvas {
+                    anchors.fill: parent
+                    renderTarget: Canvas.FramebufferObject
+                    onPaint: {
+                        var ctx = getContext("2d");
+                        ctx.reset();
+                        ctx.strokeStyle = "#FFFFFF";
+                        ctx.lineWidth = 3;
+                        ctx.lineCap = "round";
+                        ctx.lineJoin = "round";
 
-                Text {
-                    anchors.centerIn: parent
-                    text: dropArea.containsDrag ? "📥" : "⤓"
-                    font.pixelSize: dropArea.containsDrag ? 32 : 30
-                    font.bold: true
-                    color: Theme.accentCyan
+                        var cx = width / 2;
+                        var cy = height / 2;
+
+                        // Downward arrow stem: (cx, cy - 12) -> (cx, cy + 4)
+                        ctx.beginPath();
+                        ctx.moveTo(cx, cy - 12);
+                        ctx.lineTo(cx, cy + 4);
+                        ctx.stroke();
+
+                        // Downward arrow head: (cx - 7, cy - 3) -> (cx, cy + 4) -> (cx + 7, cy - 3)
+                        ctx.beginPath();
+                        ctx.moveTo(cx - 7, cy - 3);
+                        ctx.lineTo(cx, cy + 4);
+                        ctx.lineTo(cx + 7, cy - 3);
+                        ctx.stroke();
+
+                        // Bottom tray: (cx - 10, cy + 12) -> (cx + 10, cy + 12)
+                        ctx.beginPath();
+                        ctx.moveTo(cx - 10, cy + 12);
+                        ctx.lineTo(cx + 10, cy + 12);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // 2. HERO HEADINGS (BOLD WHITE TITLE + CRISP TRANSLUCENT SUBTITLE)
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 6
+
+            Text {
+                Layout.fillWidth: true
+                text: "AI Subtitle Studio"
+                color: "#FFFFFF"
+                font.pixelSize: 26
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: "Kéo thả phụ đề hoặc video vào đây để bắt đầu dịch thuật với AI tự động phân tích ngữ cảnh"
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.88)
+                font.pixelSize: 13
+                horizontalAlignment: Text.AlignHCenter
+            }
+        }
+
+        Item { Layout.preferredHeight: 4 }
+
+        // 3. DASHED TRANSLUCENT UPLOAD BOX (ROUNDED FROSTED CARD)
+        Rectangle {
+            id: dropZoneBox
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: Math.min(centerContent.width, 580)
+            Layout.preferredHeight: 175
+            radius: 20
+            color: dropArea.containsDrag ? Qt.rgba(1.0, 1.0, 1.0, 0.55) : Qt.rgba(1.0, 1.0, 1.0, 0.38)
+            border.color: "transparent"
+            border.width: 0
+            clip: true
+
+            Behavior on color { ColorAnimation { duration: 150 } }
+
+            Shape {
+                anchors.fill: parent
+                layer.enabled: true
+                layer.samples: 4
+                ShapePath {
+                    strokeColor: dropArea.containsDrag ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
+                    strokeWidth: 2
+                    strokeStyle: ShapePath.DashLine
+                    dashPattern: [5, 4]
+                    fillColor: "transparent"
+                    startX: 20; startY: 0
+                    PathLine { x: dropZoneBox.width - 20; y: 0 }
+                    PathArc { x: dropZoneBox.width; y: 20; radiusX: 20; radiusY: 20 }
+                    PathLine { x: dropZoneBox.width; y: dropZoneBox.height - 20 }
+                    PathArc { x: dropZoneBox.width - 20; y: dropZoneBox.height; radiusX: 20; radiusY: 20 }
+                    PathLine { x: 20; y: dropZoneBox.height }
+                    PathArc { x: 0; y: dropZoneBox.height - 20; radiusX: 20; radiusY: 20 }
+                    PathLine { x: 0; y: 20 }
+                    PathArc { x: 20; y: 0; radiusX: 20; radiusY: 20 }
                 }
             }
 
-            // Headings
             ColumnLayout {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignHCenter
-                spacing: Theme.spaceXs
+                anchors.centerIn: parent
+                spacing: 10
 
                 Text {
-                    Layout.fillWidth: true
-                    text: dropArea.containsDrag ? "Thả tệp vào đây để mở ngay lập tức" : "Kéo & thả file phụ đề vào đây"
-                    color: Theme.textPrimary
-                    font.pixelSize: 20
+                    Layout.alignment: Qt.AlignHCenter
+                    text: "📁"
+                    font.pixelSize: 36
+                }
+
+                Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: dropArea.containsDrag ? "Thả tệp vào đây ngay!" : "Kéo thả file vào đây hoặc Click để nạp dữ liệu mẫu"
+                    font.pixelSize: 14
+                    font.bold: true
+                    color: "#0F172A"
+                }
+
+                // Extension format pills (.SRT, .AISRT, .MP4)
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 8
+
+                    Rectangle {
+                        implicitWidth: 46
+                        implicitHeight: 22
+                        radius: 6
+                        color: Qt.rgba(0.0, 0.4, 1.0, 0.12)
+                        Text { anchors.centerIn: parent; text: ".SRT"; color: "#0066FF"; font.pixelSize: 11; font.bold: true }
+                    }
+                    Rectangle {
+                        implicitWidth: 56
+                        implicitHeight: 22
+                        radius: 6
+                        color: Qt.rgba(0.0, 0.4, 1.0, 0.12)
+                        Text { anchors.centerIn: parent; text: ".AISRT"; color: "#0066FF"; font.pixelSize: 11; font.bold: true }
+                    }
+                    Rectangle {
+                        implicitWidth: 48
+                        implicitHeight: 22
+                        radius: 6
+                        color: Qt.rgba(0.0, 0.4, 1.0, 0.12)
+                        Text { anchors.centerIn: parent; text: ".MP4"; color: "#0066FF"; font.pixelSize: 11; font.bold: true }
+                    }
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: launchpadRoot.openSrtClicked()
+            }
+        }
+
+        Item { Layout.preferredHeight: 4 }
+
+        // 4. ACTION BUTTONS ROW (EXACT MATCHING DESIGN)
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 16
+
+            // Button 1: ✨ Mở Dự Án Mẫu (Demo)
+            Button {
+                id: btnDemoProject
+                implicitWidth: 210
+                implicitHeight: 42
+                contentItem: Text {
+                    text: "✨ Mở Dự Án Mẫu (Demo)"
+                    color: "#FFFFFF"
+                    font.pixelSize: 13
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
+                background: Rectangle {
+                    radius: 21
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: btnDemoProject.pressed ? "#0052CC" : (btnDemoProject.hovered ? "#1A75FF" : "#0066FF") }
+                        GradientStop { position: 1.0; color: btnDemoProject.pressed ? "#026AA2" : (btnDemoProject.hovered ? "#0EA5E9" : "#0284C7") }
+                    }
+                    border.color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                    border.width: 1
+                }
+                onClicked: {
+                    if (typeof projectController !== "undefined" && typeof projectController.loadSampleProject === "function") {
+                        projectController.loadSampleProject()
+                    } else {
+                        launchpadRoot.openSrtClicked()
+                    }
+                }
+            }
 
-                Text {
-                    Layout.fillWidth: true
-                    text: "Hỗ trợ tệp phụ đề gốc (.srt) và tệp dự án hoàn chỉnh (.aisrt)"
-                    color: Theme.textMuted
+            // Button 2: 📁 Chọn File Từ Máy Tính
+            Button {
+                id: btnBrowseFile
+                implicitWidth: 200
+                implicitHeight: 42
+                contentItem: Text {
+                    text: "📁 Chọn File Từ Máy Tính"
+                    color: "#0F172A"
                     font.pixelSize: 13
+                    font.bold: true
                     horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
-            }
-
-            // Action Buttons
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: Theme.spaceSmall
-                spacing: Theme.spaceMedium
-
-                ColumnLayout {
-                    spacing: Theme.spaceXs
-                    Layout.alignment: Qt.AlignHCenter
-
-                    AppButton {
-                        text: "⚡ Mở file SRT"
-                        isPrimary: true
-                        tooltip: "Mở file phụ đề SRT — Ctrl + O"
-                        Layout.preferredWidth: 160
-                        Layout.preferredHeight: 38
-                        onClicked: launchpadRoot.openSrtClicked()
-                    }
-                    Text {
-                        text: "Ctrl + O"
-                        color: Theme.textDisabled
-                        font.pixelSize: 11
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-                }
-
-                ColumnLayout {
-                    spacing: Theme.spaceXs
-                    Layout.alignment: Qt.AlignHCenter
-
-                    AppButton {
-                        text: "◈ Mở dự án"
-                        tooltip: "Mở file dự án .aisrt — Ctrl + Shift + O"
-                        Layout.preferredWidth: 160
-                        Layout.preferredHeight: 38
-                        onClicked: launchpadRoot.openProjectClicked()
-                    }
-                    Text {
-                        text: "Ctrl + Shift + O"
-                        color: Theme.textDisabled
-                        font.pixelSize: 11
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-                }
-            }
-
-            // Divider
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.topMargin: Theme.spaceSmall
-                height: 1
-                color: Theme.border
-                opacity: 0.6
-            }
-
-            // Feature Badges
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignHCenter
-                spacing: Theme.spaceSmall
-
-                Item { Layout.fillWidth: true }
-
-                Rectangle {
-                    height: 24
-                    implicitWidth: b1.implicitWidth + 16
-                    radius: 12
-                    color: Theme.bgSurface
-                    border.color: Theme.border
+                background: Rectangle {
+                    radius: 21
+                    color: btnBrowseFile.pressed ? Qt.rgba(1.0, 1.0, 1.0, 0.65) : (btnBrowseFile.hovered ? Qt.rgba(1.0, 1.0, 1.0, 0.90) : Qt.rgba(1.0, 1.0, 1.0, 0.78))
+                    border.color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
                     border.width: 1
-                    Text { id: b1; anchors.centerIn: parent; text: "✦ Smart Context LLM"; color: Theme.textSecondary; font.pixelSize: 11 }
                 }
-
-                Rectangle {
-                    height: 24
-                    implicitWidth: b2.implicitWidth + 16
-                    radius: 12
-                    color: Theme.bgSurface
-                    border.color: Theme.border
-                    border.width: 1
-                    Text { id: b2; anchors.centerIn: parent; text: "🛡️ QA Guard (CPS/CPL)"; color: Theme.textSecondary; font.pixelSize: 11 }
-                }
-
-                Rectangle {
-                    height: 24
-                    implicitWidth: b3.implicitWidth + 16
-                    radius: 12
-                    color: Theme.bgSurface
-                    border.color: Theme.border
-                    border.width: 1
-                    Text { id: b3; anchors.centerIn: parent; text: "🧠 Translation Memory"; color: Theme.textSecondary; font.pixelSize: 11 }
-                }
-
-                Rectangle {
-                    height: 24
-                    implicitWidth: b4.implicitWidth + 16
-                    radius: 12
-                    color: Theme.bgSurface
-                    border.color: Theme.border
-                    border.width: 1
-                    Text { id: b4; anchors.centerIn: parent; text: "📖 Entity Dict"; color: Theme.textSecondary; font.pixelSize: 11 }
-                }
-
-                Item { Layout.fillWidth: true }
+                onClicked: launchpadRoot.openSrtClicked()
             }
         }
     }

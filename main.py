@@ -2,8 +2,12 @@ import sys
 import os
 from uuid import uuid4
 from PySide6.QtGui import QGuiApplication
+from PySide6.QtQuick import QQuickWindow
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QUrl
+
+# Bật kênh trong suốt phần cứng cho cửa sổ không viền trên Windows
+QQuickWindow.setDefaultAlphaBuffer(True)
 
 from app.models.subtitle import SubtitleModel, FilteredSubtitleModel
 from app.core.srt_parser import SRTParser
@@ -17,7 +21,9 @@ from PySide6.QtQuickControls2 import QQuickStyle
 
 def main():
     QQuickStyle.setStyle("Basic")
+    QQuickWindow.setDefaultAlphaBuffer(True)
     app = QGuiApplication(sys.argv)
+
     
     engine = QQmlApplicationEngine()
 

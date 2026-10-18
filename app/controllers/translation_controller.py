@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, Slot, Signal, Property, QTimer
+from PySide6.QtCore import QObject, Slot, Signal, Property, QTimer, QCoreApplication
 from app.llm.worker import TranslationWorker
 from app.core.context_engine import ContextEngine
 from app.core.prompt_builder import PromptBuilder
@@ -40,6 +40,15 @@ class TranslationController(QObject):
         self._subtitle_model.dataChanged.connect(self._emit_progress)
         self._subtitle_model.modelReset.connect(self._emit_qa_status)
         self._subtitle_model.dataChanged.connect(self._emit_qa_status)
+        app = QCoreApplication.instance()
+        if app:
+            app.aboutToQuit.connect(self.shutdown)
+
+    def shutdown(self):
+        if self.worker and self.worker.isRunning():
+            if hasattr(self.worker, "cancel"):
+                self.worker.cancel()
+            self.worker.wait(2000)
 
     def _emit_qa_status(self, *args):
         self.qaStatusChanged.emit()

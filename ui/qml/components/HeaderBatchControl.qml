@@ -62,8 +62,12 @@ Item {
             Layout.alignment: Qt.AlignVCenter
         }
 
-        AppButton {
-            objectName: "btnBatchStart"
+        RowLayout {
+            spacing: 2
+            visible: ["IDLE", "COMPLETED", "CANCELLED", "FAILED"].indexOf(root.controller.state) >= 0
+
+            AppButton {
+                objectName: "btnBatchStart"
             text: {
                 if (root.hasMultiSelection) {
                     return root.isCompact ? ("⚡ Chọn (" + root.selectedIndices.length + ")") : ("⚡ Dịch đã chọn (" + root.selectedIndices.length + " câu)")
@@ -71,7 +75,7 @@ Item {
                 if (root.isCompact) {
                     return root.selectedLimit === 0 ? "⚡ Toàn bộ" : ("⚡ " + root.selectedLimit + " câu")
                 }
-                return root.selectedLimit === 0 ? "⚡ Dịch toàn bộ" : ("⚡ Dịch " + root.selectedLimit + " câu")
+                return root.selectedLimit === 0 ? "⚡ Dịch hàng loạt" : ("⚡ Dịch hàng loạt (" + root.selectedLimit + " câu)")
             }
             tooltip: root.hasMultiSelection ? "Dịch các câu đã chọn (Ctrl/Shift + Click)" : "Dịch tự động phụ đề theo lô"
             isPrimary: true
@@ -109,19 +113,41 @@ Item {
 
             Menu {
                 id: presetMenu
-                y: parent.height + 4
-                width: 190
+                x: -(width - parent.width)
+                y: parent.height + 6
+                width: 200
+                topPadding: 6
+                bottomPadding: 6
+                leftPadding: 6
+                rightPadding: 6
+
                 background: Rectangle {
-                    color: Theme.bgSurfaceElevated
-                    border.color: Theme.border
-                    border.width: 1
-                    radius: Theme.radius
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.96)
+                    border.color: Qt.rgba(1.0, 1.0, 1.0, 0.98)
+                    border.width: 1.5
+                    radius: 14
                 }
 
                 MenuItem {
+                    id: mItemMulti
                     visible: root.hasMultiSelection
-                    text: "⚡ Các câu đã chọn (" + (root.selectedIndices ? root.selectedIndices.length : 0) + " câu)"
-                    contentItem: Text { text: parent.text; color: Theme.accentCyan; font.pixelSize: 12; font.bold: true }
+                    height: visible ? 36 : 0
+                    implicitHeight: visible ? 36 : 0
+                    background: Rectangle {
+                        radius: 10
+                        color: mItemMulti.hovered ? Qt.rgba(0.0, 0.4, 1.0, 0.08) : Qt.rgba(0.0, 0.4, 1.0, 0.04)
+                    }
+                    contentItem: RowLayout {
+                        spacing: 8
+                        Text { text: "⚡"; color: Theme.accentSapphire; font.pixelSize: 12 }
+                        Text {
+                            text: "Các câu đã chọn (" + (root.selectedIndices ? root.selectedIndices.length : 0) + ")"
+                            color: "#0F172A"
+                            font.pixelSize: 12
+                            font.bold: true
+                            Layout.fillWidth: true
+                        }
+                    }
                     onTriggered: {
                         root.controller.startBatchWithIndices(
                             root.sourceLanguage,
@@ -131,33 +157,164 @@ Item {
                         )
                     }
                 }
+
                 MenuItem {
-                    text: "⚡ 5 câu (Đoạn ngắn)"
-                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    id: mItem5
+                    implicitHeight: 36
+                    background: Rectangle {
+                        radius: 10
+                        color: (!root.hasMultiSelection && root.selectedLimit === 5) ? Qt.rgba(0.0, 0.4, 1.0, 0.10) :
+                               mItem5.hovered ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                        border.color: (!root.hasMultiSelection && root.selectedLimit === 5) ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                        border.width: 1
+                    }
+                    contentItem: RowLayout {
+                        spacing: 8
+                        Text { text: "⚡"; color: Theme.accentSapphire; font.pixelSize: 12 }
+                        Text {
+                            text: "5 câu (Đoạn ngắn)"
+                            color: "#0F172A"
+                            font.pixelSize: 12
+                            font.bold: !root.hasMultiSelection && root.selectedLimit === 5
+                            Layout.fillWidth: true
+                        }
+                        Text {
+                            text: "✓"
+                            color: Theme.accentSapphire
+                            font.pixelSize: 12
+                            font.bold: true
+                            visible: !root.hasMultiSelection && root.selectedLimit === 5
+                        }
+                    }
                     onTriggered: root.selectedLimit = 5
                 }
+
                 MenuItem {
-                    text: "⚡ 10 câu (Thử AI)"
-                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    id: mItem10
+                    implicitHeight: 36
+                    background: Rectangle {
+                        radius: 10
+                        color: (!root.hasMultiSelection && root.selectedLimit === 10) ? Qt.rgba(0.0, 0.4, 1.0, 0.10) :
+                               mItem10.hovered ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                        border.color: (!root.hasMultiSelection && root.selectedLimit === 10) ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                        border.width: 1
+                    }
+                    contentItem: RowLayout {
+                        spacing: 8
+                        Text { text: "⚡"; color: Theme.accentSapphire; font.pixelSize: 12 }
+                        Text {
+                            text: "10 câu (Thử AI)"
+                            color: "#0F172A"
+                            font.pixelSize: 12
+                            font.bold: !root.hasMultiSelection && root.selectedLimit === 10
+                            Layout.fillWidth: true
+                        }
+                        Text {
+                            text: "✓"
+                            color: Theme.accentSapphire
+                            font.pixelSize: 12
+                            font.bold: true
+                            visible: !root.hasMultiSelection && root.selectedLimit === 10
+                        }
+                    }
                     onTriggered: root.selectedLimit = 10
                 }
+
                 MenuItem {
-                    text: "⚡ 20 câu (Vừa phải)"
-                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    id: mItem20
+                    implicitHeight: 36
+                    background: Rectangle {
+                        radius: 10
+                        color: (!root.hasMultiSelection && root.selectedLimit === 20) ? Qt.rgba(0.0, 0.4, 1.0, 0.10) :
+                               mItem20.hovered ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                        border.color: (!root.hasMultiSelection && root.selectedLimit === 20) ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                        border.width: 1
+                    }
+                    contentItem: RowLayout {
+                        spacing: 8
+                        Text { text: "⚡"; color: Theme.accentSapphire; font.pixelSize: 12 }
+                        Text {
+                            text: "20 câu (Vừa phải)"
+                            color: "#0F172A"
+                            font.pixelSize: 12
+                            font.bold: !root.hasMultiSelection && root.selectedLimit === 20
+                            Layout.fillWidth: true
+                        }
+                        Text {
+                            text: "✓"
+                            color: Theme.accentSapphire
+                            font.pixelSize: 12
+                            font.bold: true
+                            visible: !root.hasMultiSelection && root.selectedLimit === 20
+                        }
+                    }
                     onTriggered: root.selectedLimit = 20
                 }
+
                 MenuItem {
-                    text: "⚡ 50 câu (Khuyên dùng)"
-                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    id: mItem50
+                    implicitHeight: 36
+                    background: Rectangle {
+                        radius: 10
+                        color: (!root.hasMultiSelection && root.selectedLimit === 50) ? Qt.rgba(0.0, 0.4, 1.0, 0.10) :
+                               mItem50.hovered ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                        border.color: (!root.hasMultiSelection && root.selectedLimit === 50) ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                        border.width: 1
+                    }
+                    contentItem: RowLayout {
+                        spacing: 8
+                        Text { text: "⚡"; color: Theme.accentSapphire; font.pixelSize: 12 }
+                        Text {
+                            text: "50 câu (Khuyên dùng)"
+                            color: "#0F172A"
+                            font.pixelSize: 12
+                            font.bold: !root.hasMultiSelection && root.selectedLimit === 50
+                            Layout.fillWidth: true
+                        }
+                        Text {
+                            text: "✓"
+                            color: Theme.accentSapphire
+                            font.pixelSize: 12
+                            font.bold: true
+                            visible: !root.hasMultiSelection && root.selectedLimit === 50
+                        }
+                    }
                     onTriggered: root.selectedLimit = 50
                 }
+
                 MenuItem {
-                    text: "⚡ Toàn bộ tệp"
-                    contentItem: Text { text: parent.text; color: Theme.textPrimary; font.pixelSize: 12 }
+                    id: mItem0
+                    implicitHeight: 36
+                    background: Rectangle {
+                        radius: 10
+                        color: (!root.hasMultiSelection && root.selectedLimit === 0) ? Qt.rgba(0.0, 0.4, 1.0, 0.10) :
+                               mItem0.hovered ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                        border.color: (!root.hasMultiSelection && root.selectedLimit === 0) ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                        border.width: 1
+                    }
+                    contentItem: RowLayout {
+                        spacing: 8
+                        Text { text: "⚡"; color: "#F59E0B"; font.pixelSize: 12 }
+                        Text {
+                            text: "Toàn bộ tệp"
+                            color: "#0F172A"
+                            font.pixelSize: 12
+                            font.bold: !root.hasMultiSelection && root.selectedLimit === 0
+                            Layout.fillWidth: true
+                        }
+                        Text {
+                            text: "✓"
+                            color: Theme.accentSapphire
+                            font.pixelSize: 12
+                            font.bold: true
+                            visible: !root.hasMultiSelection && root.selectedLimit === 0
+                        }
+                    }
                     onTriggered: root.selectedLimit = 0
                 }
             }
         }
+    }
 
         AppButton {
             objectName: "btnBatchPause"

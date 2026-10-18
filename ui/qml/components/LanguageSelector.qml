@@ -11,7 +11,7 @@ RowLayout {
     Layout.minimumWidth: 0
     spacing: root.compact ? Theme.spaceXs : Theme.spaceMedium
 
-    Text { text: "SOURCE"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true; visible: !root.compact }
+    Text { text: "SOURCE"; color: "#FFFFFF"; font.pixelSize: 11; font.bold: true; visible: !root.compact }
 
     ComboBox {
         objectName: "sourceLanguageCombo"
@@ -24,8 +24,9 @@ RowLayout {
         Layout.fillWidth: true
         contentItem: Text {
             text: sourceCombo.currentText
-            color: Theme.textPrimary
+            color: "#0F172A"
             font.pixelSize: root.compact ? 12 : 14
+            font.bold: true
             verticalAlignment: Text.AlignVCenter
             leftPadding: root.compact ? 4 : Theme.spaceSmall
             rightPadding: sourceCombo.indicator.width + (root.compact ? 4 : Theme.spaceSmall)
@@ -36,21 +37,40 @@ RowLayout {
             x: sourceCombo.width - width - Theme.spaceSmall
             anchors.verticalCenter: parent.verticalCenter
             text: sourcePopup.visible ? "▴" : "▾"
-            color: Theme.textSecondary
+            color: Theme.accentSapphire
             font.pixelSize: 12
+            font.bold: true
         }
 
         delegate: ItemDelegate {
-            width: sourceCombo.width - (Theme.spaceXs * 2)
-            contentItem: Text {
-                text: modelData
-                color: highlighted ? Theme.accentCyan : Theme.textPrimary
-                font.pixelSize: 13
-                verticalAlignment: Text.AlignVCenter
+            width: sourceCombo.width - 12
+            implicitHeight: 34
+            contentItem: RowLayout {
+                spacing: 8
+                Text {
+                    text: modelData
+                    color: "#0F172A"
+                    font.pixelSize: 12
+                    font.bold: highlighted || sourceCombo.currentIndex === index
+                    verticalAlignment: Text.AlignVCenter
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                }
+                Text {
+                    text: "✓"
+                    color: Theme.accentSapphire
+                    font.pixelSize: 12
+                    font.bold: true
+                    visible: sourceCombo.currentIndex === index
+                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                }
             }
             background: Rectangle {
-                color: highlighted ? Theme.bgSurfaceElevated : (sourceCombo.currentIndex === index ? Theme.bgSurfaceSoft : "transparent")
-                radius: 4
+                radius: 8
+                color: sourceCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.12) :
+                       highlighted ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                border.color: sourceCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                border.width: 1
             }
         }
 
@@ -58,8 +78,8 @@ RowLayout {
             id: sourcePopup
             y: sourceCombo.height + 4
             width: sourceCombo.width
-            padding: Theme.spaceXs
-            implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 250)
+            padding: 6
+            implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 260)
 
             contentItem: ListView {
                 clip: true
@@ -70,23 +90,23 @@ RowLayout {
             }
 
             background: Rectangle {
-                color: Theme.bgSurface
-                border.color: Theme.border
-                border.width: 1
-                radius: Theme.radius
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.96)
+                border.color: Qt.rgba(1.0, 1.0, 1.0, 0.98)
+                border.width: 1.5
+                radius: 14
             }
         }
         background: Rectangle {
-            color: Theme.bgApp
-            radius: Theme.radius
-            border.color: sourceCombo.activeFocus || sourcePopup.visible ? Theme.accentCyan : Theme.border
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+            radius: 12
+            border.color: sourceCombo.activeFocus || sourcePopup.visible ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
             border.width: 1
         }
     }
 
-    Text { text: root.compact ? "→" : " ➔ "; color: Theme.textMuted; font.pixelSize: root.compact ? 13 : 16; font.bold: true }
+    Text { text: root.compact ? "→" : " ➔ "; color: Qt.rgba(1.0, 1.0, 1.0, 0.8); font.pixelSize: root.compact ? 13 : 16; font.bold: true }
 
-    Text { text: "TARGET"; color: Theme.textMuted; font.pixelSize: 12; font.bold: true; visible: !root.compact }
+    Text { text: "TARGET"; color: "#FFFFFF"; font.pixelSize: 11; font.bold: true; visible: !root.compact }
 
     ComboBox {
         id: targetCombo
@@ -98,8 +118,9 @@ RowLayout {
         Layout.fillWidth: true
         contentItem: Text {
             text: targetCombo.currentText
-            color: Theme.textSecondary
+            color: "#475569"
             font.pixelSize: root.compact ? 12 : 14
+            font.bold: true
             verticalAlignment: Text.AlignVCenter
             leftPadding: root.compact ? 4 : Theme.spaceSmall
             rightPadding: targetIndicator.width + (root.compact ? 4 : Theme.spaceSmall)
@@ -110,13 +131,13 @@ RowLayout {
             x: targetCombo.width - width - Theme.spaceSmall
             anchors.verticalCenter: parent.verticalCenter
             text: "▾"
-            color: Theme.textDisabled
+            color: "#94A3B8"
             font.pixelSize: 12
         }
         background: Rectangle {
-            color: Theme.bgApp
-            radius: Theme.radius
-            border.color: Theme.border
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
+            radius: 12
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
             border.width: 1
         }
         enabled: false // Target luôn cố định

@@ -35,16 +35,16 @@ Rectangle {
     signal deleteClicked(string modelId)
 
     implicitHeight: mainLayout.implicitHeight + Theme.spaceLarge
-    color: root.isActive ? Theme.bgSurfaceSoft : Theme.bgSurfaceElevated
-    radius: Theme.radius
-    border.color: root.isActive ? Theme.accentCyan : (root.recommendationBadge === "RECOMMENDED" ? Theme.border : Qt.rgba(Theme.border.r, Theme.border.g, Theme.border.b, 0.5))
-    border.width: root.isActive ? 2 : 1
+    color: root.isActive ? Qt.rgba(0.92, 0.96, 1.0, 0.95) : Qt.rgba(1.0, 1.0, 1.0, 0.68)
+    radius: 16
+    border.color: root.isActive ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.85)
+    border.width: root.isActive ? 2 : 1.5
 
     ColumnLayout {
         id: mainLayout
         anchors.fill: parent
-        anchors.margins: Theme.spaceMedium
-        spacing: Theme.spaceSmall
+        anchors.margins: 16
+        spacing: 10
 
         // Hàng 1: Tiêu đề, Badge khuyên dùng, Kích thước file
         RowLayout {
@@ -53,7 +53,7 @@ Rectangle {
 
             Text {
                 text: root.displayName
-                color: Theme.textPrimary
+                color: "#0F172A"
                 font.pixelSize: 15
                 font.bold: true
                 Layout.fillWidth: true
@@ -63,19 +63,19 @@ Rectangle {
             // Recommendation Badge
             Rectangle {
                 id: badgeRect
-                implicitWidth: badgeText.implicitWidth + Theme.spaceMedium
+                implicitWidth: badgeText.implicitWidth + 16
                 implicitHeight: 22
                 radius: 11
                 visible: root.recommendationBadge !== ""
                 color: {
-                    if (root.recommendationBadge === "RECOMMENDED") return Qt.rgba(Theme.success.r, Theme.success.g, Theme.success.b, 0.15)
-                    if (root.recommendationBadge === "COMPATIBLE") return Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.15)
-                    return Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.15)
+                    if (root.recommendationBadge === "RECOMMENDED") return Qt.rgba(0.06, 0.72, 0.50, 0.15)
+                    if (root.recommendationBadge === "COMPATIBLE") return Qt.rgba(0.0, 0.4, 1.0, 0.12)
+                    return Qt.rgba(0.96, 0.62, 0.04, 0.15)
                 }
                 border.color: {
-                    if (root.recommendationBadge === "RECOMMENDED") return Theme.success
-                    if (root.recommendationBadge === "COMPATIBLE") return Theme.accentCyan
-                    return Theme.warning
+                    if (root.recommendationBadge === "RECOMMENDED") return "#10B981"
+                    if (root.recommendationBadge === "COMPATIBLE") return Theme.accentSapphire
+                    return "#F59E0B"
                 }
                 border.width: 1
 
@@ -88,9 +88,9 @@ Rectangle {
                         return "⚠ CHƯA TỐI ƯU"
                     }
                     color: {
-                        if (root.recommendationBadge === "RECOMMENDED") return Theme.success
-                        if (root.recommendationBadge === "COMPATIBLE") return Theme.accentCyan
-                        return Theme.warning
+                        if (root.recommendationBadge === "RECOMMENDED") return "#047857"
+                        if (root.recommendationBadge === "COMPATIBLE") return Theme.accentSapphire
+                        return "#B45309"
                     }
                     font.pixelSize: 11
                     font.bold: true
@@ -108,7 +108,7 @@ Rectangle {
             // Kích thước dung lượng
             Text {
                 text: root.sizeText
-                color: Theme.textMuted
+                color: "#64748B"
                 font.pixelSize: 13
                 font.bold: true
             }
@@ -118,7 +118,7 @@ Rectangle {
         Text {
             Layout.fillWidth: true
             text: root.description
-            color: Theme.textSecondary
+            color: "#475569"
             font.pixelSize: 13
             wrapMode: Text.WordWrap
             lineHeight: 1.2
@@ -170,19 +170,19 @@ Rectangle {
 
             // Tag trạng thái: Active hoặc Downloaded
             Rectangle {
-                implicitWidth: statusLabel.implicitWidth + Theme.spaceMedium
+                implicitWidth: statusLabel.implicitWidth + 16
                 implicitHeight: 24
-                radius: 4
+                radius: 8
                 visible: (root.isActive || root.isDownloaded) && !root.isDownloading
-                color: root.isActive ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.2) : Theme.bgSurfaceSoft
-                border.color: root.isActive ? Theme.accentCyan : Theme.border
+                color: root.isActive ? Qt.rgba(0.0, 0.4, 1.0, 0.12) : Qt.rgba(0.06, 0.72, 0.50, 0.12)
+                border.color: root.isActive ? Theme.accentSapphire : "#10B981"
                 border.width: 1
 
                 Text {
                     id: statusLabel
                     anchors.centerIn: parent
                     text: root.isActive ? "⚡ ĐANG SỬ DỤNG" : "✓ ĐÃ TẢI VỀ"
-                    color: root.isActive ? Theme.accentCyan : Theme.textSecondary
+                    color: root.isActive ? Theme.accentSapphire : "#047857"
                     font.pixelSize: 11
                     font.bold: true
                 }

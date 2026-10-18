@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Effects
 import "../theme"
 
 ColumnLayout {
@@ -19,6 +20,7 @@ ColumnLayout {
     }
     property string currentFilter: "ALL" // "ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"
     property string searchQuery: ""
+    property bool showAdvancedFilters: false
     property int clientFilteredCount: subListView.count
     property int filteredCount: isProxyModel ? (subListView.model ? subListView.model.filteredCount : 0) : clientFilteredCount
     property var selectedIndices: []
@@ -115,51 +117,231 @@ ColumnLayout {
     }
 
     // Header controls
-    Rectangle {
+    Item {
+        id: headerControlsWrapper
         Layout.fillWidth: true
-        Layout.preferredHeight: headerControlsColumn.implicitHeight + (Theme.spaceSmall * 2)
-        implicitHeight: Layout.preferredHeight
-        color: Theme.bgApp
-        border.color: Theme.border
-        border.width: 1
+        Layout.minimumWidth: 0
+        implicitHeight: headerControlsColumn.implicitHeight + (Theme.spaceSmall * 2)
+        Layout.preferredHeight: implicitHeight
 
         ColumnLayout {
             id: headerControlsColumn
-            anchors.fill: parent
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.margins: Theme.spaceSmall
             spacing: Theme.spaceXs
 
+            // TITLE ROW: DANH SÁCH CÂU + HOLD & DRAG BADGE (MATCHING DESIGN)
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                spacing: 8
+
+                Text {
+                    text: "📋 DANH SÁCH CÂU"
+                    font.pixelSize: 12
+                    font.bold: true
+                    color: "#FFFFFF"
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                }
+
+                // Total count pill
+                Rectangle {
+                    implicitWidth: countBadgeText.implicitWidth + 14
+                    implicitHeight: 20
+                    radius: 10
+                    color: Theme.badgeEmeraldBg
+                    border.color: Theme.badgeEmeraldText
+                    border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
+                    Text {
+                        id: countBadgeText
+                        anchors.centerIn: parent
+                        text: (subListView.count > 0 ? subListView.count : (typeof subtitleModel !== "undefined" && subtitleModel ? subtitleModel.rowCount() : 0)) + " câu"
+                        color: Theme.badgeEmeraldText
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+                }
+
+                // Filter expand toggle icon button
+                Rectangle {
+                    objectName: "btnToggleFilters"
+                    implicitWidth: 26
+                    implicitHeight: 20
+                    radius: 10
+                    color: root.showAdvancedFilters ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.22)
+                    border.color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
+                    border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
+                    Text {
+                        anchors.centerIn: parent
+                        text: "⚙"
+                        font.pixelSize: 11
+                        color: "#FFFFFF"
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.showAdvancedFilters = !root.showAdvancedFilters
+                    }
+                }
+            }
+
+            // Search Row - 100% FULL WIDTH SPACIOUS FROSTED GLASS TUBE
             RowLayout {
                 id: searchLayout
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 spacing: Theme.spaceSmall
 
-            // Search
-            TextField {
-                objectName: "searchInput"
-                id: searchInput
-                Layout.fillWidth: true
-                Layout.minimumWidth: 50
-                placeholderText: "Tìm kiếm..."
-                font.pixelSize: 12
-                color: Theme.textPrimary
-                background: Rectangle {
-                    color: Theme.bgSurface
-                    radius: Theme.radius
-                    border.color: searchInput.activeFocus ? Theme.accentCyan : Theme.border
-                }
-                onTextChanged: {
-                    root.searchQuery = text.toLowerCase()
-                    if (root.isProxyModel) {
-                        subListView.model.setSearchQuery(text)
-                    } else {
-                        root.updateFiltersAndScroll()
+                TextField {
+                    objectName: "searchInput"
+                    id: searchInput
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredHeight: 32
+                    placeholderText: "🔍 Tìm kiếm nhanh..."
+                    placeholderTextColor: "#64748B"
+                    font.pixelSize: 12
+                    color: "#0F172A"
+                    background: Rectangle {
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.88)
+                        radius: 16
+                        border.color: searchInput.activeFocus ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.95)
+                        border.width: searchInput.activeFocus ? 1.5 : 1
                     }
-                    subListView.positionViewAtIndex(0, ListView.Beginning)
-                    subListView.contentY = 0
+                    onTextChanged: {
+                        root.searchQuery = text.toLowerCase()
+                        if (root.isProxyModel) {
+                            subListView.model.setSearchQuery(text)
+                        } else {
+                            root.updateFiltersAndScroll()
+                        }
+                        subListView.positionViewAtIndex(0, ListView.Beginning)
+                        subListView.contentY = 0
+                    }
                 }
             }
+
+            // ADVANCED FILTERS (COLLAPSED BY DEFAULT TO KEEP MINIMAL CLEAN UI)
+            ColumnLayout {
+                id: advancedFiltersContainer
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                visible: root.showAdvancedFilters
+                spacing: 6
+
+                // Filter Combo
+                ComboBox {
+                    objectName: "statusFilterCombo"
+                    id: filterCombo
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredHeight: 32
+                    font.pixelSize: 12
+                    model: ["Tất cả", "Chờ dịch", "Đang dịch", "Đã dịch", "Đã sửa", "Lỗi", "Đã duyệt"]
+                    onCurrentIndexChanged: {
+                        const filters = ["ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"]
+                        root.currentFilter = filters[currentIndex]
+                        if (root.isProxyModel) {
+                            subListView.model.setStatusFilter(filters[currentIndex])
+                        } else {
+                            root.updateFiltersAndScroll()
+                        }
+                        subListView.positionViewAtIndex(0, ListView.Beginning)
+                        subListView.contentY = 0
+                    }
+
+                    contentItem: Text {
+                        leftPadding: Theme.spaceSmall
+                        rightPadding: filterCombo.indicator.width + Theme.spaceSmall
+                        text: filterCombo.currentText
+                        font.pixelSize: 12
+                        font.bold: true
+                        color: "#0F172A"
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    indicator: Text {
+                        x: filterCombo.width - width - Theme.spaceSmall
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: statusPopup.visible ? "▴" : "▾"
+                        color: Theme.accentSapphire
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+
+                    background: Rectangle {
+                        implicitHeight: 32
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                        radius: 12
+                        border.color: filterCombo.activeFocus || statusPopup.visible ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
+                        border.width: 1
+                    }
+                    
+                    delegate: ItemDelegate {
+                        width: filterCombo.width - 12
+                        implicitHeight: 34
+                        contentItem: RowLayout {
+                            spacing: 8
+                            Text {
+                                text: modelData
+                                color: "#0F172A"
+                                font.pixelSize: 12
+                                font.bold: highlighted || filterCombo.currentIndex === index
+                                verticalAlignment: Text.AlignVCenter
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                text: "✓"
+                                color: Theme.accentSapphire
+                                font.pixelSize: 12
+                                font.bold: true
+                                visible: filterCombo.currentIndex === index
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            }
+                        }
+                        background: Rectangle {
+                            radius: 8
+                            color: filterCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.12) :
+                                   highlighted ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                            border.color: filterCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                            border.width: 1
+                        }
+                    }
+
+                    popup: Popup {
+                        id: statusPopup
+                        y: filterCombo.height + 4
+                        width: filterCombo.width
+                        padding: 6
+                        implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 260)
+
+                        contentItem: ListView {
+                            clip: true
+                            implicitHeight: contentHeight
+                            model: statusPopup.visible ? filterCombo.delegateModel : null
+                            currentIndex: filterCombo.highlightedIndex
+                            ScrollIndicator.vertical: ScrollIndicator { }
+                        }
+
+                        background: Rectangle {
+                            color: Qt.rgba(1.0, 1.0, 1.0, 0.96)
+                            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.98)
+                            border.width: 1.5
+                            radius: 14
+                        }
+                    }
+                } // filterCombo
 
             // Chunk Filter Combo
             ComboBox {
@@ -167,7 +349,6 @@ ColumnLayout {
                 id: chunkFilterCombo
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                Layout.preferredWidth: 105
                 Layout.preferredHeight: 32
                 font.pixelSize: 12
                 model: [
@@ -195,7 +376,8 @@ ColumnLayout {
                     rightPadding: chunkFilterCombo.indicator.width + Theme.spaceSmall
                     text: chunkFilterCombo.currentText
                     font.pixelSize: 12
-                    color: Theme.textPrimary
+                    font.bold: true
+                    color: "#0F172A"
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
                 }
@@ -204,30 +386,48 @@ ColumnLayout {
                     x: chunkFilterCombo.width - width - Theme.spaceSmall
                     anchors.verticalCenter: parent.verticalCenter
                     text: chunkPopup.visible ? "▴" : "▾"
-                    color: Theme.textSecondary
+                    color: Theme.accentSapphire
                     font.pixelSize: 12
+                    font.bold: true
                 }
 
                 background: Rectangle {
-                    implicitWidth: 105
                     implicitHeight: 32
-                    color: Theme.bgSurface
-                    radius: Theme.radius
-                    border.color: chunkFilterCombo.activeFocus || chunkPopup.visible ? Theme.accentCyan : Theme.border
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                    radius: 12
+                    border.color: chunkFilterCombo.activeFocus || chunkPopup.visible ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
                     border.width: 1
                 }
 
                 delegate: ItemDelegate {
-                    width: chunkFilterCombo.width - (Theme.spaceXs * 2)
-                    contentItem: Text {
-                        text: modelData
-                        color: highlighted ? Theme.accentCyan : Theme.textPrimary
-                        font.pixelSize: 12
-                        verticalAlignment: Text.AlignVCenter
+                    width: chunkFilterCombo.width - 12
+                    implicitHeight: 34
+                    contentItem: RowLayout {
+                        spacing: 8
+                        Text {
+                            text: modelData
+                            color: "#0F172A"
+                            font.pixelSize: 12
+                            font.bold: highlighted || chunkFilterCombo.currentIndex === index
+                            verticalAlignment: Text.AlignVCenter
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            text: "✓"
+                            color: Theme.accentSapphire
+                            font.pixelSize: 12
+                            font.bold: true
+                            visible: chunkFilterCombo.currentIndex === index
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        }
                     }
                     background: Rectangle {
-                        color: highlighted ? Theme.bgSurfaceElevated : (chunkFilterCombo.currentIndex === index ? Theme.bgSurfaceSoft : "transparent")
-                        radius: 4
+                        radius: 8
+                        color: chunkFilterCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.12) :
+                               highlighted ? Qt.rgba(0.0, 0.4, 1.0, 0.06) : "transparent"
+                        border.color: chunkFilterCombo.currentIndex === index ? Qt.rgba(0.0, 0.4, 1.0, 0.35) : "transparent"
+                        border.width: 1
                     }
                 }
 
@@ -235,8 +435,8 @@ ColumnLayout {
                     id: chunkPopup
                     y: chunkFilterCombo.height + 4
                     width: chunkFilterCombo.width
-                    padding: Theme.spaceXs
-                    implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 220)
+                    padding: 6
+                    implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 260)
 
                     contentItem: ListView {
                         clip: true
@@ -247,101 +447,14 @@ ColumnLayout {
                     }
 
                     background: Rectangle {
-                        color: Theme.bgSurface
-                        border.color: Theme.border
-                        border.width: 1
-                        radius: Theme.radius
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.96)
+                        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.98)
+                        border.width: 1.5
+                        radius: 14
                     }
                 }
             }
 
-            // Filter Combo
-            ComboBox {
-                objectName: "statusFilterCombo"
-                id: filterCombo
-                Layout.fillWidth: true
-                Layout.minimumWidth: 0
-                Layout.preferredWidth: 105
-                Layout.preferredHeight: 32
-                font.pixelSize: 12
-                model: ["Tất cả", "Chờ dịch", "Đang dịch", "Đã dịch", "Đã sửa", "Lỗi", "Đã duyệt"]
-                onCurrentIndexChanged: {
-                    const filters = ["ALL", "PENDING", "TRANSLATING", "TRANSLATED", "EDITED", "ERROR", "ACCEPTED"]
-                    root.currentFilter = filters[currentIndex]
-                    if (root.isProxyModel) {
-                        subListView.model.setStatusFilter(filters[currentIndex])
-                    } else {
-                        root.updateFiltersAndScroll()
-                    }
-                    subListView.positionViewAtIndex(0, ListView.Beginning)
-                    subListView.contentY = 0
-                }
-
-                contentItem: Text {
-                    leftPadding: Theme.spaceSmall
-                    rightPadding: filterCombo.indicator.width + Theme.spaceSmall
-                    text: filterCombo.currentText
-                    font.pixelSize: 12
-                    color: Theme.textPrimary
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-                }
-
-                indicator: Text {
-                    x: filterCombo.width - width - Theme.spaceSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: statusPopup.visible ? "▴" : "▾"
-                    color: Theme.textSecondary
-                    font.pixelSize: 12
-                }
-
-                background: Rectangle {
-                    implicitWidth: 120
-                    implicitHeight: 32
-                    color: Theme.bgSurface
-                    radius: Theme.radius
-                    border.color: filterCombo.activeFocus || statusPopup.visible ? Theme.accentCyan : Theme.border
-                    border.width: 1
-                }
-                
-                delegate: ItemDelegate {
-                    width: filterCombo.width - (Theme.spaceXs * 2)
-                    contentItem: Text {
-                        text: modelData
-                        color: highlighted ? Theme.accentCyan : Theme.textPrimary
-                        font.pixelSize: 12
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    background: Rectangle {
-                        color: highlighted ? Theme.bgSurfaceElevated : (filterCombo.currentIndex === index ? Theme.bgSurfaceSoft : "transparent")
-                        radius: 4
-                    }
-                }
-
-                popup: Popup {
-                    id: statusPopup
-                    y: filterCombo.height + 4
-                    width: filterCombo.width
-                    padding: Theme.spaceXs
-                    implicitHeight: Math.min(contentItem.implicitHeight + padding * 2, 220)
-
-                    contentItem: ListView {
-                        clip: true
-                        implicitHeight: contentHeight
-                        model: statusPopup.visible ? filterCombo.delegateModel : null
-                        currentIndex: filterCombo.highlightedIndex
-                        ScrollIndicator.vertical: ScrollIndicator { }
-                    }
-
-                    background: Rectangle {
-                        color: Theme.bgSurface
-                        border.color: Theme.border
-                        border.width: 1
-                        radius: Theme.radius
-                    }
-                }
-            } // filterCombo
-        } // searchLayout
 
             // Time Filter Row
             RowLayout {
@@ -366,15 +479,15 @@ ColumnLayout {
                         implicitHeight: 16
                         x: timeFilterCheck.leftPadding
                         anchors.verticalCenter: parent.verticalCenter
-                        radius: 3
-                        color: timeFilterCheck.checked ? Theme.accentCyan : Theme.bgSurface
-                        border.color: timeFilterCheck.checked ? Theme.accentCyan : Theme.border
+                        radius: 5
+                        color: timeFilterCheck.checked ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                        border.color: timeFilterCheck.checked ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.95)
                         border.width: 1
 
                         Text {
                             anchors.centerIn: parent
                             text: "✓"
-                            color: Theme.bgApp
+                            color: "#FFFFFF"
                             font.pixelSize: 10
                             font.bold: true
                             visible: timeFilterCheck.checked
@@ -383,7 +496,8 @@ ColumnLayout {
                     contentItem: Text {
                         text: timeFilterCheck.text
                         font.pixelSize: 11
-                        color: timeFilterCheck.checked ? Theme.accentCyan : Theme.textSecondary
+                        font.bold: true
+                        color: "#FFFFFF"
                         verticalAlignment: Text.AlignVCenter
                         leftPadding: timeFilterCheck.indicator.width + Theme.spaceXs
                     }
@@ -393,11 +507,13 @@ ColumnLayout {
                     objectName: "startMinInput"
                     id: startMinInput
                     placeholderText: "Từ"
+                    placeholderTextColor: "#64748B"
                     Layout.preferredWidth: 46
                     Layout.minimumWidth: 35
                     Layout.preferredHeight: 28
                     font.pixelSize: 12
-                    color: Theme.textPrimary
+                    font.bold: true
+                    color: "#0F172A"
                     enabled: timeFilterCheck.checked
                     validator: IntValidator { bottom: 0; top: 9999 }
                     inputMethodHints: Qt.ImhDigitsOnly
@@ -406,17 +522,18 @@ ColumnLayout {
                         root.applyTimeFilter()
                     }
                     background: Rectangle {
-                        color: Theme.bgSurface
-                        radius: Theme.radius
-                        border.color: startMinInput.activeFocus ? Theme.accentCyan : Theme.border
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                        radius: 8
+                        border.color: startMinInput.activeFocus ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
                         border.width: 1
                     }
                 }
 
                 Text {
                     text: "➔"
-                    color: Theme.textSecondary
+                    color: "#FFFFFF"
                     font.pixelSize: 11
+                    font.bold: true
                     Layout.alignment: Qt.AlignVCenter
                 }
 
@@ -424,11 +541,13 @@ ColumnLayout {
                     objectName: "endMinInput"
                     id: endMinInput
                     placeholderText: "Đến"
+                    placeholderTextColor: "#64748B"
                     Layout.preferredWidth: 46
                     Layout.minimumWidth: 35
                     Layout.preferredHeight: 28
                     font.pixelSize: 12
-                    color: Theme.textPrimary
+                    font.bold: true
+                    color: "#0F172A"
                     enabled: timeFilterCheck.checked
                     validator: IntValidator { bottom: 0; top: 9999 }
                     inputMethodHints: Qt.ImhDigitsOnly
@@ -437,17 +556,21 @@ ColumnLayout {
                         root.applyTimeFilter()
                     }
                     background: Rectangle {
-                        color: Theme.bgSurface
-                        radius: Theme.radius
-                        border.color: endMinInput.activeFocus ? Theme.accentCyan : Theme.border
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                        radius: 8
+                        border.color: endMinInput.activeFocus ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
                         border.width: 1
                     }
                 }
 
-                Item { Layout.fillWidth: true }
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                }
             }
-        } // headerControlsColumn
-    }
+        } // advancedFiltersContainer
+    } // headerControlsColumn
+    } // headerControlsWrapper
 
     // List View
     ListView {
@@ -455,6 +578,7 @@ ColumnLayout {
         id: subListView
         Layout.fillWidth: true
         Layout.fillHeight: true
+        Layout.bottomMargin: 8
         clip: true
         model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : (typeof subtitleModel !== "undefined" ? subtitleModel : null)
         currentIndex: -1
@@ -505,7 +629,8 @@ ColumnLayout {
             property bool matchChunk: root.isProxyModel ? true : (root.selectedChunkStart < 0 ||
                                       root.isTimeFilterActive ||
                                       (index >= root.selectedChunkStart && index <= root.selectedChunkEnd))
-            property bool isSelected: (root.selectedIndices.indexOf(itemRawIndex) !== -1) || (root.selectedIndices.length <= 1 && ListView.isCurrentItem)
+            property bool isSelected: (root.selectedIndices && root.selectedIndices.indexOf(itemRawIndex) !== -1) ||
+                                      ((!root.selectedIndices || root.selectedIndices.length <= 1) && subListView.currentIndex === index)
             property bool hasTranslation: typeof translationText !== "undefined" && String(translationText).trim().length > 0
             
             property string durationStr: {
@@ -519,23 +644,64 @@ ColumnLayout {
                 return d > 0 ? d.toFixed(1) + "s" : ""
             }
 
+            property bool isCardDragging: false
+            property real dragOffsetY: 0
+
             visible: root.isProxyModel ? true : (matchSearch && matchFilter && matchChunk && matchTime)
             height: visible ? (hasTranslation ? 82 : 62) : 0
-            
-            color: isSelected ? Theme.bgSurfaceElevated : (mouseArea.containsMouse ? Theme.bgSurfaceSoft : "transparent")
-            border.color: isSelected ? Theme.accentCyan : "transparent"
-            border.width: isSelected ? 1 : 0
-            radius: isSelected ? 4 : 0
-
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: isSelected ? 0 : 0.4; visible: delegateItem.visible }
+            color: "transparent"
 
             MouseArea {
                 id: mouseArea
                 anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                anchors.topMargin: 3
+                anchors.bottomMargin: 3
                 hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
+                cursorShape: delegateItem.isCardDragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
                 acceptedButtons: Qt.LeftButton
+                z: 20
+
+                property real startPressY: 0
+
+                onPressed: function(mouse) {
+                    startPressY = mouse.y
+                    delegateItem.dragOffsetY = 0
+                }
+
+                onPositionChanged: function(mouse) {
+                    if (pressed) {
+                        var dy = mouse.y - startPressY
+                        if (!delegateItem.isCardDragging && Math.abs(dy) > 8) {
+                            delegateItem.isCardDragging = true
+                        }
+                        if (delegateItem.isCardDragging) {
+                            delegateItem.dragOffsetY = dy
+                        }
+                    }
+                }
+
+                onReleased: function(mouse) {
+                    if (delegateItem.isCardDragging) {
+                        delegateItem.isCardDragging = false
+                        var stepShift = Math.round(delegateItem.dragOffsetY / (hasTranslation ? 82 : 62))
+                        var targetIndex = Math.max(0, Math.min(subListView.count - 1, index + stepShift))
+
+                        snapAnimation.to = 0
+                        snapAnimation.start()
+
+                        if (targetIndex !== subListView.currentIndex) {
+                            subListView.currentIndex = targetIndex
+                            var rIdx = root.isProxyModel ? subListView.model.getRawIndex(targetIndex) : targetIndex
+                            root.selectedIndices = [rIdx]
+                            root.selectionChanged(root.selectedIndices)
+                        }
+                    }
+                }
+
                 onClicked: function(mouse) {
+                    if (delegateItem.isCardDragging) return
                     var list = []
                     if (mouse.modifiers & Qt.ControlModifier) {
                         list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (root.currentRawIndex >= 0 ? [root.currentRawIndex] : [])
@@ -562,105 +728,178 @@ ColumnLayout {
                 }
             }
 
-            ColumnLayout {
+            // FLOATING LIQUID GLASS POD (WITH HOLD & DRAG D:\dichuyen.mp4)
+            Rectangle {
+                id: cardPod
                 anchors.fill: parent
-                anchors.leftMargin: Theme.spaceMedium
-                anchors.rightMargin: Theme.spaceMedium
-                anchors.topMargin: Theme.spaceSmall
-                anchors.bottomMargin: Theme.spaceSmall
-                spacing: 2
-                visible: delegateItem.visible
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                anchors.topMargin: 4
+                anchors.bottomMargin: 4
+                radius: 16
+                clip: true
+                z: isSelected ? 5 : (delegateItem.isCardDragging ? 10 : 1)
 
-                // ROW 1
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Theme.spaceSmall
-                    
-                    Rectangle {
-                        implicitWidth: 32
-                        implicitHeight: 18
-                        radius: 4
-                        color: isSelected ? Theme.accentCyan : Theme.bgSurfaceSoft
-                        Text {
-                            anchors.centerIn: parent
-                            text: "#" + String(subIndex).padStart(3, '0')
-                            color: isSelected ? Theme.bgApp : Theme.textMuted
-                            font.pixelSize: 10
-                            font.bold: true
-                        }
+                transform: Translate {
+                    y: delegateItem.dragOffsetY
+                }
+
+                // Đổ bóng nổi khối 3D cho từng thẻ phụ đề
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: isSelected ? Qt.rgba(0.0, 0.38, 1.0, 0.42) : Qt.rgba(0.08, 0.04, 0.20, 0.14)
+                    shadowBlur: isSelected ? 0.55 : 0.35
+                    shadowVerticalOffset: isSelected ? 4 : 2
+                }
+
+                // Chuyển sang Gradient kính lỏng khi được chọn
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop {
+                        position: 0.0
+                        color: isSelected ? "#0066FF" : (mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.88) : Theme.glassPodLuminous)
                     }
-                    
-                    Text { text: startTime; color: Theme.textMuted; font.pixelSize: 12 }
-                    Text { text: "(" + durationStr + ")"; color: Theme.textDisabled; font.pixelSize: 11 }
-                    
-                    Item { Layout.fillWidth: true }
-                    
-                    Text {
-                        z: 2
-                        visible: typeof qaSeverity !== "undefined" && qaSeverity !== ""
-                        text: qaSeverity === "ERROR" ? "🛑" : "⚠️"
-                        font.pixelSize: 11
-                        ToolTip.visible: qaHoverArea.containsMouse
-                        ToolTip.text: typeof qaTooltip !== "undefined" ? qaTooltip : ""
-                        ToolTip.delay: 200
-                        MouseArea {
-                            id: qaHoverArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: subListView.currentIndex = index
-                        }
+                    GradientStop {
+                        position: 1.0
+                        color: isSelected ? "#0284C7" : (mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.82) : Theme.glassPodLuminous)
                     }
-                    
-                    Rectangle {
-                        implicitWidth: statusText.implicitWidth + 12
-                        implicitHeight: 18
-                        radius: 9
-                        color: normalizedStatus === "ACCEPTED" ? Qt.rgba(Theme.success.r, Theme.success.g, Theme.success.b, 0.15) :
-                               normalizedStatus === "ERROR" ? Qt.rgba(Theme.danger.r, Theme.danger.g, Theme.danger.b, 0.15) :
-                               normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Qt.rgba(Theme.accentPurple.r, Theme.accentPurple.g, Theme.accentPurple.b, 0.15) :
-                               normalizedStatus === "TRANSLATING" ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.15) :
-                               Theme.bgSurfaceSoft
+                }
+
+                border.color: isSelected ? "#7DD3FC" : Theme.glassBorderSpecularUpper
+                border.width: isSelected ? 1.5 : 1
+
+                // Vệt hắt sáng Specular 1px ở cạnh trên thẻ
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 1
+                    height: 1
+                    radius: parent.radius
+                    color: Qt.rgba(1, 1, 1, isSelected ? 0.55 : 0.85)
+                }
+
+                scale: delegateItem.isCardDragging ? 0.96 : (mouseArea.pressed ? 0.98 : (mouseArea.containsMouse ? 1.01 : 1.0))
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                NumberAnimation {
+                    id: snapAnimation
+                    target: delegateItem
+                    property: "dragOffsetY"
+                    duration: 250
+                    easing.type: Easing.OutBack
+                    easing.overshoot: 1.25
+                }
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    anchors.topMargin: 8
+                    anchors.bottomMargin: 8
+                    spacing: 4
+
+                    // ROW 1: Index + Timecode + Duration + Status Badge
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
                         
                         Text {
-                            id: statusText
-                            anchors.centerIn: parent
-                            text: normalizedStatus === "ACCEPTED" ? "✓ ACCEPTED" : 
-                                  normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? "★ TRANSLATED" : 
-                                  normalizedStatus === "TRANSLATING" ? "⚡ TRANSLATING" : 
-                                  normalizedStatus === "ERROR" ? "🛑 ERROR" : "○ PENDING"
-                            color: normalizedStatus === "ACCEPTED" ? Theme.success : 
-                                   normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.accentPurple : 
-                                   normalizedStatus === "ERROR" ? Theme.danger : 
-                                   normalizedStatus === "TRANSLATING" ? Theme.accentCyan : Theme.textMuted
-                            font.pixelSize: 9
+                            text: "#" + String(subIndex).padStart(3, '0') + " • " + startTime
+                            color: isSelected ? "#FFFFFF" : "#0369A1"
+                            font.pixelSize: 11
                             font.bold: true
                         }
-                    }
-                }
 
-                // ROW 2: Original Text
-                Text {
-                    Layout.fillWidth: true
-                    text: originalText
-                    color: Theme.textPrimary
-                    font.pixelSize: 13
-                    elide: Text.ElideRight
-                    maximumLineCount: 1
-                }
-                
-                // ROW 3: Translation Text (if exists)
-                Text {
-                    visible: hasTranslation
-                    Layout.fillWidth: true
-                    text: typeof translationText !== "undefined" ? translationText : ""
-                    color: Theme.accentCyan
-                    opacity: 0.8
-                    font.pixelSize: 13
-                    elide: Text.ElideRight
-                    maximumLineCount: 1
+                        Text {
+                            text: durationStr !== "" ? "(" + durationStr + ")" : ""
+                            color: isSelected ? Qt.rgba(0.88, 0.95, 1.0, 0.75) : Theme.textOnLightPodMuted
+                            font.pixelSize: 10
+                        }
+                        
+                        Item { Layout.fillWidth: true }
+                        
+                        Text {
+                            z: 2
+                            visible: typeof qaSeverity !== "undefined" && qaSeverity !== ""
+                            text: qaSeverity === "ERROR" ? "🛑" : "⚠️"
+                            font.pixelSize: 11
+                            ToolTip.visible: qaHoverArea.containsMouse
+                            ToolTip.text: typeof qaTooltip !== "undefined" ? qaTooltip : ""
+                            ToolTip.delay: 200
+                            MouseArea {
+                                id: qaHoverArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: subListView.currentIndex = index
+                            }
+                        }
+                        
+                        Rectangle {
+                            implicitWidth: statusText.implicitWidth + 14
+                            implicitHeight: 18
+                            radius: 9
+                            color: isSelected ? "#FEF08A" :
+                                   normalizedStatus === "ACCEPTED" ? Theme.badgeEmeraldBg :
+                                   normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.badgeEmeraldBg :
+                                   normalizedStatus === "ERROR" ? Qt.rgba(Theme.danger.r, Theme.danger.g, Theme.danger.b, 0.15) :
+                                   normalizedStatus === "TRANSLATING" ? Qt.rgba(0, 0.4, 1.0, 0.15) : Theme.badgeAmberBg
+                            border.color: isSelected ? "#FDE047" :
+                                          normalizedStatus === "ACCEPTED" || normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.badgeEmeraldText :
+                                          normalizedStatus === "ERROR" ? Theme.danger :
+                                          normalizedStatus === "TRANSLATING" ? Theme.accentSapphire : Theme.badgeAmberText
+                            border.width: 1
+                            
+                            Text {
+                                id: statusText
+                                anchors.centerIn: parent
+                                text: isSelected ? "⭐ ĐANG XEM" :
+                                      normalizedStatus === "ACCEPTED" ? "✓ ĐÃ DUYỆT" : 
+                                      normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? "✓ ĐÃ DỊCH" : 
+                                      normalizedStatus === "TRANSLATING" ? "⚡ ĐANG DỊCH" : 
+                                      normalizedStatus === "ERROR" ? "🛑 LỖI" : "⏳ CHỜ DUYỆT"
+                                color: isSelected ? "#854D0E" :
+                                       normalizedStatus === "ACCEPTED" || normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.badgeEmeraldText :
+                                       normalizedStatus === "ERROR" ? Theme.danger :
+                                       normalizedStatus === "TRANSLATING" ? Theme.accentSapphire : Theme.badgeAmberText
+                                font.pixelSize: 9
+                                font.bold: true
+                            }
+                        }
+                    }
+
+                    // ROW 2: Subtitle text (Original & Translation)
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: originalText
+                            color: isSelected ? "#FFFFFF" : Theme.textOnLightPod
+                            font.pixelSize: 12
+                            font.bold: true
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+
+                        Text {
+                            visible: hasTranslation
+                            Layout.fillWidth: true
+                            text: typeof translationText !== "undefined" ? translationText : ""
+                            color: isSelected ? "#D1FAE5" : "#059669"
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+                    }
                 }
             }
         }
+
     }
 
     // Pagination bar
@@ -671,8 +910,8 @@ ColumnLayout {
         Layout.preferredHeight: 34
         visible: root.isProxyModel ? (subListView.model && subListView.model.pageSize > 0 && subListView.model.filteredCount > 0)
                                    : (root.currentChunkSize > 0 && subListView.count > 0 && !root.isTimeFilterActive)
-        color: Theme.bgSurface
-        border.color: Theme.border
+        color: Qt.rgba(1.0, 1.0, 1.0, 0.16)
+        border.color: Theme.glassBorderSubtle
         border.width: 1
 
         RowLayout {
@@ -704,8 +943,9 @@ ColumnLayout {
                 text: root.isProxyModel
                       ? (subListView.model ? ("Trang " + subListView.model.currentPage + " / " + subListView.model.totalPages) : "")
                       : ("Trang " + root.currentPage + " / " + Math.max(1, Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1))))
-                color: Theme.textPrimary
+                color: "#FFFFFF"
                 font.pixelSize: 12
+                font.bold: true
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -733,16 +973,17 @@ ColumnLayout {
 
     // Footer stats
     Rectangle {
+        visible: false
         Layout.fillWidth: true
         height: 24
-        color: Theme.bgSurface
-        border.color: Theme.border
+        color: Qt.rgba(1.0, 1.0, 1.0, 0.12)
+        border.color: Theme.glassBorderSubtle
         border.width: 1
         Text {
             anchors.centerIn: parent
             text: root.isProxyModel ? (subListView.model ? (subListView.model.filteredCount + " / " + subListView.model.totalCount + " câu") : "0 câu")
                                    : (root.filteredCount + " / " + subListView.count + " câu")
-            color: Theme.textMuted
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.88)
             font.pixelSize: 11
         }
     }

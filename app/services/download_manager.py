@@ -2,7 +2,7 @@ import os
 import time
 import urllib.request
 from typing import Dict, Optional
-from PySide6.QtCore import QObject, QThread, Signal
+from PySide6.QtCore import QCoreApplication, QObject, QThread, Signal
 
 
 class DownloadWorker(QThread):
@@ -71,9 +71,7 @@ class DownloadWorker(QThread):
                 with open(self.part_path, "wb") as f:
                     while True:
                         if self._is_cancelled or self.isInterruptionRequested():
-                            f.close()
-                            self._cleanup_part_file()
-                            return
+                            break
 
                         chunk = response.read(chunk_size)
                         if not chunk:
@@ -148,6 +146,16 @@ class DownloadManager(QObject):
     def __init__(self, parent: Optional[QObject] = None):
         super().__init__(parent)
         self._workers: Dict[str, DownloadWorker] = {}
+        app = QCoreApplication.instance()
+        if app:
+            app.aboutToQuit.connect(self.shutdown)
+
+    def shutdown(self):
+        for worker in list(self._workers.values()):
+            if worker.isRunning():
+                worker.cancel()
+                worker.wait(2000)
+        self._workers.clear()
 
     def start_download(
         self,
@@ -189,9 +197,15 @@ class DownloadManager(QObject):
         self.downloadProgress.emit(model_id, percent, speed, eta)
 
     def _on_finished(self, model_id: str, file_path: str):
-        self._workers.pop(model_id, None)
+        worker = self._workers.get(model_id)
+        if worker is not None:
+            worker.wait(2000)
+            self._workers.pop(model_id, None)
         self.downloadFinished.emit(model_id, file_path)
 
     def _on_error(self, model_id: str, error_message: str):
-        self._workers.pop(model_id, None)
+        worker = self._workers.get(model_id)
+        if worker is not None:
+            worker.wait(2000)
+            self._workers.pop(model_id, None)
         self.downloadFailed.emit(model_id, error_message)

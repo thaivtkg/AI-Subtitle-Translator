@@ -67,6 +67,7 @@ def test_tc15_03_search(harness):
 
 
 def test_tc15_04_status_filter(harness):
+    harness.driver.click("btnToggleFilters")
     combo = harness.driver.find("statusFilterCombo")
     harness.driver.click("statusFilterCombo")
     harness.driver.key(Qt.Key_Home)
@@ -307,6 +308,8 @@ def test_tc15_17_time_range_filter():
             {"index": 4, "start_time": "00:25:00,000", "end_time": "00:25:05,000", "original": "Min 25", "status": "PENDING", "translation": ""},
         ]
         harness.model.load_data(data)
+        from PySide6.QtTest import QTest
+        QTest.qWait(50)
         harness.app.processEvents()
 
         # All 4 items visible initially

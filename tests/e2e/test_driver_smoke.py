@@ -54,3 +54,33 @@ def test_snapshot_artifact(harness, tmp_path):
 
     assert screenshot_path.exists()
     assert screenshot_path.stat().st_size > 0
+
+
+def test_alpha_buffer_enabled():
+    from PySide6.QtQuick import QQuickWindow
+    import main
+    assert QQuickWindow.hasDefaultAlphaBuffer() is True
+
+
+def test_main_window_transparency_and_islands(harness):
+    window = harness.window
+    color = window.property("color")
+    assert color.name() == "#00000000" or color.alpha() == 0 or color.alpha() < 0.1
+    split_view = harness.driver.find("mainSplitView")
+    assert split_view is not None
+
+
+def test_header_macos_controls_and_pills(harness):
+    assert harness.driver.find("btnClose") is not None
+    assert harness.driver.find("btnMinimize") is not None
+    assert harness.driver.find("btnMaximize") is not None
+    assert harness.driver.find("btnOpenSrt") is not None
+
+
+def test_subtitle_row_dimensions_and_selection(harness):
+    sub_list = harness.driver.find("subtitleList")
+    row0 = harness.driver.find("subtitleRow_0")
+    assert row0.property("height") == 62
+    harness.driver.click("subtitleRow_1")
+    assert sub_list.property("currentIndex") == 1
+

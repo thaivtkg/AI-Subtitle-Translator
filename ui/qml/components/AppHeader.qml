@@ -16,8 +16,8 @@ ToolBar {
     property string storySummary: ""
     property int currentSubtitleIndex: 0
     property var selectedIndices: []
-    readonly property bool isCompact: width < 1280
-    readonly property bool isMinimum: width < 1100
+    readonly property bool isCompact: width < 1180
+    readonly property bool isMinimum: width < 1050
 
     signal openSrtClicked()
     signal openProjectClicked()
@@ -29,248 +29,331 @@ ToolBar {
     padding: 0
 
     background: Rectangle {
-        color: Theme.bgApp
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 1
-            color: Theme.border
-        }
+        color: "transparent"
     }
 
     contentItem: Item {
-        MouseArea {
+        // SEAMLESS LIQUID GLASS HEADER BAR
+        Rectangle {
+            id: headerCapsule
             anchors.fill: parent
-            z: -1
-            acceptedButtons: Qt.LeftButton
-            onPressed: Window.window.startSystemMove()
-        }
+            radius: 0
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.18)
+            border.color: "transparent"
+            clip: true
 
-        // CỤM ĐIỀU KHIỂN CỬA SỔ (LUÔN GHIM GÓC PHẢI TRÊN, KHÔNG BAO GIỜ BỊ ĐẨY MẤT)
-        RowLayout {
-            id: windowControlsRow
-            objectName: "windowControlsRow"
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            spacing: 0
-            z: 2
-
-            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: Theme.border }
-
-            Button {
-                objectName: "btnMinimize"
-                implicitWidth: 46; implicitHeight: 48
-                ToolTip.visible: hovered
-                ToolTip.text: "Minimize"
-                contentItem: Text { text: "—"; color: Theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.bold: true }
-                background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
-                onClicked: Window.window.showMinimized()
+            // Bottom 1px glass divider line
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Theme.glassBorderSubtle
+                antialiasing: false
             }
-            Button {
-                objectName: "btnMaximize"
-                implicitWidth: 46; implicitHeight: 48
-                ToolTip.visible: hovered
-                ToolTip.text: Window.window.visibility === Window.Maximized ? "Restore" : "Maximize"
-                contentItem: Text { text: Window.window.visibility === Window.Maximized ? "🗗" : "🗖"; color: Theme.textSecondary; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                background: Rectangle { color: parent.hovered ? Theme.bgSurfaceSoft : "transparent" }
-                onClicked: {
+
+            MouseArea {
+                anchors.fill: parent
+                z: -1
+                acceptedButtons: Qt.LeftButton
+                onPressed: Window.window.startSystemMove()
+                onDoubleClicked: {
                     if (Window.window.visibility === Window.Maximized) Window.window.showNormal()
                     else Window.window.showMaximized()
                 }
             }
-            Button {
-                objectName: "btnClose"
-                implicitWidth: 46; implicitHeight: 48
-                ToolTip.visible: hovered
-                ToolTip.text: "Close"
-                contentItem: Text { text: "✕"; color: parent.hovered ? "#FFFFFF" : Theme.textSecondary; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                background: Rectangle { color: parent.hovered ? Theme.danger : "transparent" }
-                onClicked: Window.window.close()
-            }
-        }
 
-        // CỤM PHẢI: CÁC THAO TÁC CHÍNH (GHIM TRỰC TIẾP VÀO MÉP TRÁI CỤM ĐIỀU KHIỂN CỬA SỔ, ĐẢM BẢO KHÔNG BAO GIỜ BỊ ĐÈ)
-        RowLayout {
-            id: rightActionsRow
-            objectName: "rightActionsRow"
-            anchors.right: windowControlsRow.left
-            anchors.rightMargin: root.isCompact ? Theme.spaceSmall : Theme.spaceMedium
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
-            z: 1
-
-            // Nhóm nạp file
-            AppButton {
-                objectName: "btnOpenSrt"
-                text: root.isCompact ? "SRT" : "Mở SRT"
-                tooltip: "Mở file SRT — Ctrl + O"
-                enabled: !root.projectMutationLocked
-                onClicked: root.openSrtClicked()
-            }
-            AppButton {
-                objectName: "btnOpenProject"
-                text: root.isCompact ? "Dự án" : "Mở dự án"
-                tooltip: "Mở file dự án — Ctrl + Shift + O"
-                enabled: !root.projectMutationLocked
-                onClicked: root.openProjectClicked()
-            }
-
-            Rectangle {
-                visible: root.hasProject
-                Layout.preferredWidth: 1
-                Layout.preferredHeight: 16
-                color: Theme.border
-                Layout.margins: Theme.spaceXs
-            }
-
-            // Nhóm Primary Action: Dịch tự động
-            HeaderBatchControl {
-                id: headerBatch
-                visible: root.hasProject
-                sourceLanguage: root.sourceLanguage
-                targetLanguage: root.targetLanguage
-                storySummary: root.storySummary
-                isCompact: root.isCompact
-                currentSubtitleIndex: root.currentSubtitleIndex
-                selectedIndices: root.selectedIndices
-            }
-
-            Rectangle {
-                visible: root.hasProject
-                Layout.preferredWidth: 1
-                Layout.preferredHeight: 16
-                color: Theme.border
-                Layout.margins: Theme.spaceXs
-            }
-
-            // Nhóm xuất bản: Lưu & Xuất SRT
-            AppButton {
-                objectName: "btnSave"
-                visible: root.hasProject
-                text: "Lưu"
-                tooltip: "Lưu dự án — Ctrl + S"
-                enabled: root.hasProject && !root.isSaved
-                onClicked: root.saveClicked()
-            }
-            AppButton {
-                objectName: "btnExport"
-                visible: root.hasProject
-                text: root.isCompact ? "Xuất" : "Xuất SRT"
-                tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"
-                isPrimary: true
-                enabled: root.hasProject && root.hasProjectData
-                onClicked: root.exportClicked()
-            }
-        }
-
-        // CỤM TRÁI: LOGO STUDIO + TÊN DỰ ÁN (GHIM VÀO MÉP TRÁI CỬA SỔ)
-        RowLayout {
-            id: leftBrandingRow
-            objectName: "leftBrandingRow"
-            anchors.left: parent.left
-            anchors.leftMargin: Theme.spaceMedium
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Theme.spaceSmall
-
-            Text {
-                text: root.isCompact ? "◈ Studio" : "◈ AI Subtitle Studio"
-                color: Theme.accentCyan
-                font.pixelSize: 14
-                font.bold: true
-            }
-
-            Rectangle {
-                implicitWidth: 32
-                implicitHeight: 18
-                radius: 4
-                color: Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.12)
-                border.color: Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.3)
-                border.width: 1
-                Layout.alignment: Qt.AlignVCenter
-                Text {
-                    anchors.centerIn: parent
-                    text: "v1.2"
-                    color: Theme.accentCyan
-                    font.pixelSize: 10
-                    font.bold: true
-                }
-            }
-
-            Rectangle {
-                visible: root.hasProject
-                implicitWidth: 1
-                implicitHeight: 14
-                color: Theme.border
-                Layout.leftMargin: Theme.spaceXs
-                Layout.rightMargin: Theme.spaceXs
-            }
-
-            Text {
-                visible: root.hasProject
-                text: root.projectName
-                color: Theme.textPrimary
-                font.pixelSize: 14
-                font.bold: true
-                elide: Text.ElideRight
-                Layout.maximumWidth: root.isCompact ? 120 : 200
-            }
-
-            Rectangle {
-                visible: root.hasProject
-                Layout.minimumWidth: 0
-                Layout.preferredWidth: root.hasProject ? implicitWidth : 0
-                implicitWidth: statusText.implicitWidth + (root.isCompact ? Theme.spaceSmall : Theme.spaceMedium)
-                implicitHeight: 20
-                radius: 10
-                color: root.isSaved ? Theme.bgSurfaceElevated : Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.15)
-                border.color: root.isSaved ? Theme.border : Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.3)
-                border.width: 1
+            // CỤM TRÁI: LOGO STUDIO + TÊN DỰ ÁN
+            RowLayout {
+                id: leftBrandingRow
+                objectName: "leftBrandingRow"
+                anchors.left: parent.left
+                anchors.leftMargin: 16
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Theme.spaceSmall
 
                 Text {
-                    id: statusText
-                    anchors.centerIn: parent
-                    text: root.isSaved ? (root.isCompact ? "✓" : "✓ Đã lưu") : (root.isCompact ? "●" : "● Chưa lưu")
-                    color: root.isSaved ? Theme.textSecondary : Theme.warning
-                    font.pixelSize: 11
+                    text: root.isCompact ? "◈ Studio" : "◈ AI Subtitle Studio"
+                    color: Theme.textPrimaryGlass
+                    font.pixelSize: 13
                     font.bold: true
                 }
 
-                ToolTip.visible: chipMouse.containsMouse
-                ToolTip.text: root.isSaved ? "Dự án đã được lưu" : "Có thay đổi chưa lưu"
-                MouseArea {
-                    id: chipMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    acceptedButtons: Qt.NoButton
+                Rectangle {
+                    implicitWidth: verText.implicitWidth + 12
+                    implicitHeight: 18
+                    radius: 9
+                    color: Qt.rgba(1, 1, 1, 0.22)
+                    border.color: Theme.glassBorderSpecularUpper
+                    border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
+                    Text {
+                        id: verText
+                        anchors.centerIn: parent
+                        text: "v1.2 Liquid Glass"
+                        color: Theme.textPrimaryGlass
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+                }
+
+                Rectangle {
+                    visible: root.hasProject && root.projectName !== "Workspace" && root.projectName !== "Untitled"
+                    implicitWidth: 1
+                    implicitHeight: 14
+                    color: Theme.glassBorderSubtle
+                    Layout.leftMargin: Theme.spaceXs
+                    Layout.rightMargin: Theme.spaceXs
+                }
+
+                Text {
+                    visible: root.hasProject && root.projectName !== "Workspace" && root.projectName !== "Untitled"
+                    text: root.projectName
+                    color: Theme.textPrimaryGlass
+                    font.pixelSize: 13
+                    font.bold: true
+                    elide: Text.ElideRight
+                    Layout.maximumWidth: root.isCompact ? 100 : 180
+                }
+
+                Rectangle {
+                    visible: root.hasProject
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: root.hasProject ? implicitWidth : 0
+                    implicitWidth: statusText.implicitWidth + (root.isCompact ? Theme.spaceSmall : Theme.spaceMedium)
+                    implicitHeight: 20
+                    radius: 10
+                    color: root.isSaved ? Theme.badgeEmeraldBg : Theme.badgeAmberBg
+                    border.color: root.isSaved ? Theme.badgeEmeraldText : Theme.badgeAmberText
+                    border.width: 1
+
+                    Text {
+                        id: statusText
+                        anchors.centerIn: parent
+                        text: root.isSaved ? (root.isCompact ? "✓" : "✓ Đã lưu") : (root.isCompact ? "●" : "● Chưa lưu")
+                        color: root.isSaved ? Theme.badgeEmeraldText : Theme.badgeAmberText
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+
+                    ToolTip.visible: chipMouse.containsMouse
+                    ToolTip.text: root.isSaved ? "Dự án đã được lưu" : "Có thay đổi chưa lưu"
+                    MouseArea {
+                        id: chipMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        acceptedButtons: Qt.NoButton
+                    }
                 }
             }
-        }
 
-        // CỤM GIỮA: CHIP CHỌN MÔ HÌNH AI TRUNG TÂM (CÂN ĐỐI TRONG KHOẢNG TRỐNG GIỮA TRÁI VÀ PHẢI)
-        Item {
-            id: centerCluster
-            anchors.left: leftBrandingRow.right
-            anchors.leftMargin: Theme.spaceSmall
-            anchors.right: rightActionsRow.left
-            anchors.rightMargin: Theme.spaceSmall
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            clip: true
+            // CỤM NÚT ĐIỀU KHIỂN CỬA SỔ WINDOWS 11 (ANCHORED TOP-RIGHT)
+            RowLayout {
+                id: windowControlsRow
+                objectName: "windowControlsRow"
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
+                z: 5
 
-            AppButton {
-                objectName: "btnModelManager"
-                anchors.centerIn: parent
-                visible: parent.width >= 80
-                text: {
-                    if (typeof modelController === "undefined") return "⚡ Mô hình AI ▼"
-                    if (parent.width < 220) return "⚡ Mô hình ▼"
-                    return "⚡ " + modelController.activeModelDisplayName + " ▼"
+                Button {
+                    id: btnMinimize
+                    objectName: "btnMinimize"
+                    implicitWidth: 36
+                    implicitHeight: 28
+                    padding: 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Thu nhỏ"
+                    contentItem: Text {
+                        text: "—"
+                        color: Theme.textPrimaryGlass
+                        font.pixelSize: 11
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        radius: 8
+                        color: btnMinimize.pressed ? Qt.rgba(1, 1, 1, 0.25) : (btnMinimize.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent")
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                    }
+                    onClicked: Window.window.showMinimized()
                 }
-                tooltip: typeof modelController !== "undefined"
-                         ? ("Mô hình đang dùng: " + modelController.activeModelDisplayName + " — Click để thay đổi")
-                         : "Quản lý & Chọn Mô hình AI — Click để thay đổi"
-                onClicked: root.modelManagerClicked()
+
+                Button {
+                    id: btnMaximize
+                    objectName: "btnMaximize"
+                    implicitWidth: 36
+                    implicitHeight: 28
+                    padding: 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: Window.window.visibility === Window.Maximized ? "Khôi phục" : "Phóng to"
+                    contentItem: Text {
+                        text: Window.window.visibility === Window.Maximized ? "🗗" : "🗖"
+                        color: Theme.textPrimaryGlass
+                        font.pixelSize: 11
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        radius: 8
+                        color: btnMaximize.pressed ? Qt.rgba(1, 1, 1, 0.25) : (btnMaximize.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent")
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                    }
+                    onClicked: {
+                        if (Window.window.visibility === Window.Maximized) Window.window.showNormal()
+                        else Window.window.showMaximized()
+                    }
+                }
+
+                Button {
+                    id: btnClose
+                    objectName: "btnClose"
+                    implicitWidth: 36
+                    implicitHeight: 28
+                    padding: 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Đóng"
+                    contentItem: Text {
+                        text: "✕"
+                        color: btnClose.hovered ? "#FFFFFF" : Theme.textPrimaryGlass
+                        font.pixelSize: 12
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        radius: 8
+                        color: btnClose.pressed ? "#C42B1C" : (btnClose.hovered ? "#E81123" : "transparent")
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                    }
+                    onClicked: Window.window.close()
+                }
+            }
+
+            // CỤM PHẢI: CÁC THAO TÁC CHÍNH (DẠNG VIÊN THUỐC ĐẶT CẠNH WINDOW CONTROLS)
+            RowLayout {
+                id: rightActionsRow
+                objectName: "rightActionsRow"
+                anchors.right: windowControlsRow.left
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
+                z: 10
+
+                AppButton {
+                    objectName: "btnOpenSrt"
+                    text: root.isCompact ? "SRT" : "📁 Mở SRT"
+                    tooltip: "Mở file SRT — Ctrl + O"
+                    enabled: !root.projectMutationLocked
+                    onClicked: root.openSrtClicked()
+                }
+                AppButton {
+                    objectName: "btnOpenProject"
+                    visible: false
+                    text: root.isCompact ? "Dự án" : "Mở dự án"
+                    tooltip: "Mở file dự án — Ctrl + Shift + O"
+                    enabled: !root.projectMutationLocked
+                    onClicked: root.openProjectClicked()
+                }
+
+                HeaderBatchControl {
+                    id: headerBatch
+                    visible: true
+                    sourceLanguage: root.sourceLanguage
+                    targetLanguage: root.targetLanguage
+                    storySummary: root.storySummary
+                    isCompact: root.isCompact
+                    currentSubtitleIndex: root.currentSubtitleIndex
+                    selectedIndices: root.selectedIndices
+                }
+
+                AppButton {
+                    objectName: "btnSave"
+                    visible: false
+                    text: "💾 Lưu"
+                    tooltip: "Lưu dự án — Ctrl + S"
+                    enabled: root.hasProject && !root.isSaved
+                    onClicked: root.saveClicked()
+                }
+                AppButton {
+                    objectName: "btnExport"
+                    visible: true
+                    text: root.isCompact ? "Xuất" : "💾 Xuất SRT"
+                    tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"
+                    isPrimary: false
+                    isDarkGlass: true
+                    enabled: root.hasProject && root.hasProjectData
+                    onClicked: root.exportClicked()
+                }
+            }
+
+            // CỤM GIỮA: REFRACIVE LANGUAGE CAPSULE + AI MODEL MANAGER
+            Item {
+                id: centerCluster
+                anchors.left: leftBrandingRow.right
+                anchors.leftMargin: 4
+                anchors.right: rightActionsRow.left
+                anchors.rightMargin: 4
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                clip: true
+
+                RowLayout {
+                    anchors.centerIn: parent
+                    spacing: 8
+
+                    Rectangle {
+                        id: langCapsule
+                        visible: centerCluster.width >= 120
+                        implicitHeight: 26
+                        implicitWidth: langContent.implicitWidth + 20
+                        radius: 13
+                        color: Qt.rgba(1, 1, 1, 0.45)
+                        border.color: Theme.glassBorderSpecularUpper
+                        border.width: 1
+
+                        RowLayout {
+                            id: langContent
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text {
+                                text: root.sourceLanguage === "English" ? "🇬🇧 English" : root.sourceLanguage
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: Theme.textOnLightPod
+                            }
+                            Text {
+                                text: "➔"
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: Theme.accentSapphire
+                            }
+                            Text {
+                                text: root.targetLanguage === "Vietnamese" ? "🇻🇳 Tiếng Việt" : root.targetLanguage
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: Theme.accentSapphire
+                            }
+                        }
+                    }
+
+                    AppButton {
+                        objectName: "btnModelManager"
+                        visible: centerCluster.width >= 160
+                        text: {
+                            if (typeof modelController === "undefined") return "🔮 Qwen 2.5 3B ▼"
+                            var name = modelController.activeModelDisplayName || "Mô hình AI"
+                            var shortName = name.replace(/\s+Instruct.*$/i, "").replace(/\s*\(.*\)$/, "").trim()
+                            if (centerCluster.width < 280) return "🔮 " + shortName.substring(0, 10) + " ▼"
+                            return "🔮 " + shortName + " ▼"
+                        }
+                        tooltip: typeof modelController !== "undefined"
+                                 ? ("Mô hình đang dùng: " + modelController.activeModelDisplayName + " — Click để thay đổi")
+                                 : "Quản lý & Chọn Mô hình AI — Click để thay đổi"
+                        onClicked: root.modelManagerClicked()
+                    }
+                }
             }
         }
     }
