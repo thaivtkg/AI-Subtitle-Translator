@@ -54,3 +54,10 @@ def test_snapshot_artifact(harness, tmp_path):
 
     assert screenshot_path.exists()
     assert screenshot_path.stat().st_size > 0
+
+
+def test_alpha_buffer_enabled():
+    from PySide6.QtQuick import QQuickWindow
+    import main
+    assert QQuickWindow.hasDefaultAlphaBuffer() is True
+
