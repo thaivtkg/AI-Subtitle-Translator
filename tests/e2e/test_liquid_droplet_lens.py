@@ -64,27 +64,42 @@ def pump_events(duration_sec: float = 0.25):
 
 
 def test_ac02_droplet_lens_clamping_and_drag_state(harness_lens):
-    """AC-02: Cơ chế kẹp biên boundary clamping [0, count - 1] và trạng thái drag."""
+    """AC-02: Cơ chế kẹp biên, khóa z-index = 1 và đồng bộ dragHoverIndex theo thời gian thực."""
     driver = harness_lens.driver
     sub_list = driver.find("subtitleList")
     sub_lens = driver.find("subDropletLens")
     root_view = driver.find("subtitleListView")
 
     assert root_view.property("isDraggingLens") is False
+    assert root_view.property("dragHoverIndex") == -1
     assert sub_lens.property("scale") == 1.0
+    assert sub_lens.property("z") == 1
 
-    # Bật drag giả lập
+    # Bật drag giả lập và di chuyển qua câu 3
     root_view.setProperty("isDraggingLens", True)
+    root_view.setProperty("dragHoverIndex", 3)
     pump_events(0.25)
     assert root_view.property("isDraggingLens") is True
-    assert sub_lens.property("z") == 15
+    # z-index luôn khóa cứng = 1 để không bao giờ đè che chữ
+    assert sub_lens.property("z") == 1
     assert sub_lens.property("scale") == pytest.approx(0.97, abs=0.02)
+
+    # Thẻ 3 nhận thấu kính theo thời gian thực -> isPrimarySelected = True
+    item3 = sub_list.itemAtIndex(3)
+    item0 = sub_list.itemAtIndex(0)
+    if item3:
+        assert item3.property("isPrimarySelected") is True
+    if item0:
+        assert item0.property("isPrimarySelected") is False
 
     # Nhả drag
     root_view.setProperty("isDraggingLens", False)
+    root_view.setProperty("dragHoverIndex", -1)
     pump_events(0.25)
     assert sub_lens.property("z") == 1
     assert sub_lens.property("scale") == pytest.approx(1.0, abs=0.02)
+    if item0:
+        assert item0.property("isPrimarySelected") is True
 
 
 def test_ac03_multi_selection_contrast_guard(harness_lens):

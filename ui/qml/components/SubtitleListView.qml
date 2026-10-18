@@ -26,6 +26,7 @@ ColumnLayout {
     property var selectedIndices: []
     signal selectionChanged(var indices)
     property bool isDraggingLens: false
+    property int dragHoverIndex: -1
 
     property int activeTranslationTarget: {
         if (typeof batchController !== "undefined" && batchController && batchController.activeIndex >= 0) {
@@ -636,7 +637,7 @@ ColumnLayout {
             id: subDropletLens
             objectName: "subDropletLens"
             parent: subListView.contentItem
-            z: root.isDraggingLens ? 15 : 1
+            z: 1
             x: 10
             width: Math.max(0, subListView.width - 20)
             radius: 16
@@ -645,26 +646,25 @@ ColumnLayout {
             y: root.isDraggingLens ? y : targetY
             height: subListView.currentItem ? (subListView.currentItem.hasTranslation ? 74 : 54) : 54
             visible: subListView.count > 0 && subListView.currentIndex >= 0 && subListView.currentItem !== null
-            opacity: root.isDraggingLens ? 0.90 : 1.0
 
             scale: root.isDraggingLens ? 0.97 : 1.0
             Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "#0066FF" }
-                GradientStop { position: 1.0; color: "#0284C7" }
+                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.42, 1.0, 0.82) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.01, 0.52, 0.88, 0.85) }
             }
 
-            border.color: "#7DD3FC"
+            border.color: Theme.glassBorderSpecularUpper
             border.width: 1.5
 
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: Qt.rgba(0.0, 0.38, 1.0, 0.42)
-                shadowBlur: 0.55
-                shadowVerticalOffset: 4
+                shadowColor: root.isDraggingLens ? Qt.rgba(0.0, 0.45, 1.0, 0.65) : Qt.rgba(0.0, 0.38, 1.0, 0.42)
+                shadowBlur: root.isDraggingLens ? 0.70 : 0.55
+                shadowVerticalOffset: root.isDraggingLens ? 6 : 4
             }
 
             Behavior on y {
@@ -781,7 +781,8 @@ ColumnLayout {
                                       (index >= root.selectedChunkStart && index <= root.selectedChunkEnd))
             property bool isSelected: (root.selectedIndices && root.selectedIndices.indexOf(itemRawIndex) !== -1) ||
                                       ((!root.selectedIndices || root.selectedIndices.length <= 1) && subListView.currentIndex === index)
-            property bool isPrimarySelected: subListView.currentIndex === index
+            property int activePrimaryIndex: (root.isDraggingLens && root.dragHoverIndex >= 0) ? root.dragHoverIndex : subListView.currentIndex
+            property bool isPrimarySelected: activePrimaryIndex === index
             property bool isSecondarySelected: isSelected && !isPrimarySelected
             property bool hasTranslation: typeof translationText !== "undefined" && String(translationText).trim().length > 0
             
@@ -822,6 +823,7 @@ ColumnLayout {
                     subListView.forceActiveFocus()
                     startPressY = mouse.y
                     hasDragged = false
+                    root.dragHoverIndex = -1
                     dragCandidate = delegateItem.isPrimarySelected
                     initialLensY = subDropletLens.y
                 }
@@ -836,6 +838,12 @@ ColumnLayout {
                         if (root.isDraggingLens) {
                             hasDragged = true
                             subDropletLens.y = initialLensY + dy
+
+                            var hoverCenterY = subDropletLens.y + subDropletLens.height / 2
+                            var hoverTarget = subListView.indexAt(subListView.width / 2, hoverCenterY)
+                            if (hoverTarget !== -1) {
+                                root.dragHoverIndex = hoverTarget
+                            }
                         }
                     }
                 }
@@ -843,6 +851,7 @@ ColumnLayout {
                 onReleased: function(mouse) {
                     if (root.isDraggingLens) {
                         root.isDraggingLens = false
+                        root.dragHoverIndex = -1
                         mouseArea.preventStealing = false
                         dragCandidate = false
 
@@ -861,6 +870,7 @@ ColumnLayout {
                             root.selectionChanged(root.selectedIndices)
                         }
                     } else {
+                        root.dragHoverIndex = -1
                         dragCandidate = false
                     }
                 }
