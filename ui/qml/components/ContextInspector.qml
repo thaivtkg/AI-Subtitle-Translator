@@ -251,16 +251,6 @@ ColumnLayout {
                     shadowVerticalOffset: 3
                 }
 
-                // Vệt sáng 3D mép trên
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.margins: 1
-                    height: 1
-                    radius: parent.radius
-                    color: Qt.rgba(1, 1, 1, 0.90)
-                }
 
                 ColumnLayout {
                     id: timingCol
@@ -314,16 +304,6 @@ ColumnLayout {
                     shadowVerticalOffset: 3
                 }
 
-                // Vệt sáng 3D mép trên
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.margins: 1
-                    height: 1
-                    radius: parent.radius
-                    color: Qt.rgba(1, 1, 1, 0.90)
-                }
 
                 ColumnLayout {
                     id: qaCol

@@ -361,3 +361,15 @@ class FilteredSubtitleModel(QAbstractListModel):
             return self._page_indices.index(raw_index)
         return -1
 
+    @Slot(int, result=int)
+    def ensureRawIndexVisible(self, raw_index: int) -> int:
+        """Nếu raw_index thuộc danh sách khớp, chuyển trang nếu cần và trả về view index."""
+        if raw_index in self._matching_indices:
+            if self._page_size > 0:
+                target_page = (self._matching_indices.index(raw_index) // self._page_size) + 1
+                if target_page != self._current_page:
+                    self.setCurrentPage(target_page)
+            if raw_index in self._page_indices:
+                return self._page_indices.index(raw_index)
+        return -1
+
