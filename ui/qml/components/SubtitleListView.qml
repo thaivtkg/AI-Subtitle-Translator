@@ -538,7 +538,8 @@ ColumnLayout {
             property bool matchChunk: root.isProxyModel ? true : (root.selectedChunkStart < 0 ||
                                       root.isTimeFilterActive ||
                                       (index >= root.selectedChunkStart && index <= root.selectedChunkEnd))
-            property bool isSelected: (root.selectedIndices.indexOf(itemRawIndex) !== -1) || (root.selectedIndices.length <= 1 && ListView.isCurrentItem)
+            property bool isSelected: (root.selectedIndices && root.selectedIndices.indexOf(itemRawIndex) !== -1) ||
+                                      ((!root.selectedIndices || root.selectedIndices.length <= 1) && subListView.currentIndex === index)
             property bool hasTranslation: typeof translationText !== "undefined" && String(translationText).trim().length > 0
             
             property string durationStr: {
@@ -871,14 +872,14 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         height: 24
-        color: Theme.bgSurface
-        border.color: Theme.border
+        color: Qt.rgba(1.0, 1.0, 1.0, 0.12)
+        border.color: Theme.glassBorderSubtle
         border.width: 1
         Text {
             anchors.centerIn: parent
             text: root.isProxyModel ? (subListView.model ? (subListView.model.filteredCount + " / " + subListView.model.totalCount + " câu") : "0 câu")
                                    : (root.filteredCount + " / " + subListView.count + " câu")
-            color: Theme.textMuted
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.88)
             font.pixelSize: 11
         }
     }
