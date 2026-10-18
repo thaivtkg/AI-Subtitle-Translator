@@ -97,7 +97,8 @@ Item {
         Item {
             id: workspaceGlideContainer
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            implicitHeight: glideColumn.implicitHeight
+            Layout.preferredHeight: implicitHeight
 
             property real glideOffset: 0
             property real glideOpacity: 1.0
@@ -137,7 +138,10 @@ Item {
                 opacity: workspaceGlideContainer.glideOpacity
 
                 ColumnLayout {
-                    anchors.fill: parent
+                    id: glideColumn
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
                     spacing: 12
 
                     // Original Subtitle Pod
@@ -145,6 +149,7 @@ Item {
                         id: originalPod
                         Layout.fillWidth: true
                         Layout.preferredHeight: 110
+                        Layout.maximumHeight: 110
                         color: Theme.glassPodLuminous
                         radius: 16
                         border.color: Theme.glassBorderSpecularUpper
@@ -246,6 +251,7 @@ Item {
                         id: translationBox
                         Layout.fillWidth: true
                         Layout.preferredHeight: 140
+                        Layout.maximumHeight: 140
                         color: Theme.glassPodRaised
                         radius: 16
                         border.color: translationController.status === "TRANSLATING" ? Theme.accentCyan : 
@@ -543,9 +549,6 @@ Item {
                             }
                         }
                     }
-
-                    // Spacer để lộ nền kính mờ phía dưới thẻ Bản dịch
-                    Item { Layout.fillHeight: true }
                 }
             }
         }
@@ -819,9 +822,9 @@ Item {
 
                 AppButton {
                     objectName: "btnRetry"
-                    text: "↺ Dịch lại"
+                    text: "⚡ Dịch lại"
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.preferredWidth: 95
+                    Layout.preferredWidth: 105
                     Layout.minimumWidth: 70
                     isDarkGlass: true
                     visible: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0

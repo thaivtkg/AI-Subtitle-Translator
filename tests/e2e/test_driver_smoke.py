@@ -80,7 +80,7 @@ def test_header_macos_controls_and_pills(harness):
 def test_subtitle_row_dimensions_and_selection(harness):
     sub_list = harness.driver.find("subtitleList")
     row0 = harness.driver.find("subtitleRow_0")
-    assert row0.property("height") == 84
+    assert row0.property("height") == 62
     harness.driver.click("subtitleRow_1")
     assert sub_list.property("currentIndex") == 1
 

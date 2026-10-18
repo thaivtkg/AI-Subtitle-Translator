@@ -117,21 +117,25 @@ ColumnLayout {
     }
 
     // Header controls
-    Rectangle {
+    Item {
+        id: headerControlsWrapper
         Layout.fillWidth: true
+        Layout.minimumWidth: 0
         implicitHeight: headerControlsColumn.implicitHeight + (Theme.spaceSmall * 2)
-        color: "transparent"
-        border.width: 0
+        Layout.preferredHeight: implicitHeight
 
         ColumnLayout {
             id: headerControlsColumn
-            anchors.fill: parent
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.margins: Theme.spaceSmall
             spacing: Theme.spaceXs
 
             // TITLE ROW: DANH SÁCH CÂU + HOLD & DRAG BADGE (MATCHING DESIGN)
             RowLayout {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 8
 
                 Text {
@@ -139,9 +143,13 @@ ColumnLayout {
                     font.pixelSize: 12
                     font.bold: true
                     color: "#FFFFFF"
+                    Layout.alignment: Qt.AlignVCenter
                 }
 
-                Item { Layout.fillWidth: true }
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                }
 
                 // Total count pill
                 Rectangle {
@@ -151,6 +159,7 @@ ColumnLayout {
                     color: Theme.badgeEmeraldBg
                     border.color: Theme.badgeEmeraldText
                     border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
                     Text {
                         id: countBadgeText
                         anchors.centerIn: parent
@@ -170,6 +179,7 @@ ColumnLayout {
                     color: root.showAdvancedFilters ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.22)
                     border.color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
                     border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
                     Text {
                         anchors.centerIn: parent
                         text: "⚙"
@@ -195,6 +205,8 @@ ColumnLayout {
                     objectName: "searchInput"
                     id: searchInput
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredHeight: 32
                     placeholderText: "🔍 Tìm kiếm nhanh..."
                     placeholderTextColor: "#64748B"
                     font.pixelSize: 12
@@ -222,6 +234,7 @@ ColumnLayout {
             ColumnLayout {
                 id: advancedFiltersContainer
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 visible: root.showAdvancedFilters
                 spacing: 6
 
@@ -550,11 +563,14 @@ ColumnLayout {
                     }
                 }
 
-                Item { Layout.fillWidth: true }
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                }
             }
         } // advancedFiltersContainer
     } // headerControlsColumn
-    } // header controls Rectangle
+    } // headerControlsWrapper
 
     // List View
     ListView {
@@ -632,7 +648,7 @@ ColumnLayout {
             property real dragOffsetY: 0
 
             visible: root.isProxyModel ? true : (matchSearch && matchFilter && matchChunk && matchTime)
-            height: visible ? 84 : 0
+            height: visible ? (hasTranslation ? 82 : 62) : 0
             color: "transparent"
 
             MouseArea {
@@ -669,7 +685,7 @@ ColumnLayout {
                 onReleased: function(mouse) {
                     if (delegateItem.isCardDragging) {
                         delegateItem.isCardDragging = false
-                        var stepShift = Math.round(delegateItem.dragOffsetY / 84)
+                        var stepShift = Math.round(delegateItem.dragOffsetY / (hasTranslation ? 82 : 62))
                         var targetIndex = Math.max(0, Math.min(subListView.count - 1, index + stepShift))
 
                         snapAnimation.to = 0
@@ -854,20 +870,30 @@ ColumnLayout {
                         }
                     }
 
-                    // ROW 2: Subtitle text (Obsidian black on unselected, pure white on selected)
+                    // ROW 2: Subtitle text (Original & Translation)
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 1
+                        spacing: 2
 
                         Text {
                             Layout.fillWidth: true
                             text: originalText
                             color: isSelected ? "#FFFFFF" : Theme.textOnLightPod
-                            font.pixelSize: 13
+                            font.pixelSize: 12
                             font.bold: true
                             elide: Text.ElideRight
-                            maximumLineCount: 2
-                            wrapMode: Text.Wrap
+                            maximumLineCount: 1
+                        }
+
+                        Text {
+                            visible: hasTranslation
+                            Layout.fillWidth: true
+                            text: typeof translationText !== "undefined" ? translationText : ""
+                            color: isSelected ? "#D1FAE5" : "#059669"
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
                         }
                     }
                 }
