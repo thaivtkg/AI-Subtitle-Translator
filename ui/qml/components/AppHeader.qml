@@ -88,7 +88,7 @@ ToolBar {
                 }
 
                 Rectangle {
-                    implicitWidth: verText.implicitWidth + 10
+                    implicitWidth: verText.implicitWidth + 12
                     implicitHeight: 18
                     radius: 9
                     color: Qt.rgba(1, 1, 1, 0.22)
@@ -98,7 +98,7 @@ ToolBar {
                     Text {
                         id: verText
                         anchors.centerIn: parent
-                        text: "v1.2 Liquid"
+                        text: "v1.2 Liquid Glass"
                         color: Theme.textPrimaryGlass
                         font.pixelSize: 10
                         font.bold: true
@@ -106,7 +106,7 @@ ToolBar {
                 }
 
                 Rectangle {
-                    visible: root.hasProject
+                    visible: root.hasProject && root.projectName !== "Workspace" && root.projectName !== "Untitled"
                     implicitWidth: 1
                     implicitHeight: 14
                     color: Theme.glassBorderSubtle
@@ -115,7 +115,7 @@ ToolBar {
                 }
 
                 Text {
-                    visible: root.hasProject
+                    visible: root.hasProject && root.projectName !== "Workspace" && root.projectName !== "Untitled"
                     text: root.projectName
                     color: Theme.textPrimaryGlass
                     font.pixelSize: 13
@@ -255,6 +255,7 @@ ToolBar {
                 }
                 AppButton {
                     objectName: "btnOpenProject"
+                    visible: !root.hasProject
                     text: root.isCompact ? "Dự án" : "Mở dự án"
                     tooltip: "Mở file dự án — Ctrl + Shift + O"
                     enabled: !root.projectMutationLocked
@@ -337,7 +338,7 @@ ToolBar {
                             anchors.centerIn: parent
                             spacing: 6
                             Text {
-                                text: root.sourceLanguage
+                                text: root.sourceLanguage === "English" ? "🇬🇧 English" : root.sourceLanguage
                                 font.pixelSize: 11
                                 font.bold: true
                                 color: Theme.textOnLightPod
@@ -349,7 +350,7 @@ ToolBar {
                                 color: Theme.accentSapphire
                             }
                             Text {
-                                text: root.targetLanguage
+                                text: root.targetLanguage === "Vietnamese" ? "🇻🇳 Tiếng Việt" : root.targetLanguage
                                 font.pixelSize: 11
                                 font.bold: true
                                 color: Theme.accentSapphire
@@ -359,11 +360,13 @@ ToolBar {
 
                     AppButton {
                         objectName: "btnModelManager"
-                        visible: centerCluster.width >= 180
+                        visible: centerCluster.width >= 160
                         text: {
-                            if (typeof modelController === "undefined") return "⚡ Mô hình AI ▼"
-                            if (centerCluster.width < 320) return "⚡ Mô hình ▼"
-                            return "⚡ " + modelController.activeModelDisplayName + " ▼"
+                            if (typeof modelController === "undefined") return "🔮 Qwen 2.5 3B ▼"
+                            var name = modelController.activeModelDisplayName || "Mô hình AI"
+                            var shortName = name.replace(/\s+Instruct.*$/i, "").replace(/\s*\(.*\)$/, "").trim()
+                            if (centerCluster.width < 280) return "🔮 " + shortName.substring(0, 10) + " ▼"
+                            return "🔮 " + shortName + " ▼"
                         }
                         tooltip: typeof modelController !== "undefined"
                                  ? ("Mô hình đang dùng: " + modelController.activeModelDisplayName + " — Click để thay đổi")

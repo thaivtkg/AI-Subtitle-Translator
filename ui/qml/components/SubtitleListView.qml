@@ -228,7 +228,8 @@ ColumnLayout {
                     rightPadding: chunkFilterCombo.indicator.width + Theme.spaceSmall
                     text: chunkFilterCombo.currentText
                     font.pixelSize: 12
-                    color: Theme.textPrimary
+                    font.bold: true
+                    color: "#0F172A"
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
                 }
@@ -237,16 +238,17 @@ ColumnLayout {
                     x: chunkFilterCombo.width - width - Theme.spaceSmall
                     anchors.verticalCenter: parent.verticalCenter
                     text: chunkPopup.visible ? "▴" : "▾"
-                    color: Theme.textSecondary
+                    color: Theme.accentSapphire
                     font.pixelSize: 12
+                    font.bold: true
                 }
 
                 background: Rectangle {
                     implicitWidth: 105
                     implicitHeight: 32
-                    color: Theme.bgSurface
-                    radius: Theme.radius
-                    border.color: chunkFilterCombo.activeFocus || chunkPopup.visible ? Theme.accentCyan : Theme.border
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                    radius: 12
+                    border.color: chunkFilterCombo.activeFocus || chunkPopup.visible ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
                     border.width: 1
                 }
 
@@ -315,7 +317,8 @@ ColumnLayout {
                     rightPadding: filterCombo.indicator.width + Theme.spaceSmall
                     text: filterCombo.currentText
                     font.pixelSize: 12
-                    color: Theme.textPrimary
+                    font.bold: true
+                    color: "#0F172A"
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
                 }
@@ -324,16 +327,17 @@ ColumnLayout {
                     x: filterCombo.width - width - Theme.spaceSmall
                     anchors.verticalCenter: parent.verticalCenter
                     text: statusPopup.visible ? "▴" : "▾"
-                    color: Theme.textSecondary
+                    color: Theme.accentSapphire
                     font.pixelSize: 12
+                    font.bold: true
                 }
 
                 background: Rectangle {
                     implicitWidth: 120
                     implicitHeight: 32
-                    color: Theme.bgSurface
-                    radius: Theme.radius
-                    border.color: filterCombo.activeFocus || statusPopup.visible ? Theme.accentCyan : Theme.border
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                    radius: 12
+                    border.color: filterCombo.activeFocus || statusPopup.visible ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
                     border.width: 1
                 }
                 
@@ -399,15 +403,15 @@ ColumnLayout {
                         implicitHeight: 16
                         x: timeFilterCheck.leftPadding
                         anchors.verticalCenter: parent.verticalCenter
-                        radius: 3
-                        color: timeFilterCheck.checked ? Theme.accentCyan : Theme.bgSurface
-                        border.color: timeFilterCheck.checked ? Theme.accentCyan : Theme.border
+                        radius: 5
+                        color: timeFilterCheck.checked ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                        border.color: timeFilterCheck.checked ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.95)
                         border.width: 1
 
                         Text {
                             anchors.centerIn: parent
                             text: "✓"
-                            color: Theme.bgApp
+                            color: "#FFFFFF"
                             font.pixelSize: 10
                             font.bold: true
                             visible: timeFilterCheck.checked
@@ -416,7 +420,8 @@ ColumnLayout {
                     contentItem: Text {
                         text: timeFilterCheck.text
                         font.pixelSize: 11
-                        color: timeFilterCheck.checked ? Theme.accentCyan : Theme.textSecondary
+                        font.bold: true
+                        color: "#FFFFFF"
                         verticalAlignment: Text.AlignVCenter
                         leftPadding: timeFilterCheck.indicator.width + Theme.spaceXs
                     }
@@ -426,11 +431,13 @@ ColumnLayout {
                     objectName: "startMinInput"
                     id: startMinInput
                     placeholderText: "Từ"
+                    placeholderTextColor: "#64748B"
                     Layout.preferredWidth: 46
                     Layout.minimumWidth: 35
                     Layout.preferredHeight: 28
                     font.pixelSize: 12
-                    color: Theme.textPrimary
+                    font.bold: true
+                    color: "#0F172A"
                     enabled: timeFilterCheck.checked
                     validator: IntValidator { bottom: 0; top: 9999 }
                     inputMethodHints: Qt.ImhDigitsOnly
@@ -439,17 +446,18 @@ ColumnLayout {
                         root.applyTimeFilter()
                     }
                     background: Rectangle {
-                        color: Theme.bgSurface
-                        radius: Theme.radius
-                        border.color: startMinInput.activeFocus ? Theme.accentCyan : Theme.border
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                        radius: 8
+                        border.color: startMinInput.activeFocus ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
                         border.width: 1
                     }
                 }
 
                 Text {
                     text: "➔"
-                    color: Theme.textSecondary
+                    color: "#FFFFFF"
                     font.pixelSize: 11
+                    font.bold: true
                     Layout.alignment: Qt.AlignVCenter
                 }
 
@@ -457,11 +465,13 @@ ColumnLayout {
                     objectName: "endMinInput"
                     id: endMinInput
                     placeholderText: "Đến"
+                    placeholderTextColor: "#64748B"
                     Layout.preferredWidth: 46
                     Layout.minimumWidth: 35
                     Layout.preferredHeight: 28
                     font.pixelSize: 12
-                    color: Theme.textPrimary
+                    font.bold: true
+                    color: "#0F172A"
                     enabled: timeFilterCheck.checked
                     validator: IntValidator { bottom: 0; top: 9999 }
                     inputMethodHints: Qt.ImhDigitsOnly
@@ -470,9 +480,9 @@ ColumnLayout {
                         root.applyTimeFilter()
                     }
                     background: Rectangle {
-                        color: Theme.bgSurface
-                        radius: Theme.radius
-                        border.color: endMinInput.activeFocus ? Theme.accentCyan : Theme.border
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+                        radius: 8
+                        border.color: endMinInput.activeFocus ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
                         border.width: 1
                     }
                 }
@@ -808,8 +818,8 @@ ColumnLayout {
         Layout.preferredHeight: 34
         visible: root.isProxyModel ? (subListView.model && subListView.model.pageSize > 0 && subListView.model.filteredCount > 0)
                                    : (root.currentChunkSize > 0 && subListView.count > 0 && !root.isTimeFilterActive)
-        color: Theme.bgSurface
-        border.color: Theme.border
+        color: Qt.rgba(1.0, 1.0, 1.0, 0.16)
+        border.color: Theme.glassBorderSubtle
         border.width: 1
 
         RowLayout {
@@ -841,8 +851,9 @@ ColumnLayout {
                 text: root.isProxyModel
                       ? (subListView.model ? ("Trang " + subListView.model.currentPage + " / " + subListView.model.totalPages) : "")
                       : ("Trang " + root.currentPage + " / " + Math.max(1, Math.ceil(subListView.count / (root.currentChunkSize > 0 ? root.currentChunkSize : 1))))
-                color: Theme.textPrimary
+                color: "#FFFFFF"
                 font.pixelSize: 12
+                font.bold: true
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter

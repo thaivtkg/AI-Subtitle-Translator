@@ -38,32 +38,25 @@ ApplicationWindow {
         border.color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
         border.width: 1.5
 
-        // LAYER 1: Radiant Horizontal Liquid Mesh Gradient (Sky Blue -> Sapphire -> Violet -> Magenta)
+        // LAYER 1: Fluid Liquid Mesh Wallpaper (100% 1:1 match with web design mockup)
+        Image {
+            id: bgLiquidMesh
+            anchors.fill: parent
+            source: "../assets/liquid_mesh_bg.jpg"
+            fillMode: Image.PreserveAspectCrop
+            smooth: true
+            asynchronous: false
+        }
+
+        // LAYER 2: Ultra-Gloss Liquid Glass Frost Sheen
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "#0284C7" }   // Deep sky blue (Bottom-Left)
-                GradientStop { position: 0.28; color: "#0066FF" }  // Vibrant Sapphire blue
-                GradientStop { position: 0.65; color: "#8B5CF6" }  // Luminous violet purple
-                GradientStop { position: 1.0; color: "#EC4899" }   // Radiant magenta pink (Top-Right)
+                orientation: Gradient.Vertical
+                GradientStop { position: 0.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.28) }
+                GradientStop { position: 0.5; color: Qt.rgba(1.0, 1.0, 1.0, 0.12) }
+                GradientStop { position: 1.0; color: Qt.rgba(1.0, 1.0, 1.0, 0.20) }
             }
-        }
-
-        // LAYER 2: Warm Ambient Depth Overlay (Peach glow at top-left, rich indigo depth at bottom)
-        Rectangle {
-            anchors.fill: parent
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(0.98, 0.45, 0.2, 0.28) } // Warm peach top-left
-                GradientStop { position: 0.45; color: Qt.rgba(0.0, 0.0, 0.0, 0.0) }
-                GradientStop { position: 1.0; color: Qt.rgba(0.0, 0.2, 0.8, 0.22) }  // Deep sapphire bottom
-            }
-        }
-
-        // LAYER 3: Ultra-Gloss Liquid Glass Frost Veil
-        Rectangle {
-            anchors.fill: parent
-            color: Qt.rgba(1.0, 1.0, 1.0, 0.14)
         }
 
         // Top Specular Gleam Highlight along the upper rounded rim
