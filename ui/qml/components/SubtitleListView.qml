@@ -25,6 +25,7 @@ ColumnLayout {
     property int filteredCount: isProxyModel ? (subListView.model ? subListView.model.filteredCount : 0) : clientFilteredCount
     property var selectedIndices: []
     signal selectionChanged(var indices)
+    property bool isDraggingLens: false
 
     property int activeTranslationTarget: {
         if (typeof batchController !== "undefined" && batchController && batchController.activeIndex >= 0) {
@@ -629,6 +630,57 @@ ColumnLayout {
             onClicked: subListView.forceActiveFocus()
         }
 
+        // PHYSICAL LIQUID DROPLET LENS (AC-01, AC-02)
+        // Reparented to subListView.contentItem to share native coordinate system with list items
+        Rectangle {
+            id: subDropletLens
+            objectName: "subDropletLens"
+            parent: subListView.contentItem
+            z: root.isDraggingLens ? 15 : 1
+            x: 10
+            width: Math.max(0, subListView.width - 20)
+            radius: 16
+
+            property real targetY: subListView.currentItem ? subListView.currentItem.y + 4 : y
+            y: root.isDraggingLens ? y : targetY
+            height: subListView.currentItem ? (subListView.currentItem.hasTranslation ? 74 : 54) : 54
+            visible: subListView.count > 0 && subListView.currentIndex >= 0 && subListView.currentItem !== null
+            opacity: root.isDraggingLens ? 0.90 : 1.0
+
+            scale: root.isDraggingLens ? 0.97 : 1.0
+            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "#0066FF" }
+                GradientStop { position: 1.0; color: "#0284C7" }
+            }
+
+            border.color: "#7DD3FC"
+            border.width: 1.5
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0.0, 0.38, 1.0, 0.42)
+                shadowBlur: 0.55
+                shadowVerticalOffset: 4
+            }
+
+            Behavior on y {
+                enabled: !subListView.moving && !subListView.flicking && !root.isDraggingLens
+                NumberAnimation {
+                    duration: 220
+                    easing.type: Easing.OutBack
+                    easing.overshoot: 1.25
+                }
+            }
+
+            Behavior on height {
+                NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+            }
+        }
+
         ListView {
             objectName: "subtitleList"
             id: subListView
@@ -729,6 +781,8 @@ ColumnLayout {
                                       (index >= root.selectedChunkStart && index <= root.selectedChunkEnd))
             property bool isSelected: (root.selectedIndices && root.selectedIndices.indexOf(itemRawIndex) !== -1) ||
                                       ((!root.selectedIndices || root.selectedIndices.length <= 1) && subListView.currentIndex === index)
+            property bool isPrimarySelected: subListView.currentIndex === index
+            property bool isSecondarySelected: isSelected && !isPrimarySelected
             property bool hasTranslation: typeof translationText !== "undefined" && String(translationText).trim().length > 0
             
             property string durationStr: {
@@ -742,12 +796,10 @@ ColumnLayout {
                 return d > 0 ? d.toFixed(1) + "s" : ""
             }
 
-            property bool isCardDragging: false
-            property real dragOffsetY: 0
-
             visible: root.isProxyModel ? true : (matchSearch && matchFilter && matchChunk && matchTime)
             height: visible ? (hasTranslation ? 82 : 62) : 0
             color: "transparent"
+            z: 2
 
             MouseArea {
                 id: mouseArea
@@ -757,51 +809,68 @@ ColumnLayout {
                 anchors.topMargin: 3
                 anchors.bottomMargin: 3
                 hoverEnabled: true
-                cursorShape: delegateItem.isCardDragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                cursorShape: (delegateItem.isPrimarySelected && root.isDraggingLens) ? Qt.ClosedHandCursor : Qt.PointingHandCursor
                 acceptedButtons: Qt.LeftButton
                 z: 20
 
                 property real startPressY: 0
+                property real initialLensY: 0
+                property bool dragCandidate: false
+                property bool hasDragged: false
 
                 onPressed: function(mouse) {
                     subListView.forceActiveFocus()
                     startPressY = mouse.y
-                    delegateItem.dragOffsetY = 0
+                    hasDragged = false
+                    dragCandidate = delegateItem.isPrimarySelected
+                    initialLensY = subDropletLens.y
                 }
 
                 onPositionChanged: function(mouse) {
-                    if (pressed) {
+                    if (pressed && dragCandidate) {
                         var dy = mouse.y - startPressY
-                        if (!delegateItem.isCardDragging && Math.abs(dy) > 8) {
-                            delegateItem.isCardDragging = true
+                        if (!root.isDraggingLens && Math.abs(dy) > 8) {
+                            root.isDraggingLens = true
+                            mouseArea.preventStealing = true
                         }
-                        if (delegateItem.isCardDragging) {
-                            delegateItem.dragOffsetY = dy
+                        if (root.isDraggingLens) {
+                            hasDragged = true
+                            subDropletLens.y = initialLensY + dy
                         }
                     }
                 }
 
                 onReleased: function(mouse) {
-                    if (delegateItem.isCardDragging) {
-                        delegateItem.isCardDragging = false
-                        var stepShift = Math.round(delegateItem.dragOffsetY / (hasTranslation ? 82 : 62))
-                        var targetIndex = Math.max(0, Math.min(subListView.count - 1, index + stepShift))
+                    if (root.isDraggingLens) {
+                        root.isDraggingLens = false
+                        mouseArea.preventStealing = false
+                        dragCandidate = false
 
-                        snapAnimation.to = 0
-                        snapAnimation.start()
+                        var lensCenterY = subDropletLens.y + subDropletLens.height / 2
+                        var target = subListView.indexAt(subListView.width / 2, lensCenterY)
+                        if (target === -1) {
+                            target = (lensCenterY < subListView.contentY) ? 0 : (subListView.count - 1)
+                        }
+                        var targetIndex = Math.max(0, Math.min(subListView.count - 1, target))
 
                         if (targetIndex !== subListView.currentIndex) {
                             subListView.currentIndex = targetIndex
+                            subListView.positionViewAtIndex(targetIndex, ListView.Contain)
                             var rIdx = root.isProxyModel ? subListView.model.getRawIndex(targetIndex) : targetIndex
                             root.selectedIndices = [rIdx]
                             root.selectionChanged(root.selectedIndices)
                         }
+                    } else {
+                        dragCandidate = false
                     }
                 }
 
                 onClicked: function(mouse) {
                     subListView.forceActiveFocus()
-                    if (delegateItem.isCardDragging) return
+                    if (hasDragged) {
+                        hasDragged = false
+                        return
+                    }
                     var list = []
                     if (mouse.modifiers & Qt.ControlModifier) {
                         list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (root.currentRawIndex >= 0 ? [root.currentRawIndex] : [])
@@ -828,7 +897,7 @@ ColumnLayout {
                 }
             }
 
-            // FLOATING LIQUID GLASS POD (WITH HOLD & DRAG D:\dichuyen.mp4)
+            // FLOATING LIQUID GLASS POD
             Rectangle {
                 id: cardPod
                 anchors.fill: parent
@@ -838,49 +907,30 @@ ColumnLayout {
                 anchors.bottomMargin: 4
                 radius: 16
                 clip: true
-                z: isSelected ? 5 : (delegateItem.isCardDragging ? 10 : 1)
 
-                transform: Translate {
-                    y: delegateItem.dragOffsetY
-                }
-
-                // Đổ bóng nổi khối 3D cho từng thẻ phụ đề
-                layer.enabled: true
+                // Đổ bóng 3D cho các thẻ không được chọn (Thẻ chọn chính dùng bóng từ subDropletLens)
+                layer.enabled: !delegateItem.isPrimarySelected
                 layer.effect: MultiEffect {
                     shadowEnabled: true
-                    shadowColor: isSelected ? Qt.rgba(0.0, 0.38, 1.0, 0.42) : Qt.rgba(0.08, 0.04, 0.20, 0.14)
-                    shadowBlur: isSelected ? 0.55 : 0.35
-                    shadowVerticalOffset: isSelected ? 4 : 2
+                    shadowColor: delegateItem.isSecondarySelected ? Qt.rgba(0.0, 0.38, 1.0, 0.20) : Qt.rgba(0.08, 0.04, 0.20, 0.14)
+                    shadowBlur: 0.35
+                    shadowVerticalOffset: 2
                 }
 
-                // Chuyển sang Gradient kính lỏng khi được chọn
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop {
-                        position: 0.0
-                        color: isSelected ? "#0066FF" : (mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.88) : Theme.glassPodLuminous)
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: isSelected ? "#0284C7" : (mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.82) : Theme.glassPodLuminous)
-                    }
-                }
+                // Nền thẻ: trong suốt khi được chọn chính (để subDropletLens hiển thị), xanh mờ 20% khi chọn phụ, kính mờ khi chưa chọn
+                color: delegateItem.isPrimarySelected ? "transparent" :
+                       delegateItem.isSecondarySelected ? Qt.rgba(0.0, 0.4, 1.0, 0.20) :
+                       (mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.88) : Theme.glassPodLuminous)
 
-                border.color: isSelected ? "#7DD3FC" : Theme.glassBorderSpecularUpper
-                border.width: isSelected ? 1.5 : 1
+                border.color: delegateItem.isPrimarySelected ? "transparent" :
+                              delegateItem.isSecondarySelected ? Qt.rgba(0.0, 0.4, 1.0, 0.40) :
+                              Theme.glassBorderSpecularUpper
+                border.width: 1
 
-                scale: delegateItem.isCardDragging ? 0.96 : (mouseArea.pressed ? 0.98 : (mouseArea.containsMouse ? 1.01 : 1.0))
+                scale: mouseArea.pressed ? 0.98 : (mouseArea.containsMouse ? 1.01 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                Behavior on color { ColorAnimation { duration: 150 } }
                 Behavior on border.color { ColorAnimation { duration: 150 } }
-
-                NumberAnimation {
-                    id: snapAnimation
-                    target: delegateItem
-                    property: "dragOffsetY"
-                    duration: 250
-                    easing.type: Easing.OutBack
-                    easing.overshoot: 1.25
-                }
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -897,24 +947,32 @@ ColumnLayout {
                         
                         Text {
                             text: "#" + String(subIndex).padStart(3, '0') + " • " + startTime
-                            color: isSelected ? "#FFFFFF" : "#0369A1"
+                            color: delegateItem.isPrimarySelected ? "#FFFFFF" : "#0369A1"
                             font.pixelSize: 11
                             font.bold: true
+                            Layout.alignment: Qt.AlignVCenter
+                            Behavior on color { ColorAnimation { duration: 150 } }
                         }
 
                         Text {
                             text: durationStr !== "" ? "(" + durationStr + ")" : ""
-                            color: isSelected ? Qt.rgba(0.88, 0.95, 1.0, 0.75) : Theme.textOnLightPodMuted
+                            color: delegateItem.isPrimarySelected ? Qt.rgba(0.88, 0.95, 1.0, 0.75) : Theme.textOnLightPodMuted
                             font.pixelSize: 10
+                            Layout.alignment: Qt.AlignVCenter
+                            Behavior on color { ColorAnimation { duration: 150 } }
                         }
                         
-                        Item { Layout.fillWidth: true }
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                        }
                         
                         Text {
                             z: 2
                             visible: typeof qaSeverity !== "undefined" && qaSeverity !== ""
                             text: qaSeverity === "ERROR" ? "🛑" : "⚠️"
                             font.pixelSize: 11
+                            Layout.alignment: Qt.AlignVCenter
                             ToolTip.visible: qaHoverArea.containsMouse
                             ToolTip.text: typeof qaTooltip !== "undefined" ? qaTooltip : ""
                             ToolTip.delay: 200
@@ -927,15 +985,18 @@ ColumnLayout {
                         }
                         
                         Rectangle {
-                            implicitWidth: statusText.implicitWidth + 14
-                            implicitHeight: 18
-                            radius: 9
-                            color: isSelected ? "#FEF08A" :
+                            implicitWidth: statusText.implicitWidth + 16
+                            implicitHeight: 20
+                            radius: 10
+                            Layout.alignment: Qt.AlignVCenter
+                            color: delegateItem.isPrimarySelected ? "#FEF08A" :
+                                   delegateItem.isSecondarySelected ? Qt.rgba(0.0, 0.4, 1.0, 0.15) :
                                    normalizedStatus === "ACCEPTED" ? Theme.badgeEmeraldBg :
                                    normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.badgeEmeraldBg :
                                    normalizedStatus === "ERROR" ? Qt.rgba(Theme.danger.r, Theme.danger.g, Theme.danger.b, 0.15) :
                                    normalizedStatus === "TRANSLATING" ? Qt.rgba(0, 0.4, 1.0, 0.15) : Theme.badgeAmberBg
-                            border.color: isSelected ? "#FDE047" :
+                            border.color: delegateItem.isPrimarySelected ? "#FDE047" :
+                                          delegateItem.isSecondarySelected ? Theme.accentSapphire :
                                           normalizedStatus === "ACCEPTED" || normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.badgeEmeraldText :
                                           normalizedStatus === "ERROR" ? Theme.danger :
                                           normalizedStatus === "TRANSLATING" ? Theme.accentSapphire : Theme.badgeAmberText
@@ -944,16 +1005,19 @@ ColumnLayout {
                             Text {
                                 id: statusText
                                 anchors.centerIn: parent
-                                text: isSelected ? "⭐ ĐANG XEM" :
+                                leftPadding: 8
+                                rightPadding: 8
+                                text: delegateItem.isPrimarySelected ? "⭐ ĐANG XEM" :
                                       normalizedStatus === "ACCEPTED" ? "✓ ĐÃ DUYỆT" : 
                                       normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? "✓ ĐÃ DỊCH" : 
                                       normalizedStatus === "TRANSLATING" ? "⚡ ĐANG DỊCH" : 
                                       normalizedStatus === "ERROR" ? "🛑 LỖI" : "⏳ CHỜ DUYỆT"
-                                color: isSelected ? "#854D0E" :
+                                color: delegateItem.isPrimarySelected ? "#854D0E" :
+                                       delegateItem.isSecondarySelected ? Theme.accentSapphire :
                                        normalizedStatus === "ACCEPTED" || normalizedStatus === "TRANSLATED" || normalizedStatus === "EDITED" ? Theme.badgeEmeraldText :
                                        normalizedStatus === "ERROR" ? Theme.danger :
                                        normalizedStatus === "TRANSLATING" ? Theme.accentSapphire : Theme.badgeAmberText
-                                font.pixelSize: 9
+                                font.pixelSize: 10
                                 font.bold: true
                             }
                         }
@@ -967,22 +1031,24 @@ ColumnLayout {
                         Text {
                             Layout.fillWidth: true
                             text: originalText
-                            color: isSelected ? "#FFFFFF" : Theme.textOnLightPod
+                            color: delegateItem.isPrimarySelected ? "#FFFFFF" : Theme.textOnLightPod
                             font.pixelSize: 12
                             font.bold: true
                             elide: Text.ElideRight
                             maximumLineCount: 1
+                            Behavior on color { ColorAnimation { duration: 150 } }
                         }
 
                         Text {
                             visible: hasTranslation
                             Layout.fillWidth: true
                             text: typeof translationText !== "undefined" ? translationText : ""
-                            color: isSelected ? "#D1FAE5" : "#059669"
+                            color: delegateItem.isPrimarySelected ? "#D1FAE5" : "#059669"
                             font.pixelSize: 12
                             font.weight: Font.Medium
                             elide: Text.ElideRight
                             maximumLineCount: 1
+                            Behavior on color { ColorAnimation { duration: 150 } }
                         }
                     }
                 }
