@@ -573,9 +573,6 @@ ColumnLayout {
                 return d > 0 ? d.toFixed(1) + "s" : ""
             }
 
-            property bool isCardDragging: false
-            property real dragOffsetY: 0
-
             visible: root.isProxyModel ? true : (matchSearch && matchFilter && matchChunk && matchTime)
             height: visible ? 84 : 0
             color: "transparent"
@@ -588,49 +585,11 @@ ColumnLayout {
                 anchors.topMargin: 3
                 anchors.bottomMargin: 3
                 hoverEnabled: true
-                cursorShape: delegateItem.isCardDragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                cursorShape: Qt.PointingHandCursor
                 acceptedButtons: Qt.LeftButton
                 z: 20
 
-                property real startPressY: 0
-
-                onPressed: function(mouse) {
-                    startPressY = mouse.y
-                    delegateItem.dragOffsetY = 0
-                }
-
-                onPositionChanged: function(mouse) {
-                    if (pressed) {
-                        var dy = mouse.y - startPressY
-                        if (!delegateItem.isCardDragging && Math.abs(dy) > 6) {
-                            delegateItem.isCardDragging = true
-                        }
-                        if (delegateItem.isCardDragging) {
-                            delegateItem.dragOffsetY = dy
-                        }
-                    }
-                }
-
-                onReleased: function(mouse) {
-                    if (delegateItem.isCardDragging) {
-                        delegateItem.isCardDragging = false
-                        var stepShift = Math.round(delegateItem.dragOffsetY / 84)
-                        var targetIndex = Math.max(0, Math.min(subListView.count - 1, index + stepShift))
-
-                        snapAnimation.to = 0
-                        snapAnimation.start()
-
-                        if (targetIndex !== subListView.currentIndex) {
-                            subListView.currentIndex = targetIndex
-                            var rIdx = root.isProxyModel ? subListView.model.getRawIndex(targetIndex) : targetIndex
-                            root.selectedIndices = [rIdx]
-                            root.selectionChanged(root.selectedIndices)
-                        }
-                    }
-                }
-
                 onClicked: function(mouse) {
-                    if (delegateItem.isCardDragging) return
                     var list = []
                     if (mouse.modifiers & Qt.ControlModifier) {
                         list = (root.selectedIndices && root.selectedIndices.length > 0) ? root.selectedIndices.slice() : (root.currentRawIndex >= 0 ? [root.currentRawIndex] : [])
@@ -657,7 +616,7 @@ ColumnLayout {
                 }
             }
 
-            // FLOATING LIQUID GLASS POD (WITH HOLD & DRAG D:\dichuyen.mp4)
+            // FLOATING LIQUID GLASS POD
             Rectangle {
                 id: cardPod
                 anchors.fill: parent
@@ -667,29 +626,16 @@ ColumnLayout {
                 anchors.bottomMargin: 3
                 radius: 18
                 clip: true
-                z: isSelected ? 5 : (delegateItem.isCardDragging ? 10 : 1)
-
-                transform: Translate {
-                    y: delegateItem.dragOffsetY
-                }
+                z: isSelected ? 5 : 1
 
                 color: isSelected ? Theme.accentSapphire : (mouseArea.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.88) : Theme.glassPodLuminous)
                 border.color: isSelected ? Theme.glassBorderSpecularUpper : (mouseArea.containsMouse ? Theme.glassBorderSpecularUpper : Theme.glassBorderSpecularLower)
                 border.width: isSelected ? 1.5 : 1
 
-                scale: delegateItem.isCardDragging ? 0.96 : (mouseArea.pressed ? 0.98 : (mouseArea.containsMouse ? 1.01 : 1.0))
+                scale: mouseArea.pressed ? 0.98 : (mouseArea.containsMouse ? 1.01 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
                 Behavior on color { ColorAnimation { duration: 150 } }
                 Behavior on border.color { ColorAnimation { duration: 150 } }
-
-                NumberAnimation {
-                    id: snapAnimation
-                    target: delegateItem
-                    property: "dragOffsetY"
-                    duration: 250
-                    easing.type: Easing.OutBack
-                    easing.overshoot: 1.25
-                }
 
                 ColumnLayout {
                     anchors.fill: parent
