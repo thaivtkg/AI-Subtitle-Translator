@@ -749,6 +749,8 @@ Item {
 
             // Gợi ý phím tắt bên trái (Matching Design Mockup)
             RowLayout {
+                id: shortcutHintRow
+                Layout.alignment: Qt.AlignVCenter
                 visible: workspace.width >= 620
                 spacing: 6
                 Text {
@@ -756,12 +758,14 @@ Item {
                     color: Qt.rgba(1, 1, 1, 0.85)
                     font.pixelSize: 12
                     font.bold: true
+                    Layout.alignment: Qt.AlignVCenter
                 }
                 Rectangle {
                     implicitWidth: keyHintText.implicitWidth + 12
                     implicitHeight: 22
                     radius: 6
                     color: Qt.rgba(1, 1, 1, 0.9)
+                    Layout.alignment: Qt.AlignVCenter
                     Text {
                         id: keyHintText
                         anchors.centerIn: parent
@@ -776,14 +780,19 @@ Item {
                     color: Qt.rgba(1, 1, 1, 0.85)
                     font.pixelSize: 12
                     font.bold: true
+                    Layout.alignment: Qt.AlignVCenter
                 }
             }
 
-            Item { Layout.fillWidth: true }
+            Item {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+            }
 
             AppButton {
                 objectName: "btnRetry"
                 text: "↺ Dịch lại"
+                Layout.alignment: Qt.AlignVCenter
                 Layout.preferredWidth: 90
                 Layout.minimumWidth: 70
                 visible: ["ERROR", "TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
@@ -796,6 +805,7 @@ Item {
                 objectName: "btnTranslate"
                 visible: translationController.status === "PENDING" || translationController.status === "TRANSLATING"
                 text: translationController.status === "TRANSLATING" ? "◌ Đang dịch..." : "⚡ Dịch (Ctrl+T)"
+                Layout.alignment: Qt.AlignVCenter
                 Layout.preferredWidth: 120
                 Layout.minimumWidth: 80
                 isPrimary: true
@@ -807,6 +817,7 @@ Item {
             AppButton {
                 objectName: "btnAccept"
                 text: "✓ Chấp nhận (Accept) ➔"
+                Layout.alignment: Qt.AlignVCenter
                 Layout.preferredWidth: Math.max(185, implicitWidth)
                 Layout.minimumWidth: 100
                 isPrimary: true

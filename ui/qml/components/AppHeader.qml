@@ -238,7 +238,7 @@ ToolBar {
                 anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
-                z: 2
+                z: 10
 
                 AppButton {
                     objectName: "btnOpenSrt"

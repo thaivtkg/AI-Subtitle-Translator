@@ -10,6 +10,8 @@ Button {
     implicitWidth: Math.max(80, contentItem.implicitWidth + Theme.spaceLarge)
     implicitHeight: 32
 
+    z: 1
+
     ToolTip.visible: hovered && tooltip !== ""
     ToolTip.text: tooltip
     ToolTip.delay: 400
@@ -19,7 +21,7 @@ Button {
         text: control.text
         font.pixelSize: 13
         font.bold: true
-        color: !control.enabled ? Qt.rgba(1, 1, 1, 0.45) : Theme.textPrimaryGlass
+        color: !control.enabled ? Qt.rgba(1, 1, 1, 0.45) : (control.isPrimary ? "#FFFFFF" : Theme.textPrimaryGlass)
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
@@ -30,26 +32,15 @@ Button {
         implicitHeight: 32
         radius: control.height / 2
 
-        color: !control.enabled ? Qt.rgba(1, 1, 1, 0.10) :
-               control.pressed ? (control.isPrimary ? Qt.darker(Theme.accentSapphire, 1.2) : Qt.rgba(1, 1, 1, 0.16)) :
-               control.hovered ? (control.isPrimary ? Theme.accentSapphireHover : Qt.rgba(1, 1, 1, 0.32)) :
-               (control.isPrimary ? Theme.accentSapphire : Qt.rgba(1, 1, 1, 0.22))
+        color: !control.enabled ? (control.isPrimary ? Qt.rgba(0, 102, 255, 0.4) : Qt.rgba(1, 1, 1, 0.12)) :
+               control.pressed ? (control.isPrimary ? "#0052CC" : Qt.rgba(1, 1, 1, 0.20)) :
+               control.hovered ? (control.isPrimary ? "#1A75FF" : Qt.rgba(1, 1, 1, 0.38)) :
+               (control.isPrimary ? Theme.accentSapphire : Qt.rgba(1, 1, 1, 0.28))
 
-        border.color: !control.enabled ? Qt.rgba(1, 1, 1, 0.18) :
-                      control.hovered ? Theme.glassBorderSpecularUpper :
-                      (control.isPrimary ? Theme.glassBorderSpecularUpper : Theme.glassBorderSubtle)
+        border.color: !control.enabled ? Qt.rgba(1, 1, 1, 0.20) :
+                      control.hovered ? Qt.rgba(1, 1, 1, 0.90) :
+                      (control.isPrimary ? Qt.rgba(1, 1, 1, 0.80) : Qt.rgba(1, 1, 1, 0.60))
         border.width: 1
-
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 1
-            height: 1
-            color: Qt.rgba(1, 1, 1, 0.35)
-            radius: parent.radius
-            visible: control.enabled
-        }
 
         Behavior on color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
         Behavior on border.color { ColorAnimation { duration: Theme.animHover; easing.type: Easing.OutQuad } }
