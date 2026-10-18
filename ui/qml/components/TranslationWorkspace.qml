@@ -19,7 +19,7 @@ Item {
     function setSourceLanguage(lang) { langSelector.setLanguage(lang) }
     function getSourceLanguage() { return langSelector.sourceLang }
     
-    Rectangle { anchors.fill: parent; color: Theme.bgApp }
+    Rectangle { anchors.fill: parent; color: "transparent" }
     
     EmptyWorkspace {
         anchors.fill: parent
@@ -31,11 +31,11 @@ Item {
     
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.spaceLarge
-        spacing: Theme.spaceMedium
+        anchors.margins: 18
+        spacing: 12
         visible: workspace.hasSelection
         
-        // Status & Original header
+        // Status & Language Header Row
         RowLayout {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
@@ -43,19 +43,29 @@ Item {
             
             Text {
                 text: "Trạng thái:"
-                color: Theme.textMuted
+                color: Theme.textSecondary
                 font.pixelSize: 12
+                font.bold: true
                 visible: workspace.width >= 420
             }
+
             Rectangle {
-                implicitWidth: statusBadge.implicitWidth + 16
-                implicitHeight: 20
-                radius: 10
-                color: translationController.status === "ACCEPTED" ? Qt.rgba(Theme.success.r, Theme.success.g, Theme.success.b, 0.15) :
-                       translationController.status === "ERROR" ? Qt.rgba(Theme.danger.r, Theme.danger.g, Theme.danger.b, 0.15) :
-                       translationController.status === "TRANSLATED" || translationController.status === "EDITED" ? Qt.rgba(Theme.accentPurple.r, Theme.accentPurple.g, Theme.accentPurple.b, 0.15) :
-                       translationController.status === "TRANSLATING" ? Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.15) :
-                       Theme.bgSurfaceSoft
+                implicitWidth: statusBadge.implicitWidth + 18
+                implicitHeight: 22
+                radius: 11
+                color: translationController.status === "ACCEPTED" ? Theme.badgeEmeraldBg :
+                       translationController.status === "ERROR" ? "#FFE4E6" :
+                       translationController.status === "TRANSLATED" ? "#DBEAFE" :
+                       translationController.status === "EDITED" ? "#F3E8FF" :
+                       translationController.status === "TRANSLATING" ? "#CFFAFE" :
+                       Theme.badgeAmberBg
+                border.color: translationController.status === "ACCEPTED" ? Qt.rgba(0.08, 0.5, 0.24, 0.3) :
+                              translationController.status === "ERROR" ? Qt.rgba(0.74, 0.07, 0.23, 0.3) :
+                              translationController.status === "TRANSLATED" ? Qt.rgba(0.11, 0.31, 0.85, 0.3) :
+                              translationController.status === "EDITED" ? Qt.rgba(0.43, 0.16, 0.85, 0.3) :
+                              translationController.status === "TRANSLATING" ? Qt.rgba(0.05, 0.45, 0.56, 0.3) :
+                              Qt.rgba(0.71, 0.32, 0.04, 0.3)
+                border.width: 1
                 
                 Text {
                     id: statusBadge
@@ -65,18 +75,22 @@ Item {
                           translationController.status === "EDITED" ? "ĐÃ SỬA ●" :
                           translationController.status === "TRANSLATING" ? "Đang dịch…" : 
                           translationController.status === "ERROR" ? "LỖI ✕" : "CHỜ DỊCH"
-                    color: translationController.status === "ACCEPTED" ? Theme.success : 
-                           translationController.status === "TRANSLATED" || translationController.status === "EDITED" ? Theme.accentPurple : 
-                           translationController.status === "ERROR" ? Theme.danger : 
-                           translationController.status === "TRANSLATING" ? Theme.accentCyan : Theme.textMuted
+                    color: translationController.status === "ACCEPTED" ? Theme.badgeEmeraldText : 
+                           translationController.status === "TRANSLATED" ? "#1D4ED8" : 
+                           translationController.status === "EDITED" ? "#6D28D9" : 
+                           translationController.status === "ERROR" ? "#BE123C" : 
+                           translationController.status === "TRANSLATING" ? "#0E7490" : 
+                           Theme.badgeAmberText
                     font.pixelSize: 10
                     font.bold: true
                 }
             }
+
             Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
             }
+
             LanguageSelector {
                 id: langSelector
                 objectName: "sourceLangCombo"
@@ -85,275 +99,441 @@ Item {
             }
         }
         
-        Text {
-            text: "CÂU GỐC"
-            color: Theme.textMuted
-            font.pixelSize: 11
-            font.bold: true
-        }
-        
-        Rectangle {
+        // Workspace Liquid Glide Container (Elastic transition on subtitle switch)
+        Item {
+            id: workspaceGlideContainer
             Layout.fillWidth: true
-            Layout.preferredHeight: 100
-            color: Theme.bgSurface
-            radius: Theme.radius
-            border.color: Theme.border
-            border.width: 1
-            
-            ScrollView {
-                anchors.fill: parent
-                anchors.margins: Theme.spaceMedium
-                TextArea {
-                    text: translationController.currentOriginal
-                    color: Theme.textPrimary
-                    font.pixelSize: 15
-                    wrapMode: Text.WordWrap
-                    readOnly: true
-                    background: null
-                    selectByMouse: true
+            Layout.fillHeight: true
+
+            property real glideOffset: 0
+            property real glideOpacity: 1.0
+
+            Connections {
+                target: typeof translationController !== "undefined" ? translationController : null
+                function onCurrentOriginalChanged() {
+                    glideAnim.restart()
                 }
             }
-        }
-        
-        Item { Layout.preferredHeight: Theme.spaceMedium }
-        
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spaceSmall
-            
-            Text {
-                text: "BẢN DỊCH TIẾNG VIỆT"
-                color: Theme.textMuted
-                font.pixelSize: 11
-                font.bold: true
-            }
 
-            // Live Translating badge with pulsing animation
-            Rectangle {
-                visible: translationController.status === "TRANSLATING"
-                implicitWidth: liveTranslatingRow.implicitWidth + 16
-                implicitHeight: 20
-                radius: 10
-                color: Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.2)
-                border.color: Theme.accentCyan
-                border.width: 1
-
-                RowLayout {
-                    id: liveTranslatingRow
-                    anchors.centerIn: parent
-                    spacing: 4
-                    Text { text: "⚡"; color: Theme.accentCyan; font.pixelSize: 10 }
-                    Text {
-                        text: "ĐANG DỊCH TRỰC TIẾP"
-                        color: Theme.accentCyan
-                        font.pixelSize: 9
-                        font.bold: true
+            SequentialAnimation {
+                id: glideAnim
+                PropertyAction { target: workspaceGlideContainer; property: "glideOffset"; value: 12 }
+                PropertyAction { target: workspaceGlideContainer; property: "glideOpacity"; value: 0.35 }
+                ParallelAnimation {
+                    NumberAnimation {
+                        target: workspaceGlideContainer
+                        property: "glideOffset"
+                        to: 0
+                        duration: 220
+                        easing.type: Easing.OutCubic
                     }
-                }
-
-                SequentialAnimation on opacity {
-                    running: translationController.status === "TRANSLATING"
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 1.0; to: 0.4; duration: 600; easing.type: Easing.InOutQuad }
-                    NumberAnimation { from: 0.4; to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
-                }
-            }
-
-            Item { Layout.fillWidth: true }
-
-            // Live Word & Char count in header
-            RowLayout {
-                spacing: 6
-                visible: translationController.status === "TRANSLATING" || translationInput.text.length > 0
-
-                property int wordCount: {
-                    var s = translationInput.text.trim();
-                    return s.length > 0 ? s.split(/\s+/).length : 0;
-                }
-
-                Text {
-                    text: parent.wordCount + " từ"
-                    color: translationController.status === "TRANSLATING" ? Theme.accentCyan : Theme.textSecondary
-                    font.pixelSize: 11
-                    font.bold: translationController.status === "TRANSLATING"
-                }
-
-                Text {
-                    text: "•"
-                    color: Theme.textDisabled
-                    font.pixelSize: 10
-                }
-
-                Text {
-                    text: translationInput.text.length + " ký tự"
-                    color: Theme.textMuted
-                    font.pixelSize: 11
-                }
-            }
-        }
-        
-        Rectangle {
-            id: translationBox
-            Layout.fillWidth: true
-            Layout.preferredHeight: 120
-            color: Theme.bgSurfaceElevated
-            radius: Theme.radius
-            border.color: translationController.status === "TRANSLATING" ? Theme.accentCyan : 
-                          (translationInput.activeFocus ? Theme.accentCyan : Theme.border)
-            border.width: translationController.status === "TRANSLATING" ? 2 : 1
-            clip: true
-            
-            ScrollView {
-                anchors.fill: parent
-                anchors.margins: Theme.spaceMedium
-                TextArea {
-                    objectName: "translationInput"
-                    id: translationInput
-                    text: translationController.currentTranslation
-                    placeholderText: translationController.status === "TRANSLATING" ? "" : "Nhập bản dịch tiếng Việt tại đây..."
-                    placeholderTextColor: Theme.textDisabled
-                    color: Theme.textPrimary
-                    font.pixelSize: 15
-                    wrapMode: Text.WordWrap
-                    background: null
-                    selectByMouse: true
-                    readOnly: translationController.status === "TRANSLATING" || workspace.executionLocked
-                    onTextChanged: {
-                        if (focus && translationController.currentTranslation !== text) {
-                            translationController.updateCurrentTranslation(text)
-                        }
+                    NumberAnimation {
+                        target: workspaceGlideContainer
+                        property: "glideOpacity"
+                        to: 1.0
+                        duration: 220
+                        easing.type: Easing.OutCubic
                     }
                 }
             }
 
-            // Scramble Decoder Overlay (Hiệu ứng giải mã chữ ngẫu nhiên matrix/cyber khi đang chờ sinh token)
             Item {
-                id: scrambleOverlay
                 anchors.fill: parent
-                anchors.margins: Theme.spaceMedium
-                visible: translationController.status === "TRANSLATING" && translationInput.text.trim().length === 0
-                z: 5
-
-                property var phrases: [
-                    "ĐANG GIẢI MÃ BỐI CẢNH & PHỤ ĐỀ...",
-                    "NEURAL MODEL CONNECTED...",
-                    "KHỞI TẠO DÒNG BẢN DỊCH TIẾNG VIỆT...",
-                    "TỐI ƯU HÓA ĐỘ DÀI & CPS..."
-                ]
-                property int phraseIndex: 0
-                property string currentTarget: phrases[phraseIndex]
-                property string displayText: ""
-                property real progress: 0.0
-                readonly property string glyphs: "ABCDEFGHJKLMNOPQRSTUVWXYZ0123456789#@$%&*+=<>_~░▒▓█"
-
-                Timer {
-                    id: scrambleTimer
-                    interval: 40
-                    running: scrambleOverlay.visible
-                    repeat: true
-                    onTriggered: {
-                        scrambleOverlay.progress += 0.55
-                        var target = scrambleOverlay.currentTarget
-                        var len = target.length
-                        var chars = scrambleOverlay.glyphs
-                        var cutoff = Math.floor(scrambleOverlay.progress)
-
-                        var res = ""
-                        for (var i = 0; i < len; i++) {
-                            var ch = target.charAt(i)
-                            if (ch === " " || ch === "." || ch === "&" || ch === ",") {
-                                res += ch
-                            } else if (i < cutoff) {
-                                res += ch
-                            } else {
-                                var randIdx = Math.floor(Math.random() * chars.length)
-                                res += chars.charAt(randIdx)
-                            }
-                        }
-                        scrambleOverlay.displayText = res
-
-                        if (cutoff >= len + 16) {
-                            scrambleOverlay.progress = 0
-                            scrambleOverlay.phraseIndex = (scrambleOverlay.phraseIndex + 1) % scrambleOverlay.phrases.length
-                        }
-                    }
-                }
+                anchors.topMargin: workspaceGlideContainer.glideOffset
+                opacity: workspaceGlideContainer.glideOpacity
 
                 ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 6
+                    anchors.fill: parent
+                    spacing: 12
 
-                    RowLayout {
-                        Layout.alignment: Qt.AlignHCenter
-                        spacing: 8
+                    // Original Subtitle Pod
+                    Rectangle {
+                        id: originalPod
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Math.max(workspace.height * 0.22, 105)
+                        color: Theme.glassPodLuminous
+                        radius: 16
+                        border.color: Theme.glassBorderSpecularUpper
+                        border.width: 1.5
 
-                        Text {
-                            text: "⚡"
-                            color: Theme.accentCyan
-                            font.pixelSize: 15
-                            font.bold: true
-                        }
-
-                        Text {
-                            text: scrambleOverlay.displayText
-                            color: Theme.accentCyan
-                            font.pixelSize: 13
-                            font.family: "Consolas, 'Courier New', monospace"
-                            font.bold: true
-                            font.letterSpacing: 1.1
-                        }
-
-                        // Blinking cyber block cursor
+                        // Specular top highlight gleam
                         Rectangle {
-                            width: 8
-                            height: 15
-                            color: Theme.accentCyan
-                            radius: 1
-                            SequentialAnimation on opacity {
-                                loops: Animation.Infinite
-                                NumberAnimation { from: 1.0; to: 0.15; duration: 280 }
-                                NumberAnimation { from: 0.15; to: 1.0; duration: 280 }
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            radius: parent.radius
+                            color: Qt.rgba(1.0, 1.0, 1.0, 0.65)
+                        }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 8
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Rectangle {
+                                    implicitWidth: originalBadgeText.implicitWidth + 16
+                                    implicitHeight: 20
+                                    radius: 10
+                                    color: Theme.accentSapphire
+
+                                    Text {
+                                        id: originalBadgeText
+                                        anchors.centerIn: parent
+                                        text: "CÂU GỐC (" + (langSelector.sourceLang ? langSelector.sourceLang.toUpperCase() : "ENGLISH") + ")"
+                                        color: "#FFFFFF"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        font.letterSpacing: 0.5
+                                    }
+                                }
+
+                                Rectangle {
+                                    visible: typeof translationController.currentStartTime !== "undefined" && translationController.currentStartTime !== ""
+                                    implicitWidth: timeRangeText.implicitWidth + 16
+                                    implicitHeight: 20
+                                    radius: 10
+                                    color: Qt.rgba(0.0, 0.4, 1.0, 0.12)
+                                    border.color: Qt.rgba(0.0, 0.4, 1.0, 0.3)
+                                    border.width: 1
+
+                                    Text {
+                                        id: timeRangeText
+                                        anchors.centerIn: parent
+                                        text: (typeof translationController.currentStartTime !== "undefined" ? translationController.currentStartTime : "") +
+                                              " ➔ " +
+                                              (typeof translationController.currentEndTime !== "undefined" ? translationController.currentEndTime : "")
+                                        color: "#0369A1"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                    }
+                                }
+
+                                Item { Layout.fillWidth: true }
+                            }
+
+                            ScrollView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                TextArea {
+                                    text: translationController.currentOriginal
+                                    color: Theme.textOnLightPod
+                                    font.pixelSize: 15
+                                    font.weight: Font.DemiBold
+                                    wrapMode: Text.WordWrap
+                                    readOnly: true
+                                    background: null
+                                    selectByMouse: true
+                                    selectionColor: Theme.accentSapphire
+                                    selectedTextColor: "#FFFFFF"
+                                }
                             }
                         }
                     }
 
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: "AI Neural Engine đang giải mã token đầu tiên..."
-                        color: Theme.textMuted
-                        font.pixelSize: 11
-                    }
-                }
-            }
+                    // AI Translation Pod
+                    Rectangle {
+                        id: translationBox
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.minimumHeight: 130
+                        color: Theme.glassPodRaised
+                        radius: 16
+                        border.color: translationController.status === "TRANSLATING" ? Theme.accentCyan : 
+                                      (translationInput.activeFocus ? Theme.accentSapphire : Theme.glassBorderSpecularUpper)
+                        border.width: (translationController.status === "TRANSLATING" || translationInput.activeFocus) ? 2 : 1.5
+                        clip: true
 
-            // Top scanner bar when translating
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 2
-                color: "transparent"
-                visible: translationController.status === "TRANSLATING"
+                        Behavior on border.color { ColorAnimation { duration: Theme.animFocus } }
 
-                Rectangle {
-                    id: streamScanner
-                    height: 2
-                    width: Math.max(translationBox.width * 0.35, 60)
-                    color: Theme.accentCyan
-                    radius: 1
+                        // Specular top highlight gleam
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            radius: parent.radius
+                            color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
+                            z: 2
+                        }
 
-                    NumberAnimation on x {
-                        from: -streamScanner.width
-                        to: translationBox.width
-                        duration: 1200
-                        loops: Animation.Infinite
-                        running: translationController.status === "TRANSLATING"
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 8
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Rectangle {
+                                    implicitWidth: transBadgeText.implicitWidth + 16
+                                    implicitHeight: 20
+                                    radius: 10
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0.0; color: Theme.badgePurpleGradientStart }
+                                        GradientStop { position: 1.0; color: Theme.badgePurpleGradientEnd }
+                                    }
+
+                                    Text {
+                                        id: transBadgeText
+                                        anchors.centerIn: parent
+                                        text: "BẢN DỊCH TIẾNG VIỆT"
+                                        color: "#FFFFFF"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        font.letterSpacing: 0.5
+                                    }
+                                }
+
+                                Rectangle {
+                                    visible: translationController.status !== "TRANSLATING" && translationInput.text.trim().length > 0
+                                    implicitWidth: confText.implicitWidth + 16
+                                    implicitHeight: 20
+                                    radius: 10
+                                    color: Theme.badgeEmeraldBg
+                                    border.color: Qt.rgba(0.08, 0.5, 0.24, 0.3)
+                                    border.width: 1
+
+                                    Text {
+                                        id: confText
+                                        anchors.centerIn: parent
+                                        text: "⚡ 98% Tin cậy"
+                                        color: Theme.badgeEmeraldText
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                    }
+                                }
+
+                                Rectangle {
+                                    visible: translationController.status === "TRANSLATING"
+                                    implicitWidth: liveTranslatingRow.implicitWidth + 16
+                                    implicitHeight: 20
+                                    radius: 10
+                                    color: Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.2)
+                                    border.color: Theme.accentCyan
+                                    border.width: 1
+
+                                    RowLayout {
+                                        id: liveTranslatingRow
+                                        anchors.centerIn: parent
+                                        spacing: 4
+                                        Text { text: "⚡"; color: Theme.accentCyan; font.pixelSize: 10 }
+                                        Text {
+                                            text: "ĐANG DỊCH TRỰC TIẾP"
+                                            color: Theme.accentCyan
+                                            font.pixelSize: 9
+                                            font.bold: true
+                                        }
+                                    }
+
+                                    SequentialAnimation on opacity {
+                                        running: translationController.status === "TRANSLATING"
+                                        loops: Animation.Infinite
+                                        NumberAnimation { from: 1.0; to: 0.4; duration: 600; easing.type: Easing.InOutQuad }
+                                        NumberAnimation { from: 0.4; to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
+                                    }
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                RowLayout {
+                                    spacing: 6
+                                    visible: translationController.status === "TRANSLATING" || translationInput.text.length > 0
+
+                                    property int wordCount: {
+                                        var s = translationInput.text.trim();
+                                        return s.length > 0 ? s.split(/\s+/).length : 0;
+                                    }
+
+                                    Text {
+                                        text: parent.wordCount + " từ"
+                                        color: translationController.status === "TRANSLATING" ? Theme.accentCyan : "#475569"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                    }
+
+                                    Text {
+                                        text: "•"
+                                        color: "#94A3B8"
+                                        font.pixelSize: 10
+                                    }
+
+                                    Text {
+                                        text: translationInput.text.length + " ký tự"
+                                        color: "#475569"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                    }
+                                }
+                            }
+
+                            ScrollView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+
+                                TextArea {
+                                    objectName: "translationInput"
+                                    id: translationInput
+                                    text: translationController.currentTranslation
+                                    placeholderText: translationController.status === "TRANSLATING" ? "" : "Nhập bản dịch tiếng Việt tại đây..."
+                                    placeholderTextColor: "#94A3B8"
+                                    color: Theme.textOnLightPod
+                                    font.pixelSize: 15
+                                    font.weight: Font.DemiBold
+                                    wrapMode: Text.WordWrap
+                                    background: null
+                                    selectByMouse: true
+                                    selectionColor: Theme.accentSapphire
+                                    selectedTextColor: "#FFFFFF"
+                                    readOnly: translationController.status === "TRANSLATING" || workspace.executionLocked
+                                    onTextChanged: {
+                                        if (focus && translationController.currentTranslation !== text) {
+                                            translationController.updateCurrentTranslation(text)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Scramble Decoder Overlay
+                        Item {
+                            id: scrambleOverlay
+                            anchors.fill: parent
+                            anchors.margins: Theme.spaceMedium
+                            visible: translationController.status === "TRANSLATING" && translationInput.text.trim().length === 0
+                            z: 5
+
+                            property var phrases: [
+                                "ĐANG GIẢI MÃ BỐI CẢNH & PHỤ ĐỀ...",
+                                "NEURAL MODEL CONNECTED...",
+                                "KHỞI TẠO DÒNG BẢN DỊCH TIẾNG VIỆT...",
+                                "TỐI ƯU HÓA ĐỘ DÀI & CPS..."
+                            ]
+                            property int phraseIndex: 0
+                            property string currentTarget: phrases[phraseIndex]
+                            property string displayText: ""
+                            property real progress: 0.0
+                            readonly property string glyphs: "ABCDEFGHJKLMNOPQRSTUVWXYZ0123456789#@$%&*+=<>_~░▒▓█"
+
+                            Timer {
+                                id: scrambleTimer
+                                interval: 40
+                                running: scrambleOverlay.visible
+                                repeat: true
+                                onTriggered: {
+                                    scrambleOverlay.progress += 0.55
+                                    var target = scrambleOverlay.currentTarget
+                                    var len = target.length
+                                    var chars = scrambleOverlay.glyphs
+                                    var cutoff = Math.floor(scrambleOverlay.progress)
+
+                                    var res = ""
+                                    for (var i = 0; i < len; i++) {
+                                        var ch = target.charAt(i)
+                                        if (ch === " " || ch === "." || ch === "&" || ch === ",") {
+                                            res += ch
+                                        } else if (i < cutoff) {
+                                            res += ch
+                                        } else {
+                                            var randIdx = Math.floor(Math.random() * chars.length)
+                                            res += chars.charAt(randIdx)
+                                        }
+                                    }
+                                    scrambleOverlay.displayText = res
+
+                                    if (cutoff >= len + 16) {
+                                        scrambleOverlay.progress = 0
+                                        scrambleOverlay.phraseIndex = (scrambleOverlay.phraseIndex + 1) % scrambleOverlay.phrases.length
+                                    }
+                                }
+                            }
+
+                            ColumnLayout {
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                RowLayout {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    spacing: 8
+
+                                    Text {
+                                        text: "⚡"
+                                        color: Theme.accentCyan
+                                        font.pixelSize: 15
+                                        font.bold: true
+                                    }
+
+                                    Text {
+                                        text: scrambleOverlay.displayText
+                                        color: Theme.accentCyan
+                                        font.pixelSize: 13
+                                        font.family: "Consolas, 'Courier New', monospace"
+                                        font.bold: true
+                                        font.letterSpacing: 1.1
+                                    }
+
+                                    // Blinking cyber block cursor
+                                    Rectangle {
+                                        width: 8
+                                        height: 15
+                                        color: Theme.accentCyan
+                                        radius: 1
+                                        SequentialAnimation on opacity {
+                                            loops: Animation.Infinite
+                                            NumberAnimation { from: 1.0; to: 0.15; duration: 280 }
+                                            NumberAnimation { from: 0.15; to: 1.0; duration: 280 }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: "AI Neural Engine đang giải mã token đầu tiên..."
+                                    color: Theme.textMuted
+                                    font.pixelSize: 11
+                                }
+                            }
+                        }
+
+                        // Top scanner bar when translating
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 2
+                            color: "transparent"
+                            visible: translationController.status === "TRANSLATING"
+
+                            Rectangle {
+                                id: streamScanner
+                                height: 2
+                                width: Math.max(translationBox.width * 0.35, 60)
+                                color: Theme.accentCyan
+                                radius: 1
+
+                                NumberAnimation on x {
+                                    from: -streamScanner.width
+                                    to: translationBox.width
+                                    duration: 1200
+                                    loops: Animation.Infinite
+                                    running: translationController.status === "TRANSLATING"
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // LIVE TRANSLATING HUD (Hiển thị thời gian thực khi đang sinh bản dịch)
+        // LIVE TRANSLATING HUD
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spaceMedium
@@ -369,7 +549,6 @@ Item {
                 return t ? t.split('\n').length : 0;
             }
 
-            // Badge 1: Trạng thái sinh với spinner động
             Rectangle {
                 implicitWidth: liveStreamRow.implicitWidth + 24
                 implicitHeight: 24
@@ -408,7 +587,6 @@ Item {
                 }
             }
 
-            // Badge 2: Số từ
             Rectangle {
                 implicitWidth: liveWordsRow.implicitWidth + 24
                 implicitHeight: 24
@@ -425,7 +603,6 @@ Item {
                 }
             }
 
-            // Badge 3: Số ký tự
             Rectangle {
                 implicitWidth: liveCharsRow.implicitWidth + 24
                 implicitHeight: 24
@@ -442,7 +619,6 @@ Item {
                 }
             }
 
-            // Badge 4: Số dòng
             Rectangle {
                 implicitWidth: liveLinesCountRow.implicitWidth + 24
                 implicitHeight: 24
@@ -462,7 +638,7 @@ Item {
             Item { Layout.fillWidth: true }
         }
         
-        // QA HUD (Hiển thị sau khi dịch xong hoặc đã có bản dịch)
+        // QA HUD
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spaceMedium
@@ -560,6 +736,7 @@ Item {
         
         Item { Layout.fillHeight: true }
         
+        // Bottom Action Buttons
         RowLayout {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
@@ -601,6 +778,7 @@ Item {
                 Layout.minimumWidth: 130
                 Layout.preferredWidth: workspace.compactActions ? 130 : 160
                 Layout.maximumWidth: 180
+                isPrimary: true
                 enabled: !workspace.executionLocked && (translationController.status === "TRANSLATED" || translationController.status === "EDITED")
                 onClicked: acceptRequested(translationInput.text)
             }

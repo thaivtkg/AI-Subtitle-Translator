@@ -13,10 +13,20 @@ Item {
         anchors.centerIn: parent
         width: Math.min(parent.width * 0.85, 520)
         implicitHeight: cardContent.implicitHeight + Theme.spaceLarge * 2
-        radius: 12
-        color: Theme.bgSurface
-        border.color: Theme.border
-        border.width: 1
+        radius: 18
+        color: Theme.glassPodLuminous
+        border.color: Theme.glassBorderSpecularUpper
+        border.width: 1.5
+
+        // Specular top sheen
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            radius: parent.radius
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.7)
+        }
 
         ColumnLayout {
             id: cardContent
@@ -27,7 +37,7 @@ Item {
             Text {
                 Layout.alignment: Qt.AlignHCenter
                 text: "⚡ HƯỚNG DẪN THAO TÁC NHANH"
-                color: Theme.accentCyan
+                color: Theme.accentSapphire
                 font.pixelSize: 14
                 font.bold: true
                 font.letterSpacing: 1.5
@@ -36,8 +46,9 @@ Item {
             Text {
                 Layout.alignment: Qt.AlignHCenter
                 text: "Chọn một câu phụ đề bên trái để bắt đầu dịch"
-                color: Theme.textSecondary
+                color: "#475569"
                 font.pixelSize: 13
+                font.bold: true
                 Layout.bottomMargin: Theme.spaceSmall
             }
 
@@ -51,40 +62,40 @@ Item {
                 RowLayout {
                     spacing: Theme.spaceSmall
                     Rectangle {
-                        width: 32; height: 32; radius: 6; color: Theme.bgSurfaceSoft; border.color: Theme.border
-                        Text { anchors.centerIn: parent; text: "T"; color: Theme.textPrimary; font.bold: true; font.pixelSize: 14 }
+                        width: 32; height: 32; radius: 8; color: Theme.glassPodRaised; border.color: Theme.glassBorderSpecularUpper; border.width: 1
+                        Text { anchors.centerIn: parent; text: "T"; color: Theme.textOnLightPod; font.bold: true; font.pixelSize: 14 }
                     }
-                    Text { text: "Dịch bằng AI"; color: Theme.textSecondary; font.pixelSize: 12 }
+                    Text { text: "Dịch bằng AI"; color: Theme.textOnLightPod; font.pixelSize: 12; font.bold: true }
                 }
 
                 // Phím tắt 2
                 RowLayout {
                     spacing: Theme.spaceSmall
                     Rectangle {
-                        width: 32; height: 32; radius: 6; color: Theme.bgSurfaceSoft; border.color: Theme.border
-                        Text { anchors.centerIn: parent; text: "↵"; color: Theme.textPrimary; font.bold: true; font.pixelSize: 16 }
+                        width: 32; height: 32; radius: 8; color: Theme.glassPodRaised; border.color: Theme.glassBorderSpecularUpper; border.width: 1
+                        Text { anchors.centerIn: parent; text: "↵"; color: Theme.textOnLightPod; font.bold: true; font.pixelSize: 16 }
                     }
-                    Text { text: "Duyệt & Tới câu tiếp"; color: Theme.textSecondary; font.pixelSize: 12 }
+                    Text { text: "Duyệt & Tới câu tiếp"; color: Theme.textOnLightPod; font.pixelSize: 12; font.bold: true }
                 }
 
                 // Phím tắt 3
                 RowLayout {
                     spacing: Theme.spaceSmall
                     Rectangle {
-                        width: 32; height: 32; radius: 6; color: Theme.bgSurfaceSoft; border.color: Theme.border
-                        Text { anchors.centerIn: parent; text: "↑↓"; color: Theme.textPrimary; font.bold: true; font.pixelSize: 14 }
+                        width: 32; height: 32; radius: 8; color: Theme.glassPodRaised; border.color: Theme.glassBorderSpecularUpper; border.width: 1
+                        Text { anchors.centerIn: parent; text: "↑↓"; color: Theme.textOnLightPod; font.bold: true; font.pixelSize: 14 }
                     }
-                    Text { text: "Điều hướng danh sách câu"; color: Theme.textSecondary; font.pixelSize: 12 }
+                    Text { text: "Điều hướng danh sách câu"; color: Theme.textOnLightPod; font.pixelSize: 12; font.bold: true }
                 }
 
                 // Phím tắt 4
                 RowLayout {
                     spacing: Theme.spaceSmall
                     Rectangle {
-                        width: 32; height: 32; radius: 6; color: Theme.bgSurfaceSoft; border.color: Theme.border
-                        Text { anchors.centerIn: parent; text: "S"; color: Theme.textPrimary; font.bold: true; font.pixelSize: 14 }
+                        width: 32; height: 32; radius: 8; color: Theme.glassPodRaised; border.color: Theme.glassBorderSpecularUpper; border.width: 1
+                        Text { anchors.centerIn: parent; text: "S"; color: Theme.textOnLightPod; font.bold: true; font.pixelSize: 14 }
                     }
-                    Text { text: "Lưu dự án"; color: Theme.textSecondary; font.pixelSize: 12 }
+                    Text { text: "Lưu dự án"; color: Theme.textOnLightPod; font.pixelSize: 12; font.bold: true }
                 }
             }
         }
