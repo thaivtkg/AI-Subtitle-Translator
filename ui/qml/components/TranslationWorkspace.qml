@@ -158,7 +158,7 @@ Item {
                     Rectangle {
                         id: originalPod
                         Layout.fillWidth: true
-                        Layout.preferredHeight: Math.max(workspace.height * 0.22, 105)
+                        Layout.preferredHeight: 110
                         color: Theme.glassPodLuminous
                         radius: 16
                         border.color: Theme.glassBorderSpecularUpper

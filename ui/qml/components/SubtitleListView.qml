@@ -219,7 +219,6 @@ ColumnLayout {
                     id: filterCombo
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
-                    Layout.preferredWidth: 105
                     Layout.preferredHeight: 32
                     font.pixelSize: 12
                     model: ["Tất cả", "Chờ dịch", "Đang dịch", "Đã dịch", "Đã sửa", "Lỗi", "Đã duyệt"]
@@ -256,7 +255,6 @@ ColumnLayout {
                     }
 
                     background: Rectangle {
-                        implicitWidth: 105
                         implicitHeight: 32
                         color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
                         radius: 12
@@ -308,7 +306,6 @@ ColumnLayout {
                 id: chunkFilterCombo
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                Layout.preferredWidth: 105
                 Layout.preferredHeight: 32
                 font.pixelSize: 12
                 model: [
@@ -352,7 +349,6 @@ ColumnLayout {
                 }
 
                 background: Rectangle {
-                    implicitWidth: 105
                     implicitHeight: 32
                     color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
                     radius: 12

@@ -14,11 +14,20 @@ ColumnLayout {
 
         RowLayout {
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            spacing: 6
+
             Text {
-                text: "🟣 THANH NGỮ CẢNH (INSPECTOR)"
+                text: "🟣 NGỮ CẢNH"
                 color: "#FFFFFF"
-                font.pixelSize: 13
+                font.pixelSize: 12
                 font.bold: true
+            }
+            Text {
+                text: "(INSPECTOR)"
+                color: Qt.rgba(1, 1, 1, 0.7)
+                font.pixelSize: 11
+                visible: inspectorRoot.width >= 310
             }
             Item { Layout.fillWidth: true }
             Rectangle {
@@ -26,8 +35,8 @@ ColumnLayout {
                 color: Qt.rgba(1, 1, 1, 0.16)
                 border.color: Qt.rgba(1, 1, 1, 0.3)
                 border.width: 1
-                implicitWidth: closeLbl.implicitWidth + 14
-                implicitHeight: 24
+                implicitWidth: closeLbl.implicitWidth + 12
+                implicitHeight: 22
                 Text {
                     id: closeLbl
                     anchors.centerIn: parent
