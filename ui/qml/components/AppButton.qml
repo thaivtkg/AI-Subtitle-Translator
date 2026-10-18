@@ -65,18 +65,6 @@ Button {
                       control.hovered ? Qt.rgba(1, 1, 1, 0.95) :
                       (control.isPrimary ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(1, 1, 1, 0.45))
         border.width: 1
-
-        // Vệt hắt sáng mép trên (Top Specular Gleam)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: parent.radius * 0.6
-            anchors.rightMargin: parent.radius * 0.6
-            anchors.topMargin: 1
-            height: 1
-            color: Qt.rgba(1, 1, 1, control.isPrimary ? 0.65 : 0.45)
-        }
     }
 }
 

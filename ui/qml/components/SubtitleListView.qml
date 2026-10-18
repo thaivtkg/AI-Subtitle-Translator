@@ -869,17 +869,6 @@ ColumnLayout {
                 border.color: isSelected ? "#7DD3FC" : Theme.glassBorderSpecularUpper
                 border.width: isSelected ? 1.5 : 1
 
-                // Vệt hắt sáng Specular 1px ở cạnh trên thẻ
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.margins: 1
-                    height: 1
-                    radius: parent.radius
-                    color: Qt.rgba(1, 1, 1, isSelected ? 0.55 : 0.85)
-                }
-
                 scale: delegateItem.isCardDragging ? 0.96 : (mouseArea.pressed ? 0.98 : (mouseArea.containsMouse ? 1.01 : 1.0))
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
                 Behavior on border.color { ColorAnimation { duration: 150 } }
@@ -1054,15 +1043,6 @@ ColumnLayout {
             shadowColor: "#60000000"
             shadowBlur: 0.6
             shadowVerticalOffset: 3
-        }
-
-        // Top specular sheen
-        Rectangle {
-            anchors.top: parent.top
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width - 16
-            height: 1
-            color: Qt.rgba(1.0, 1.0, 1.0, 0.45)
         }
 
         RowLayout {

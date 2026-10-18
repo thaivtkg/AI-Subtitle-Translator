@@ -18,15 +18,6 @@ Item {
         border.color: Theme.glassBorderSpecularUpper
         border.width: 1.5
 
-        // Specular top sheen
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            radius: parent.radius
-            color: Qt.rgba(1.0, 1.0, 1.0, 0.7)
-        }
 
         ColumnLayout {
             id: cardContent

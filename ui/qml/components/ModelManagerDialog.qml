@@ -32,15 +32,6 @@ Dialog {
             shadowColor: Qt.rgba(0, 0, 0, 0.35)
         }
 
-        // Top specular highlight
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            radius: parent.radius
-            color: Qt.rgba(1.0, 1.0, 1.0, 0.8)
-        }
     }
 
     Connections {

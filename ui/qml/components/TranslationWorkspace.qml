@@ -85,13 +85,6 @@ Item {
             }
         }
 
-        // Vách ngăn kính dưới Header Cột Giữa
-        Rectangle {
-            Layout.fillWidth: true
-            height: 1
-            color: Qt.rgba(1, 1, 1, 0.25)
-            antialiasing: false
-        }
         
         // Workspace Liquid Glide Container (Elastic transition on subtitle switch)
         Item {
@@ -161,17 +154,6 @@ Item {
                             shadowColor: Qt.rgba(0.08, 0.04, 0.22, 0.16)
                             shadowBlur: 0.45
                             shadowVerticalOffset: 4
-                        }
-
-                        // Vệt sáng 3D mép trên của hộp kính
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.margins: 1
-                            height: 1
-                            radius: parent.radius
-                            color: Qt.rgba(1, 1, 1, 0.90)
                         }
 
                         ColumnLayout {
@@ -269,16 +251,6 @@ Item {
                             shadowVerticalOffset: 4
                         }
 
-                        // Vệt sáng 3D mép trên của hộp kính
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.margins: 1
-                            height: 1
-                            radius: parent.radius
-                            color: Qt.rgba(1, 1, 1, 0.90)
-                        }
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -763,14 +735,6 @@ Item {
             color: Qt.rgba(1, 1, 1, 0.08)
             radius: 12
 
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 1
-                color: Qt.rgba(1, 1, 1, 0.20)
-                antialiasing: false
-            }
 
             RowLayout {
                 anchors.fill: parent
