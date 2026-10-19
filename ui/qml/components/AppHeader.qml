@@ -24,6 +24,7 @@ ToolBar {
     signal saveClicked()
     signal exportClicked()
     signal modelManagerClicked()
+    signal archetypeClicked()
 
     implicitHeight: 48
     padding: 0
@@ -334,6 +335,69 @@ ToolBar {
                                 font.pixelSize: 11
                                 font.bold: true
                                 color: Theme.accentSapphire
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: archetypeHeaderCapsule
+                        objectName: "archetypeHeaderCapsule"
+                        visible: root.hasProject && typeof projectController !== "undefined" && centerCluster.width >= 320
+                        implicitHeight: 26
+                        implicitWidth: archetypeHeaderRow.implicitWidth + 20
+                        radius: 13
+                        color: archetypeHeaderMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.65) : Qt.rgba(1, 1, 1, 0.45)
+                        border.color: Theme.glassBorderSpecularUpper
+                        border.width: 1
+
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        RowLayout {
+                            id: archetypeHeaderRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: {
+                                    if (typeof projectController === "undefined") return "🎭"
+                                    var list = projectController.archetypeList || []
+                                    for (var i = 0; i < list.length; i++) {
+                                        if (list[i].id === projectController.activeArchetype) {
+                                            return list[i].icon || "🎭"
+                                        }
+                                    }
+                                    return "🎭"
+                                }
+                                font.pixelSize: 12
+                            }
+
+                            Text {
+                                text: {
+                                    if (typeof projectController === "undefined") return "Tự do"
+                                    var pair = projectController.activePronounPair || ""
+                                    return pair.startsWith("Tự do") ? "Tự do" : pair
+                                }
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: Theme.textOnLightPod
+                            }
+                        }
+
+                        ToolTip.visible: archetypeHeaderMouse.containsMouse
+                        ToolTip.text: typeof projectController !== "undefined"
+                                      ? ("Thể loại: " + projectController.archetypeDisplayLabel + " (" + projectController.activePronounPair + ") - Click để tùy chỉnh")
+                                      : ""
+
+                        MouseArea {
+                            id: archetypeHeaderMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.archetypeClicked()
+                                if (typeof contextTabs !== "undefined") {
+                                    contextTabs.setCurrentIndex(1)
+                                }
                             }
                         }
                     }

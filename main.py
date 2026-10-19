@@ -104,6 +104,7 @@ def main():
         glossary=project_controller.glossary,
         entities=project_controller.entity_dictionary,
         translation_memory=project_controller.translation_memory,
+        project_controller=project_controller,
     )
 
     if getattr(sys, "frozen", False):

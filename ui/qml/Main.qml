@@ -110,6 +110,9 @@ ApplicationWindow {
                     }
                 }
                 onModelManagerClicked: modelManagerDialog.open()
+                onArchetypeClicked: {
+                    contextInspector.switchToTab(1)
+                }
             }
 
             StudioLaunchpad {

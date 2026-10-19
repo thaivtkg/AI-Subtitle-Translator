@@ -47,6 +47,12 @@ class AppHarness:
             self.translation_controller.hardware_profile.update(profile_overrides)
 
         self.project_controller = ProjectController(self.model)
+        self.translation_controller.bind_intelligence(
+            glossary=self.project_controller.glossary,
+            entities=self.project_controller.entity_dictionary,
+            translation_memory=self.project_controller.translation_memory,
+            project_controller=self.project_controller,
+        )
         self.batch_runtime = BatchRuntimeBridge(self.translation_controller)
         self.batch_controller = BatchController(
             self.model,
