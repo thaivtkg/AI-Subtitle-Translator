@@ -673,17 +673,17 @@ ColumnLayout {
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: root.isDraggingLens ? Qt.rgba(0.0, 0.60, 1.0, 0.75) : Qt.rgba(0.0, 0.55, 1.0, 0.50)
-                shadowBlur: root.isDraggingLens ? 0.75 : 0.60
-                shadowVerticalOffset: root.isDraggingLens ? 6 : 4
+                shadowColor: root.isDraggingLens ? Qt.rgba(0.0, 0.20, 0.60, 0.42) : Qt.rgba(0.0, 0.18, 0.50, 0.30)
+                shadowBlur: root.isDraggingLens ? 0.50 : 0.40
+                shadowVerticalOffset: root.isDraggingLens ? 3 : 2
             }
 
             Behavior on y {
                 enabled: !subListView.moving && !subListView.flicking && !root.isDraggingLens
                 SpringAnimation {
-                    spring: 3.2
-                    damping: 0.30
-                    epsilon: 0.25
+                    spring: 4.0
+                    damping: 0.48
+                    epsilon: 0.15
                 }
             }
 

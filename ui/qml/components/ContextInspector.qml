@@ -101,9 +101,9 @@ ColumnLayout {
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: Qt.rgba(0.0, 0.60, 1.0, 0.65)
-                shadowBlur: 0.75
-                shadowVerticalOffset: 3
+                shadowColor: tabOuterContainer.isDragging ? Qt.rgba(0.0, 0.25, 0.65, 0.45) : Qt.rgba(0.0, 0.20, 0.60, 0.32)
+                shadowBlur: tabOuterContainer.isDragging ? 0.50 : 0.42
+                shadowVerticalOffset: 2
             }
 
             x: tabOuterContainer.isDragging
@@ -120,32 +120,36 @@ ColumnLayout {
             Behavior on x {
                 enabled: !tabOuterContainer.isDragging
                 SpringAnimation {
-                    spring: 3.5
-                    damping: 0.32
-                    epsilon: 0.25
+                    spring: 4.0
+                    damping: 0.48
+                    epsilon: 0.15
                 }
             }
         }
 
-        TabBar {
+        Row {
             id: contextTabs
             objectName: "contextTabs"
+            property int currentIndex: 0
+            readonly property int count: 3
+            function setCurrentIndex(idx) {
+                currentIndex = Math.max(0, Math.min(tabOuterContainer.tabCount - 1, idx))
+            }
             anchors.fill: parent
             anchors.margins: 3
             spacing: 0
-            implicitWidth: tabOuterContainer.width
-            background: Item {}
             clip: true
             z: 2
 
-            TabButton {
+            Item {
                 id: tabTimeline
-                text: "TIMELINE"
+                objectName: "tabTimeline"
                 width: tabOuterContainer.tabWidth
-                implicitWidth: tabOuterContainer.tabWidth
                 height: parent.height
-                contentItem: Text {
-                    text: parent.text
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "TIMELINE"
                     font.pixelSize: 11
                     font.bold: true
                     color: tabOuterContainer.activeHoverIndex === 0 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.55)
@@ -154,17 +158,17 @@ ColumnLayout {
                     elide: Text.ElideRight
                     Behavior on color { ColorAnimation { duration: 150 } }
                 }
-                background: Item {}
             }
 
-            TabButton {
+            Item {
                 id: tabIntelligence
-                text: "INTELLIGENCE"
+                objectName: "tabIntelligence"
                 width: tabOuterContainer.tabWidth
-                implicitWidth: tabOuterContainer.tabWidth
                 height: parent.height
-                contentItem: Text {
-                    text: parent.text
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "INTELLIGENCE"
                     font.pixelSize: 11
                     font.bold: true
                     color: tabOuterContainer.activeHoverIndex === 1 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.55)
@@ -173,17 +177,17 @@ ColumnLayout {
                     elide: Text.ElideRight
                     Behavior on color { ColorAnimation { duration: 150 } }
                 }
-                background: Item {}
             }
 
-            TabButton {
+            Item {
                 id: tabSummary
-                text: "SUMMARY"
+                objectName: "tabSummary"
                 width: tabOuterContainer.tabWidth
-                implicitWidth: tabOuterContainer.tabWidth
                 height: parent.height
-                contentItem: Text {
-                    text: parent.text
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "SUMMARY"
                     font.pixelSize: 11
                     font.bold: true
                     color: tabOuterContainer.activeHoverIndex === 2 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.55)
@@ -192,7 +196,6 @@ ColumnLayout {
                     elide: Text.ElideRight
                     Behavior on color { ColorAnimation { duration: 150 } }
                 }
-                background: Item {}
             }
         }
 
