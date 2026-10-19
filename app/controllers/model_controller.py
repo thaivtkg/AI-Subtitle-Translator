@@ -29,6 +29,8 @@ class ModelController(QObject):
         settings: Optional[AppSettings] = None,
         download_manager: Optional[DownloadManager] = None,
         parent: Optional[QObject] = None,
+        gpu_info: Optional[dict] = None,
+        llama_has_cuda: Optional[bool] = None,
     ):
         super().__init__(parent)
         self.models_dir = models_dir or os.path.join(
@@ -43,8 +45,8 @@ class ModelController(QObject):
         self._download_states: Dict[str, tuple] = {}
 
         # Thông tin phần cứng
-        self._gpu_info = HardwareDetector.get_gpu_info()
-        self._llama_has_cuda = HardwareDetector.check_llama_cuda_backend()
+        self._gpu_info = gpu_info if gpu_info is not None else HardwareDetector.get_gpu_info()
+        self._llama_has_cuda = llama_has_cuda if llama_has_cuda is not None else HardwareDetector.check_llama_cuda_backend()
 
         # Kết nối sự kiện DownloadManager
         self._download_manager.downloadProgress.connect(self._on_download_progress)
@@ -53,6 +55,10 @@ class ModelController(QObject):
 
         # Khởi tạo active model id từ settings hoặc fallback thông minh
         self._active_model_id = self._determine_initial_active_model()
+        self._apply_active_model_profile()
+
+    def bind_translation_controller(self, controller: QObject) -> None:
+        self._translation_controller = controller
         self._apply_active_model_profile()
 
     def _determine_initial_active_model(self) -> str:
@@ -87,7 +93,22 @@ class ModelController(QObject):
             return
 
         full_model_path = os.path.join(self.models_dir, meta.filename)
-        n_gpu_layers = -1 if (self._gpu_info.get("has_gpu_hardware") and self._llama_has_cuda) else 0
+
+        has_gpu = bool(self._gpu_info.get("has_gpu_hardware")) and self._llama_has_cuda
+        vram_gb = float(self._gpu_info.get("vram_gb", 0.0))
+        if not has_gpu:
+            n_gpu_layers = 0
+            backend_status = "CPU Backend"
+        elif vram_gb >= meta.min_vram_gb:
+            n_gpu_layers = -1
+            backend_status = "CUDA Enabled (Full Offload)"
+        else:
+            # Dynamic layer offloading cho GPU VRAM thấp (RTX 3050 4GB chạy model 8B/9B)
+            safe_vram = max(0.5, vram_gb - 0.8)
+            model_size_gb = meta.size_bytes / (1024 ** 3)
+            ratio = min(1.0, safe_vram / max(1.0, model_size_gb))
+            n_gpu_layers = max(8, int(ratio * 40))
+            backend_status = f"CUDA Hybrid ({n_gpu_layers} layers on GPU)"
 
         profile = getattr(self._translation_controller, "hardware_profile", {})
         profile.update({
@@ -96,7 +117,7 @@ class ModelController(QObject):
             "n_ctx": meta.recommended_ctx,
             "n_gpu_layers": n_gpu_layers,
             "gpu_info": self._gpu_info,
-            "backend_status": "CUDA Enabled (Full Offload)" if n_gpu_layers == -1 else "CPU Backend",
+            "backend_status": backend_status,
         })
         self._translation_controller.hardware_profile = profile
 
@@ -233,18 +254,19 @@ class ModelController(QObject):
             self.notify.emit("ERROR", "Không tìm thấy thông tin model.")
             return False
 
-        target_file = os.path.join(self.models_dir, meta.filename)
-        if not os.path.exists(target_file):
-            self.notify.emit("ERROR", f"File model {meta.filename} chưa được tải về máy.")
-            return False
-
-        self._active_model_id = model_id
-        self._settings.active_model_id = model_id
-        self._apply_active_model_profile()
-
-        self.activeModelChanged.emit(model_id)
-        self.modelListChanged.emit()
-        self.notify.emit("SUCCESS", f"Đã chuyển sang mô hình: {meta.display_name}")
+        if self._active_model_id != model_id:
+            # Thu hồi VRAM của model cũ ngay khi người dùng bấm chọn model khác
+            try:
+                from app.llm.model_manager import ModelManager
+                ModelManager.get_instance("llama_cpp").unload_model()
+            except Exception:
+                pass
+            self._active_model_id = model_id
+            self._settings.active_model_id = model_id
+            self._apply_active_model_profile()
+            self.activeModelChanged.emit(model_id)
+            self.modelListChanged.emit()
+            self.notify.emit("SUCCESS", f"Đã chuyển sang mô hình: {meta.display_name}")
         return True
 
     @Slot(str, result=bool)

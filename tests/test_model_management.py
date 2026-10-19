@@ -475,3 +475,32 @@ def test_active_model_pinned_to_top_and_llama33_url():
     # Model đầu tiên bắt buộc phải là active model
     assert models_list[0]["is_active"] is True
 
+
+def test_tc_mm_17_vram_cleanup_and_safe_hybrid_layers(tmp_path):
+    """Kiểm tra giải phóng VRAM khi đổi model và tính toán số layer an toàn cho GPU VRAM thấp."""
+    from app.controllers.model_controller import ModelController
+    from app.core.backends.llama_cpp_backend import LlamaCppBackend
+    from unittest.mock import MagicMock
+    # 1. Kiểm tra LlamaCppBackend.load_model giải phóng model cũ
+    backend = LlamaCppBackend()
+    backend._llm = MagicMock()
+    backend._current_model = "models/old_model.gguf"
+    
+    backend.unload_model()
+    assert backend._llm is None
+    assert backend._current_model == ""
+    # 2. Kiểm tra tính toán layer GPU an toàn cho RTX 3050 (4GB VRAM) khi nạp Gemma 2 9B
+    fake_gpu = {"has_gpu_hardware": True, "name": "RTX 3050", "vram_gb": 4.0}
+    controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True)
+    
+    mock_trans = MagicMock()
+    mock_trans.hardware_profile = {}
+    controller.bind_translation_controller(mock_trans)
+    
+    controller.selectActiveModel("translategemma-9b-q4_k_m")
+    prof = mock_trans.hardware_profile
+    # Với 4GB VRAM, số layer offload phải nằm trong khoảng an toàn (8 <= n_gpu_layers < 40)
+    assert 8 <= prof["n_gpu_layers"] <= 30
+    assert "CUDA Hybrid" in prof["backend_status"]
+
+

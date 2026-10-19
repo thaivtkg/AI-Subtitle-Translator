@@ -403,13 +403,19 @@ ToolBar {
                     }
 
                     AppButton {
+                        id: btnModelManager
                         objectName: "btnModelManager"
                         visible: centerCluster.width >= 160
+                        Layout.maximumWidth: 175
                         text: {
                             if (typeof modelController === "undefined") return "🔮 Qwen 2.5 3B ▼"
                             var name = modelController.activeModelDisplayName || "Mô hình AI"
-                            var shortName = name.replace(/\s+Instruct.*$/i, "").replace(/\s*\(.*\)$/, "").trim()
-                            if (centerCluster.width < 280) return "🔮 " + shortName.substring(0, 10) + " ▼"
+                            var shortName = name.split('/')[0].replace(/\s+(?:Instruct|Distill|Default|IT).*$/i, "").replace(/\s*\(.*\)$/, "").trim()
+                            if (centerCluster.width < 280) {
+                                if (shortName.length > 10) shortName = shortName.substring(0, 10) + "…"
+                            } else {
+                                if (shortName.length > 14) shortName = shortName.substring(0, 14) + "…"
+                            }
                             return "🔮 " + shortName + " ▼"
                         }
                         tooltip: typeof modelController !== "undefined"
