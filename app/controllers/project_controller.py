@@ -11,6 +11,7 @@ from app.core.entity_dictionary import EntityDictionary
 from app.core.translation_memory import TranslationMemory
 from app.core.context_analyzer import (
     ARCHETYPE_CUSTOM,
+    ARCHETYPE_ANIME_SCHOOL,
     DEFAULT_PRONOUNS,
     ARCHETYPE_METADATA,
     ContextAnalyzer,
@@ -50,6 +51,7 @@ class ProjectController(QObject):
         self._active_pronoun_pair = DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
         self._is_archetype_locked = False
         self.dismissed_auto_terms = set()
+        self._is_ja_origin = False
         if self._subtitle_model is not None:
             self._subtitle_model.dataChanged.connect(self._on_model_changed)
             self._subtitle_model.modelReset.connect(self.projectStateChanged.emit)
@@ -75,6 +77,10 @@ class ProjectController(QObject):
     @Property(bool, notify=archetypeChanged)
     def isArchetypeLocked(self):
         return self._is_archetype_locked
+
+    @Property(bool, notify=archetypeChanged)
+    def isJaOrigin(self) -> bool:
+        return getattr(self, "_is_ja_origin", False)
 
     @Property(str, notify=archetypeChanged)
     def archetypeDisplayLabel(self):
@@ -116,31 +122,56 @@ class ProjectController(QObject):
 
     @Slot(str)
     def analyzeSummary(self, summary_text: str):
-        if not summary_text or not summary_text.strip():
-            return
+        summary_clean = (summary_text or "").strip()
         terms_changed = False
-        extracted = ContextAnalyzer.extract_entities(summary_text)
-        for item in extracted:
-            src = item.get("source_term") or item.get("source", "")
-            target = item.get("preferred_translation") or item.get("target", src)
-            if not src:
-                continue
-            if src in self.dismissed_auto_terms:
-                continue
-            if self.glossary.get(src) is None:
-                self.glossary.add(src, target, (), is_auto=True)
-                terms_changed = True
+        if summary_clean:
+            extracted = ContextAnalyzer.extract_entities(summary_clean)
+            for item in extracted:
+                src = item.get("source_term") or item.get("source", "")
+                target = item.get("preferred_translation") or item.get("target", src)
+                if not src:
+                    continue
+                if src in self.dismissed_auto_terms:
+                    continue
+                if self.glossary.get(src) is None:
+                    self.glossary.add(src, target, (), is_auto=True)
+                    terms_changed = True
+
+        sample_subs = ""
+        if self._subtitle_model is not None and hasattr(self._subtitle_model, "get_all_data"):
+            all_subs = self._subtitle_model.get_all_data()[:30]
+            sample_subs = " ".join([
+                sub.get("original", "") if isinstance(sub, dict) else getattr(sub, "original", "")
+                for sub in all_subs
+            ])
+
+        ja_detection = ContextAnalyzer.detect_ja_translated_en(sample_subs, summary_clean)
+        old_is_ja = self._is_ja_origin
+        self._is_ja_origin = ja_detection.get("is_ja_origin", False)
 
         archetype_changed = False
         if not self._is_archetype_locked:
-            archetype_id, pronoun_pair = ContextAnalyzer.classify_archetype(summary_text)
+            if self._is_ja_origin and not summary_clean:
+                target_archetype = ARCHETYPE_ANIME_SCHOOL
+                target_pronouns = "Em - Tiền bối"
+            elif summary_clean:
+                target_archetype, target_pronouns = ContextAnalyzer.classify_archetype(summary_clean)
+                if self._is_ja_origin and target_archetype == ARCHETYPE_ANIME_SCHOOL:
+                    target_pronouns = "Em - Tiền bối"
+            else:
+                target_archetype = self._active_archetype
+                target_pronouns = self._active_pronoun_pair
+
             if (
-                archetype_id != self._active_archetype
-                or pronoun_pair != self._active_pronoun_pair
+                target_archetype != self._active_archetype
+                or target_pronouns != self._active_pronoun_pair
             ):
-                self._active_archetype = archetype_id
-                self._active_pronoun_pair = pronoun_pair
+                self._active_archetype = target_archetype
+                self._active_pronoun_pair = target_pronouns
                 archetype_changed = True
+
+        if old_is_ja != self._is_ja_origin:
+            archetype_changed = True
 
         if terms_changed:
             self.glossaryChanged.emit()
@@ -229,6 +260,26 @@ class ProjectController(QObject):
         # 2. Reset trạng thái giao diện để tránh kẹt dữ liệu cũ
         self.projectLoaded.emit("")          # Xóa Story Summary cũ
         self.languageLoaded.emit("English") # Đưa dropdown về mặc định
+
+        # 3. Quét 30 câu phụ đề đầu tiên nhận diện dấu vết tiếng Nhật & gợi ý thể loại nếu chưa khóa
+        sample_subs = " ".join([
+            str(sub.get("original", "")) for sub in parsed_data[:30] if isinstance(sub, dict)
+        ])
+        ja_detection = ContextAnalyzer.detect_ja_translated_en(sample_subs, "")
+        old_is_ja = self._is_ja_origin
+        self._is_ja_origin = ja_detection.get("is_ja_origin", False)
+        archetype_changed = False
+        if not self._is_archetype_locked:
+            if self._is_ja_origin:
+                if self._active_archetype != ARCHETYPE_ANIME_SCHOOL or self._active_pronoun_pair != "Em - Tiền bối":
+                    self._active_archetype = ARCHETYPE_ANIME_SCHOOL
+                    self._active_pronoun_pair = "Em - Tiền bối"
+                    archetype_changed = True
+        if old_is_ja != self._is_ja_origin:
+            archetype_changed = True
+        if archetype_changed:
+            self.archetypeChanged.emit()
+
         self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT: {self._original_source_file}")
 
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
@@ -254,11 +305,13 @@ class ProjectController(QObject):
             or self._is_archetype_locked
             or bool(self.dismissed_auto_terms)
             or self._active_pronoun_pair != DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
+            or self._is_ja_origin
         ):
             intelligence["archetype"] = self._active_archetype
             intelligence["pronoun_pair"] = self._active_pronoun_pair
             intelligence["is_archetype_locked"] = self._is_archetype_locked
             intelligence["dismissed_auto_terms"] = list(self.dismissed_auto_terms)
+            intelligence["is_ja_origin"] = self._is_ja_origin
 
         data = {
             "metadata": {
@@ -333,11 +386,13 @@ class ProjectController(QObject):
                 )
                 loaded_locked = bool(intelligence.get("is_archetype_locked", False))
                 loaded_dismissed = set(intelligence.get("dismissed_auto_terms", []))
+                loaded_is_ja = bool(intelligence.get("is_ja_origin", False))
             else:
                 loaded_archetype = ARCHETYPE_CUSTOM
                 loaded_pronoun = DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
                 loaded_locked = False
                 loaded_dismissed = set()
+                loaded_is_ja = False
 
             subtitles = data.get("subtitles", [])
             self._subtitle_model.load_data(subtitles)
@@ -348,6 +403,7 @@ class ProjectController(QObject):
             self._active_pronoun_pair = loaded_pronoun
             self._is_archetype_locked = loaded_locked
             self.dismissed_auto_terms = loaded_dismissed
+            self._is_ja_origin = loaded_is_ja
             self.archetypeChanged.emit()
             self.glossaryChanged.emit()
             print(f"[PROJECT_LOAD] Loaded {len(subtitles)} subtitles from {os.path.basename(file_path)}")

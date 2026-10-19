@@ -19,7 +19,7 @@ ARCHETYPE_CUSTOM = "custom"
 # --- Default Pronoun Pair Mappings ---
 DEFAULT_PRONOUNS: dict[str, str] = {
     ARCHETYPE_ANCIENT_FANTASY: "Ta - Ngươi",
-    ARCHETYPE_ANIME_SCHOOL: "Tớ - Cậu",
+    ARCHETYPE_ANIME_SCHOOL: "Em - Tiền bối",
     ARCHETYPE_MODERN_ACTION: "Tôi - Bạn",
     ARCHETYPE_ROMANCE_FAMILY: "Anh - Em",
     ARCHETYPE_CUSTOM: "Tự do (Theo ngữ cảnh)",
@@ -36,7 +36,7 @@ ARCHETYPE_METADATA: dict[str, dict[str, Any]] = {
     ARCHETYPE_ANIME_SCHOOL: {
         "id": ARCHETYPE_ANIME_SCHOOL,
         "name": "Anime / Học Đường",
-        "pronouns": "Tớ - Cậu",
+        "pronouns": "Em - Tiền bối",
         "icon": "🌸",
     },
     ARCHETYPE_MODERN_ACTION: {
@@ -109,6 +109,65 @@ TECH_KEYWORDS: list[str] = [
     "lập trình", "lập trình viên", "bug", "code", "máy tính", "server", "hệ thống máy tính",
     "tin học", "phần mềm", "source code", "developer", "cntt", "it",
 ]
+
+# --- Bảng Nhận Diện Phụ Đề Tiếng Anh Dịch Từ Tiếng Nhật (EN translated from JA) ---
+JA_SOURCE_INDICATORS = {
+    "romaji_honorifics": [
+        "senpai", "kouhai", "sensei", "aniki", "sama", "dono",
+        "onii-san", "onii-chan", "onee-san", "onee-chan", "shishou"
+    ],
+    "anime_keywords": [
+        "anime", "manga", "otaku", "kaijin", "witch", "magic girl", "isekai"
+    ]
+}
+# 1. Bắt kính ngữ tiếng Nhật có gạch nối trong tiếng Anh (VD: Tanaka-senpai, Sakura-chan)
+JA_HONORIFIC_SUFFIX_REGEX = re.compile(
+    r"\b[A-Za-z0-9]+-(?:senpai|kouhai|sensei|san|kun|chan|sama|dono)\b", 
+    re.IGNORECASE
+)
+# 2. Bắt Romaji đứng độc lập
+JA_STANDALONE_HONORIFIC_REGEX = re.compile(
+    r"\b(senpai|kouhai|sensei|aniki|shishou|onii-chan|onee-chan|onii-san|onee-san)\b",
+    re.IGNORECASE
+)
+# 3. Bắt đại từ "senior/seniors" dùng làm danh xưng anime (thay thế cho 先輩)
+JA_ANIME_SENIOR_ADDRESS_REGEX = re.compile(
+    r"(?:\b(?:my favorite|good|dear)\s+seniors?\b|,\s*seniors?\b|\bsenior\s*,|\bsenior\s+touched\b|\bsenior\s*,\s*are\b)",
+    re.IGNORECASE
+)
+
+
+def detect_ja_translated_en(subtitles_text_sample: str, summary: str = "") -> dict[str, Any]:
+    """
+    Phát hiện phụ đề tiếng Anh có phải được dịch từ tiếng Nhật hay không
+    dựa trên Romaji honorifics, hậu tố gạch nối và hiện tượng 'senior/seniors' làm đại xưng hô.
+    """
+    sample = f"{subtitles_text_sample}\n{summary}"
+    sample_lower = sample.lower()
+    clues: list[str] = []
+    # 1. Quét kính ngữ Romaji độc lập
+    for term in JA_SOURCE_INDICATORS["romaji_honorifics"]:
+        if re.search(rf"\b{re.escape(term)}\b", sample_lower):
+            clues.append(f"romaji:{term}")
+    # 2. Quét kính ngữ có gạch nối
+    suffix_matches = JA_HONORIFIC_SUFFIX_REGEX.findall(sample)
+    if suffix_matches:
+        clues.extend([f"suffix:{m}" for m in suffix_matches[:3]])
+    # 3. Quét đại từ xưng hô "senior/seniors"
+    senior_matches = JA_ANIME_SENIOR_ADDRESS_REGEX.findall(sample)
+    if senior_matches:
+        clues.append("anime_senior_address")
+    # 4. Quét từ khóa thể loại anime
+    for kw in JA_SOURCE_INDICATORS["anime_keywords"]:
+        if re.search(rf"\b{re.escape(kw)}\b", sample_lower):
+            clues.append(f"anime_kw:{kw}")
+    is_ja = len(clues) > 0
+    confidence = min(1.0, len(clues) * 0.3) if is_ja else 0.0
+    return {
+        "is_ja_origin": is_ja,
+        "confidence": confidence,
+        "matched_clues": list(set(clues))
+    }
 
 
 def extract_entities(text: str, source_lang: str = "") -> list[dict[str, Any]]:
@@ -242,3 +301,7 @@ class ContextAnalyzer:
     @staticmethod
     def analyze_context(text: str, source_lang: str = "") -> dict[str, Any]:
         return analyze_context(text, source_lang)
+
+    @staticmethod
+    def detect_ja_translated_en(subtitles_text_sample: str, summary: str = "") -> dict[str, Any]:
+        return detect_ja_translated_en(subtitles_text_sample, summary)

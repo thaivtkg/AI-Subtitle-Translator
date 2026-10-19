@@ -43,12 +43,12 @@ def test_project_controller_summary_analysis_and_dismissal():
     ctrl.selectArchetype(ARCHETYPE_ANIME_SCHOOL, manual_lock=True)
     assert ctrl.isArchetypeLocked is True
     assert ctrl.activeArchetype == ARCHETYPE_ANIME_SCHOOL
-    assert ctrl.activePronounPair == "Tớ - Cậu"
+    assert ctrl.activePronounPair == "Em - Tiền bối"
 
     # Tóm tắt mới không được ghi đè thể loại đã khóa
     ctrl.analyzeSummary("Phim cổ trang kiếm hiệp khác")
     assert ctrl.activeArchetype == ARCHETYPE_ANIME_SCHOOL
-    assert ctrl.activePronounPair == "Tớ - Cậu"
+    assert ctrl.activePronounPair == "Em - Tiền bối"
 
 
 def test_project_controller_save_and_load_persistence():

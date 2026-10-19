@@ -235,6 +235,11 @@ class TranslationController(QObject):
             if self._project_controller
             else ""
         )
+        is_ja = (
+            getattr(self._project_controller, "isJaOrigin", False)
+            if self._project_controller
+            else False
+        )
         prompt = PromptBuilder.build(
             story_summary,
             source_lang,
@@ -245,6 +250,7 @@ class TranslationController(QObject):
             glossary_hits=tuple(enriched_glossary_hits),
             entity_hits=tuple(entity_hits),
             active_pronoun_pair=active_pronoun,
+            is_ja_origin=is_ja,
         )
 
         if hasattr(self._worker_factory, "create_worker"):

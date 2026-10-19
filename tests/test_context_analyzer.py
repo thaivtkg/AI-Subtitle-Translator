@@ -16,7 +16,7 @@ from app.core.context_analyzer import (
 def test_archetype_constants_and_metadata():
     assert len(ARCHETYPE_METADATA) == 5
     assert DEFAULT_PRONOUNS[ARCHETYPE_ANCIENT_FANTASY] == "Ta - Ngươi"
-    assert DEFAULT_PRONOUNS[ARCHETYPE_ANIME_SCHOOL] == "Tớ - Cậu"
+    assert DEFAULT_PRONOUNS[ARCHETYPE_ANIME_SCHOOL] == "Em - Tiền bối"
     assert DEFAULT_PRONOUNS[ARCHETYPE_MODERN_ACTION] == "Tôi - Bạn"
     assert DEFAULT_PRONOUNS[ARCHETYPE_ROMANCE_FAMILY] == "Anh - Em"
     assert DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM] == "Tự do (Theo ngữ cảnh)"
@@ -94,7 +94,7 @@ def test_classify_anime_school():
     text = "Câu chuyện học đường thanh xuân về nữ sinh tham gia clb anime cùng senpai."
     archetype, pronouns = classify_archetype(text)
     assert archetype == ARCHETYPE_ANIME_SCHOOL
-    assert pronouns == "Tớ - Cậu"
+    assert pronouns == "Em - Tiền bối"
 
 
 def test_classify_modern_action():

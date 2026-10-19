@@ -78,11 +78,11 @@ def test_project_controller_select_archetype_and_locking(harness):
     driver.wait_until(
         lambda: harness.project_controller.activeArchetype == ARCHETYPE_ANIME_SCHOOL
     )
-    assert harness.project_controller.activePronounPair == "Tớ - Cậu"
+    assert harness.project_controller.activePronounPair == "Em - Tiền bối"
     assert harness.project_controller.isArchetypeLocked is True
 
     # Kiểm tra UI Tab 2 phản ánh chính xác
-    assert driver.text("activePronounDisplay") == "Tớ - Cậu"
+    assert driver.text("activePronounDisplay") == "Em - Tiền bối"
     assert "Đã khóa" in driver.text("statusBadgeText")
     btn_unlock = driver.find("btnUnlockArchetype")
     assert btn_unlock.property("visible") is True
