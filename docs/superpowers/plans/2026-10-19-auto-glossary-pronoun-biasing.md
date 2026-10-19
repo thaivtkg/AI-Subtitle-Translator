@@ -209,24 +209,28 @@ git commit -m "feat(core): enhance ContextEngine dialogue continuity, PromptBuil
 
 ---
 
-### Task 3: Controller State Management & Persistence (`ProjectController` & `TranslationController`)
+### Task 3: Controller State Management & Persistence (`ProjectController`, `TranslationController` & `Glossary`)
 
 **Files:**
+- Modify: `app/core/glossary.py`
 - Modify: `app/controllers/project_controller.py`
 - Modify: `app/controllers/translation_controller.py`
 - Create: `tests/test_project_intelligence_controller.py`
 
 **Interfaces:**
 - Produces:
+  - `GlossaryEntry.is_auto: bool = False` (with backward-compatible `_coerce_entry`, `from_payload`, and `to_payload`)
   - `ProjectController.activeArchetype: str` (Q_PROPERTY)
   - `ProjectController.activePronounPair: str` (Q_PROPERTY)
   - `ProjectController.isArchetypeLocked: bool` (Q_PROPERTY)
   - `ProjectController.archetypeDisplayLabel: str` (Q_PROPERTY)
   - `ProjectController.archetypeList: list[dict]` (Q_PROPERTY)
+  - `ProjectController.glossaryTerms: list[dict]` (Q_PROPERTY, notify `glossaryChanged`)
+  - `ProjectController.glossaryChanged: Signal()`
   - `ProjectController.analyzeSummary(summary_text: str)` (Slot)
   - `ProjectController.selectArchetype(archetype_id: str, manual_lock: bool = True)` (Slot)
   - `ProjectController.dismissAutoTerm(source_term: str)` (Slot)
-  - `TranslationController` consumes `active_pronoun_pair` when calling `PromptBuilder.build`.
+  - `TranslationController.bind_intelligence(..., project_controller=None)` consumes `active_pronoun_pair` when calling `PromptBuilder.build`.
 
 - [ ] **Step 1: Write failing controller test in `tests/test_project_intelligence_controller.py`**
 
@@ -237,7 +241,7 @@ from app.controllers.project_controller import ProjectController
 from app.core.context_analyzer import ARCHETYPE_ANCIENT_FANTASY, ARCHETYPE_ANIME_SCHOOL
 
 def test_project_controller_summary_analysis_and_dismissal():
-    ctrl = ProjectController()
+    ctrl = ProjectController(subtitle_model=MagicMock())
     
     # 1. Analyze summary
     ctrl.analyzeSummary("Phim cổ trang kiếm hiệp, nhân vật \"Lăng Ba\": Khinh công")
@@ -249,6 +253,7 @@ def test_project_controller_summary_analysis_and_dismissal():
     assert glossary is not None
     assert glossary.get("Lăng Ba") is not None
     assert glossary.get("Lăng Ba").is_auto is True
+    assert any(term["source_term"] == "Lăng Ba" and term["is_auto"] is True for term in ctrl.glossaryTerms)
 
     # 3. Dismiss auto term
     ctrl.dismissAutoTerm("Lăng Ba")
@@ -277,13 +282,23 @@ Expected: FAIL
 
 - [ ] **Step 3: Implement controller state, persistence in `.aisrt`, and slots**
 
+Update `app/core/glossary.py`:
+- Add `is_auto: bool = False` to `GlossaryEntry`.
+- Support 3 or 4-element tuples in `_coerce_entry(raw_entry)`.
+- Update `add`, `update`, `from_payload`, and `to_payload()` maintaining full backwards compatibility.
+
 Update `ProjectController`:
-- Add properties, `analyzeSummary`, `selectArchetype`, `dismissAutoTerm`.
+- Support optional `subtitle_model=None` with safe signal connection.
+- Add properties `activeArchetype`, `activePronounPair`, `isArchetypeLocked`, `archetypeDisplayLabel`, `archetypeList`, `glossaryTerms`.
+- Add `glossaryChanged = Signal()`, emitting whenever glossary updates or terms are dismissed.
+- Add `analyzeSummary`, `selectArchetype`, `dismissAutoTerm`.
 - Add `dismissed_auto_terms = set()`.
 - Add `active_archetype` and `active_pronoun_pair` to `saveProject` / `loadProject` `.aisrt` JSON.
+
 Update `TranslationController`:
+- Update `bind_intelligence(..., project_controller=None)` storing `self._project_controller`.
 - Pass `active_pronoun_pair` from `ProjectController` to `PromptBuilder.build(...)`.
-- Add regex sanitizer in `on_finished` stripping leading `[Line \d+]:`.
+- Add regex sanitizer in `on_finished` stripping leading `r'^\[Line \d+\]:\s*'`.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -293,7 +308,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/controllers/project_controller.py app/controllers/translation_controller.py tests/test_project_intelligence_controller.py
+git add app/core/glossary.py app/controllers/project_controller.py app/controllers/translation_controller.py tests/test_project_intelligence_controller.py
 git commit -m "feat(controller): implement archetype state, auto-glossary management, and .aisrt persistence"
 ```
 
@@ -304,7 +319,7 @@ git commit -m "feat(controller): implement archetype state, auto-glossary manage
 **Files:**
 - Modify: `ui/qml/components/TranslationWorkspace.qml:45-85`
 - Modify: `ui/qml/components/ContextInspector.qml:385-450, 465-545`
-- Modify: `tests/e2e/test_batch_ui.py` or new UI test
+- Create: `tests/e2e/test_archetype_ui.py`
 
 **Interfaces:**
 - Consumes: Controller properties and slots from Task 3.
@@ -322,6 +337,11 @@ from PySide6.QtCore import QCoreApplication
 
 def test_archetype_capsule_and_summary_debounce():
     h = AppHarness(None)
+    # Load 1 sample subtitle row and select it so hasSelection becomes True
+    h.model.load_data([
+        {"id": 1, "start_time": "00:00:01,000", "end_time": "00:00:03,000", "original": "Hello", "translation": "", "status": "PENDING"}
+    ])
+    h.translation_controller.loadSubtitle(0)
     h.window.show()
     [QCoreApplication.processEvents() for _ in range(5)]
 
