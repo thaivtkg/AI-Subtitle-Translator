@@ -4,19 +4,20 @@ class ContextEngine:
         prev_ctx = []
         next_ctx = []
         
-        # Lấy 3 câu trước (PREVIOUS)
+        # Lấy tối đa 3 câu trước (PREVIOUS)
         start_prev = max(0, current_index - 3)
         for i in range(start_prev, current_index):
             sub = subtitles[i]
-            # FIX BUG: Ép kiểu và chuyển In Hoa để so sánh tuyệt đối an toàn
             status = str(sub.get("status", "")).strip().upper()
+            translation = str(sub.get("translation", "")).strip()
             
-            if status == "ACCEPTED":
-                prev_ctx.append(sub.get("translation", ""))
+            # Đồng bộ hội thoại: Sử dụng bản dịch nếu câu đã duyệt, đã dịch hoặc đã sửa
+            if status in ("ACCEPTED", "TRANSLATED", "EDITED") and translation:
+                prev_ctx.append(translation)
             else:
                 prev_ctx.append(sub.get("original", ""))
                 
-        # Lấy 3 câu sau (NEXT - Luôn dùng Original vì tương lai chưa được duyệt)
+        # Lấy tối đa 3 câu sau (NEXT - Luôn dùng Original vì tương lai chưa dịch/duyệt)
         end_next = min(len(subtitles), current_index + 4)
         for i in range(current_index + 1, end_next):
             sub = subtitles[i]
