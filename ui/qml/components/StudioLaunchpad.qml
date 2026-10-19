@@ -22,7 +22,7 @@ Item {
             var hasValid = false
             for (var i = 0; i < drag.urls.length; i++) {
                 var url = drag.urls[i].toString().toLowerCase()
-                if (url.endsWith(".srt") || url.endsWith(".aisrt") || url.endsWith(".mp4")) {
+                if (url.endsWith(".srt") || url.endsWith(".aisrt")) {
                     hasValid = true
                     break
                 }
@@ -189,13 +189,13 @@ Item {
 
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    text: dropArea.containsDrag ? "Thả tệp vào đây ngay!" : "Kéo thả file vào đây hoặc Click để nạp dữ liệu mẫu"
+                    text: dropArea.containsDrag ? "Thả tệp vào đây ngay!" : "Kéo thả file vào đây hoặc Click để nạp phụ đề"
                     font.pixelSize: 14
                     font.bold: true
                     color: Theme.textOnLightPod
                 }
 
-                // Extension format pills (.SRT, .AISRT, .MP4)
+                // Extension format pills: .SRT và .AISRT
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter
                     spacing: 8
@@ -214,13 +214,6 @@ Item {
                         color: Qt.rgba(0.0, 0.4, 1.0, 0.12)
                         Text { anchors.centerIn: parent; text: ".AISRT"; color: "#0066FF"; font.pixelSize: 11; font.bold: true }
                     }
-                    Rectangle {
-                        implicitWidth: 48
-                        implicitHeight: 22
-                        radius: 6
-                        color: Qt.rgba(0.0, 0.4, 1.0, 0.12)
-                        Text { anchors.centerIn: parent; text: ".MP4"; color: "#0066FF"; font.pixelSize: 11; font.bold: true }
-                    }
                 }
             }
 
@@ -229,68 +222,6 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: launchpadRoot.openSrtClicked()
-            }
-        }
-
-        Item { Layout.preferredHeight: 4 }
-
-        // 4. ACTION BUTTONS ROW (EXACT MATCHING DESIGN)
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 16
-
-            // Button 1: ✨ Mở Dự Án Mẫu (Demo)
-            Button {
-                id: btnDemoProject
-                implicitWidth: 210
-                implicitHeight: 42
-                contentItem: Text {
-                    text: "✨ Mở Dự Án Mẫu (Demo)"
-                    color: "#FFFFFF"
-                    font.pixelSize: 13
-                    font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    radius: 21
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: btnDemoProject.pressed ? "#0052CC" : (btnDemoProject.hovered ? "#1A75FF" : "#0066FF") }
-                        GradientStop { position: 1.0; color: btnDemoProject.pressed ? "#026AA2" : (btnDemoProject.hovered ? "#0EA5E9" : "#0284C7") }
-                    }
-                    border.color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
-                    border.width: 1
-                }
-                onClicked: {
-                    if (typeof projectController !== "undefined" && typeof projectController.loadSampleProject === "function") {
-                        projectController.loadSampleProject()
-                    } else {
-                        launchpadRoot.openSrtClicked()
-                    }
-                }
-            }
-
-            // Button 2: 📁 Chọn File Từ Máy Tính
-            Button {
-                id: btnBrowseFile
-                implicitWidth: 200
-                implicitHeight: 42
-                contentItem: Text {
-                    text: "📁 Chọn File Từ Máy Tính"
-                    color: "#0F172A"
-                    font.pixelSize: 13
-                    font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    radius: 21
-                    color: btnBrowseFile.pressed ? Qt.rgba(1.0, 1.0, 1.0, 0.65) : (btnBrowseFile.hovered ? Qt.rgba(1.0, 1.0, 1.0, 0.90) : Qt.rgba(1.0, 1.0, 1.0, 0.78))
-                    border.color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
-                    border.width: 1
-                }
                 onClicked: launchpadRoot.openSrtClicked()
             }
         }

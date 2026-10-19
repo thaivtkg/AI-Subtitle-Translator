@@ -242,9 +242,13 @@ ToolBar {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
                 z: 10
+                // ẨN TOÀN BỘ KHI Ở MÀN HÌNH KHỞI ĐỘNG
+                visible: root.hasProject
 
+                // Ẩn Mở SRT và Đóng khỏi thanh Header để chống chật chội
                 AppButton {
                     objectName: "btnOpenSrt"
+                    visible: false
                     text: root.isCompact ? "SRT" : "📁 Mở SRT"
                     tooltip: "Mở hoặc đổi file SRT khác — Ctrl + O"
                     enabled: !root.projectMutationLocked
@@ -253,7 +257,7 @@ ToolBar {
                 AppButton {
                     id: btnCloseProject
                     objectName: "btnCloseProject"
-                    visible: root.hasProject
+                    visible: false
                     text: root.isCompact ? "⌂" : "⌂ Đóng & Khởi động"
                     tooltip: "Đóng file phụ đề hiện tại và quay về màn hình khởi động — Ctrl + W"
                     isPrimary: false
@@ -270,6 +274,7 @@ ToolBar {
                     onClicked: root.openProjectClicked()
                 }
 
+                // CHỈ HIỂN THỊ 2 NÚT THỰC THI CHÍNH KHI ĐANG DỊCH
                 HeaderBatchControl {
                     id: headerBatch
                     visible: true
@@ -318,7 +323,7 @@ ToolBar {
 
                     Rectangle {
                         id: langCapsule
-                        visible: centerCluster.width >= 120
+                        visible: root.hasProject && centerCluster.width >= 120
                         implicitHeight: 26
                         implicitWidth: langContent.implicitWidth + 20
                         radius: 13
@@ -417,7 +422,7 @@ ToolBar {
                     AppButton {
                         id: btnModelManager
                         objectName: "btnModelManager"
-                        visible: centerCluster.width >= 160
+                        visible: centerCluster.width >= 140
                         Layout.maximumWidth: 175
                         text: {
                             if (typeof modelController === "undefined") return "🔮 Qwen 2.5 3B ▼"

@@ -254,7 +254,23 @@ ApplicationWindow {
         parent: Overlay.overlay
         z: 99999
     }
-    FileDialog { id: importSrtDialog; title: "Chọn file SRT gốc"; nameFilters: ["Subtitle files (*.srt)"]; onAccepted: projectController.importSrt(selectedFile) }
+    FileDialog {
+        id: importSrtDialog
+        title: "Chọn file phụ đề hoặc dự án"
+        nameFilters: [
+            "Tất cả định dạng phụ đề (*.srt *.aisrt)",
+            "File phụ đề SRT (*.srt)",
+            "File dự án AISRT (*.aisrt)"
+        ]
+        onAccepted: {
+            var path = selectedFile.toString().toLowerCase()
+            if (path.endsWith(".aisrt")) {
+                projectController.loadProject(selectedFile)
+            } else {
+                projectController.importSrt(selectedFile)
+            }
+        }
+    }
     FileDialog { id: loadProjectDialog; title: "Mở file dự án"; nameFilters: ["AI Subtitle Project (*.aisrt)"]; onAccepted: projectController.loadProject(selectedFile) }
 
     FileDialog {

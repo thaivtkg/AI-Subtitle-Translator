@@ -522,4 +522,21 @@ def test_tc_mm_18_realtime_vram_telemetry(tmp_path):
     assert controller.vramTotal > 0.0 or controller.vramTotal == -1.0
 
 
+def test_tc_mm_19_minimalist_launchpad_and_unified_file_dialog():
+    """Kiểm tra màn hình khởi động tinh gọn và hộp thoại hỗ trợ cả .srt lẫn .aisrt."""
+    with open("ui/qml/components/StudioLaunchpad.qml", "r", encoding="utf-8") as f:
+        launchpad_code = f.read()
+    # 1. Xác nhận đã đổi text và xóa 2 nút mẫu / duyệt file
+    assert "Kéo thả file vào đây hoặc Click để nạp phụ đề" in launchpad_code
+    assert "btnDemoProject" not in launchpad_code
+    assert "btnBrowseFile" not in launchpad_code
+    assert ".MP4" not in launchpad_code
+    # 2. Xác nhận hộp thoại Main.qml hỗ trợ cả .srt và .aisrt
+    with open("ui/qml/Main.qml", "r", encoding="utf-8") as f:
+        main_code = f.read()
+    assert "*.srt *.aisrt" in main_code
+    assert "loadProject" in main_code
+
+
+
 
