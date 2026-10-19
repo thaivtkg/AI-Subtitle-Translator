@@ -231,8 +231,8 @@ ApplicationWindow {
                 engineStatus: {
                     return translationController.engineStatus
                 }
-                vramUsed: typeof translationController.vramUsed !== "undefined" ? translationController.vramUsed : -1.0
-                vramTotal: typeof translationController.vramTotal !== "undefined" ? translationController.vramTotal : -1.0
+                vramUsed: typeof modelController !== "undefined" ? modelController.vramUsed : -1.0
+                vramTotal: typeof modelController !== "undefined" ? modelController.vramTotal : -1.0
                 gpuName: typeof modelController !== "undefined" && modelController.hardwareSummary ? modelController.hardwareSummary.gpu_name : ""
                 backendStatus: typeof modelController !== "undefined" && modelController.hardwareSummary ? modelController.hardwareSummary.backend_status : ""
             }

@@ -1,4 +1,4 @@
-import QtQuick 2.15
+import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "../theme"
@@ -111,19 +111,26 @@ Item {
             RowLayout {
                 spacing: 12
 
+                FrameAnimation {
+                    id: frameAnim
+                    running: true
+                }
+
                 Text {
                     objectName: "vramStatusText"
                     id: vramText
                     text: (root.vramTotal > 0 && root.vramUsed >= 0)
                           ? ("Bộ nhớ VRAM: " + root.vramUsed.toFixed(1) + " / " + root.vramTotal.toFixed(1) + " GB")
-                          : "Bộ nhớ VRAM: 1.4 / 16.0 GB"
+                          : (root.vramTotal > 0
+                             ? ("Bộ nhớ VRAM: " + root.vramTotal.toFixed(1) + " GB")
+                             : "Bộ nhớ: RAM hệ thống")
                     color: Qt.rgba(1, 1, 1, 0.85)
                     font.pixelSize: 11
                     font.bold: true
                 }
 
                 Text {
-                    text: "FPS: 60.0"
+                    text: "FPS: " + (frameAnim.smoothFrameRate > 0 ? frameAnim.smoothFrameRate.toFixed(1) : "60.0")
                     color: Qt.rgba(1, 1, 1, 0.85)
                     font.pixelSize: 11
                     font.bold: true

@@ -1,6 +1,6 @@
 import os
 from typing import Dict, List, Optional
-from PySide6.QtCore import QObject, Property, Signal, Slot
+from PySide6.QtCore import QObject, Property, Signal, Slot, QTimer
 
 from app.core.app_settings import AppSettings
 from app.core.hardware_detector import HardwareDetector
@@ -20,6 +20,7 @@ class ModelController(QObject):
     downloadFinished = Signal(str)                 # model_id
     downloadFailed = Signal(str, str)              # model_id, error_message
     notify = Signal(str, str)                      # type, message
+    vramChanged = Signal()
 
     def __init__(
         self,
@@ -47,6 +48,16 @@ class ModelController(QObject):
         # Thông tin phần cứng
         self._gpu_info = gpu_info if gpu_info is not None else HardwareDetector.get_gpu_info()
         self._llama_has_cuda = llama_has_cuda if llama_has_cuda is not None else HardwareDetector.check_llama_cuda_backend()
+
+        # Giám sát VRAM thời gian thực
+        self._vram_used = -1.0
+        self._vram_total = -1.0
+        if self._gpu_info.get("has_gpu_hardware"):
+            self._update_vram_usage()
+            self._vram_timer = QTimer(self)
+            self._vram_timer.setInterval(2000)
+            self._vram_timer.timeout.connect(self._update_vram_usage)
+            self._vram_timer.start()
 
         # Kết nối sự kiện DownloadManager
         self._download_manager.downloadProgress.connect(self._on_download_progress)
@@ -148,6 +159,23 @@ class ModelController(QObject):
             "has_cuda": self._llama_has_cuda,
             "backend_status": "CUDA Acceleration" if self._llama_has_cuda else "CPU Only",
         }
+
+    @Slot()
+    def _update_vram_usage(self) -> None:
+        used, total = HardwareDetector.get_vram_usage()
+        if used >= 0 and total > 0:
+            if self._vram_used != used or self._vram_total != total:
+                self._vram_used = used
+                self._vram_total = total
+                self.vramChanged.emit()
+
+    @Property(float, notify=vramChanged)
+    def vramUsed(self) -> float:
+        return self._vram_used
+
+    @Property(float, notify=vramChanged)
+    def vramTotal(self) -> float:
+        return self._vram_total
 
     @Property("QVariantList", notify=modelListChanged)
     def models(self) -> list:

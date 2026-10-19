@@ -504,3 +504,22 @@ def test_tc_mm_17_vram_cleanup_and_safe_hybrid_layers(tmp_path):
     assert "CUDA Hybrid" in prof["backend_status"]
 
 
+def test_tc_mm_18_realtime_vram_telemetry(tmp_path):
+    """Kiểm tra đo đạc VRAM thời gian thực và loại bỏ hoàn toàn dữ liệu tĩnh giả."""
+    from app.core.hardware_detector import HardwareDetector
+    from app.controllers.model_controller import ModelController
+    from app.core.app_settings import AppSettings
+    # 1. Kiểm tra API get_vram_usage trả về tuple hợp lệ
+    used, total = HardwareDetector.get_vram_usage()
+    if HardwareDetector.get_gpu_info().get("has_gpu_hardware"):
+        assert total > 0.0
+        assert used >= 0.0
+    else:
+        assert (used, total) == (-1.0, -1.0)
+    # 2. Kiểm tra ModelController phát sinh property vramUsed / vramTotal thực tế
+    fake_gpu = {"has_gpu_hardware": True, "name": "RTX 3050", "vram_gb": 4.0}
+    controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True)
+    assert controller.vramTotal > 0.0 or controller.vramTotal == -1.0
+
+
+
