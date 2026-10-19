@@ -80,8 +80,35 @@ ColumnLayout {
             ? Math.max(0, Math.min(tabCount - 1, Math.floor((pillDragX + baseTabWidth / 2 - 3) / baseTabWidth)))
             : contextTabs.currentIndex
 
-        Behavior on fluidScaleX { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
-        Behavior on fluidScaleY { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+        Behavior on fluidScaleX { enabled: !tabSquashImpulse.running; NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+        Behavior on fluidScaleY { enabled: !tabSquashImpulse.running; NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+
+        // Bắt sự kiện đổi tab (do Click hoặc gọi lệnh)
+        Connections {
+            target: contextTabs
+            function onCurrentIndexChanged() {
+                if (!tabOuterContainer.isDragging) {
+                    tabSquashImpulse.restart()
+                }
+            }
+        }
+
+        // Chuỗi xung lực biến dạng giọt nước: Phóng dãn -> Đập dẹt -> Nảy về ban đầu
+        SequentialAnimation {
+            id: tabSquashImpulse
+            ParallelAnimation {
+                NumberAnimation { target: tabOuterContainer; property: "fluidScaleX"; to: 1.15; duration: 90; easing.type: Easing.OutQuad }
+                NumberAnimation { target: tabOuterContainer; property: "fluidScaleY"; to: 0.88; duration: 90; easing.type: Easing.OutQuad }
+            }
+            ParallelAnimation {
+                NumberAnimation { target: tabOuterContainer; property: "fluidScaleX"; to: 0.94; duration: 110; easing.type: Easing.InOutQuad }
+                NumberAnimation { target: tabOuterContainer; property: "fluidScaleY"; to: 1.04; duration: 110; easing.type: Easing.InOutQuad }
+            }
+            ParallelAnimation {
+                NumberAnimation { target: tabOuterContainer; property: "fluidScaleX"; to: 1.0; duration: 100; easing.type: Easing.OutBack }
+                NumberAnimation { target: tabOuterContainer; property: "fluidScaleY"; to: 1.0; duration: 100; easing.type: Easing.OutBack }
+            }
+        }
 
         // SLIDING LIQUID PILL (E:\Liquid Effect.mp4)
         Rectangle {
@@ -124,9 +151,9 @@ ColumnLayout {
             Behavior on x {
                 enabled: !tabOuterContainer.isDragging
                 SpringAnimation {
-                    spring: 4.5
-                    damping: 0.42
-                    epsilon: 0.15
+                    spring: 3.4
+                    damping: 0.28
+                    epsilon: 0.05
                 }
             }
         }

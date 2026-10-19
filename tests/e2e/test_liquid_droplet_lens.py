@@ -32,6 +32,14 @@ def harness_lens():
     harness.close()
 
 
+def pump_events(duration_sec: float = 0.25):
+    import time
+    start = time.perf_counter()
+    while time.perf_counter() - start < duration_sec:
+        QCoreApplication.processEvents()
+        time.sleep(0.01)
+
+
 def test_ac01_droplet_lens_structure_and_tracking(harness_lens):
     """AC-01: subDropletLens được gán vào contentItem và bám sát currentItem."""
     driver = harness_lens.driver
@@ -48,19 +56,11 @@ def test_ac01_droplet_lens_structure_and_tracking(harness_lens):
 
     # Khi đổi currentIndex sang 2, subDropletLens cập nhật targetY
     sub_list.setProperty("currentIndex", 2)
-    QCoreApplication.processEvents()
+    pump_events(0.35)
 
     cur_item = sub_list.property("currentItem")
     assert cur_item is not None
     assert sub_lens.property("targetY") == cur_item.property("y") + 4
-
-
-def pump_events(duration_sec: float = 0.25):
-    import time
-    start = time.perf_counter()
-    while time.perf_counter() - start < duration_sec:
-        QCoreApplication.processEvents()
-        time.sleep(0.01)
 
 
 def test_ac02_droplet_lens_clamping_and_drag_state(harness_lens):
@@ -70,6 +70,7 @@ def test_ac02_droplet_lens_clamping_and_drag_state(harness_lens):
     sub_lens = driver.find("subDropletLens")
     root_view = driver.find("subtitleListView")
 
+    pump_events(0.35)
     assert root_view.property("isDraggingLens") is False
     assert root_view.property("dragHoverIndex") == -1
     assert sub_lens.property("fluidScaleX") == 1.0
@@ -220,6 +221,21 @@ def test_ac07_launchpad_dropzone_hover_and_border():
     assert "Theme.accentSapphire" in launchpad_content, "Must use sapphire border when hovered/dragged"
     assert "Theme.glassBorderSpecularUpper" in launchpad_content, "Must use specular border by default"
     assert "MultiEffect" in launchpad_content, "Must use MultiEffect for 3D optical sapphire glow"
+
+
+def test_ac08_squash_and_stretch_impulse_animation():
+    """AC-08: Impulse animations exist with elastic spring (damping: 0.28, spring: 3.4)."""
+    from pathlib import Path
+    ctx_content = Path("ui/qml/components/ContextInspector.qml").read_text(encoding="utf-8")
+    assert "tabSquashImpulse" in ctx_content, "ContextInspector must have tabSquashImpulse"
+    assert "damping: 0.28" in ctx_content, "ContextInspector must use damping 0.28"
+    assert "spring: 3.4" in ctx_content, "ContextInspector must use spring 3.4"
+
+    sub_content = Path("ui/qml/components/SubtitleListView.qml").read_text(encoding="utf-8")
+    assert "subLensImpulse" in sub_content, "SubtitleListView must have subLensImpulse"
+    assert "damping: 0.28" in sub_content, "SubtitleListView must use damping 0.28"
+    assert "spring: 3.4" in sub_content, "SubtitleListView must use spring 3.4"
+
 
 
 

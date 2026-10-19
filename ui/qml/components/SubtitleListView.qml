@@ -651,8 +651,33 @@ ColumnLayout {
             property real fluidScaleY: 1.0
             property real fluidOriginY: height / 2
 
-            Behavior on fluidScaleX { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
-            Behavior on fluidScaleY { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+            Behavior on fluidScaleX { enabled: !subLensImpulse.running; NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+            Behavior on fluidScaleY { enabled: !subLensImpulse.running; NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+
+            Connections {
+                target: subListView
+                function onCurrentIndexChanged() {
+                    if (!root.isDraggingLens && subListView.currentIndex >= 0) {
+                        subLensImpulse.restart()
+                    }
+                }
+            }
+
+            SequentialAnimation {
+                id: subLensImpulse
+                ParallelAnimation {
+                    NumberAnimation { target: subDropletLens; property: "fluidScaleY"; to: 1.14; duration: 90; easing.type: Easing.OutQuad }
+                    NumberAnimation { target: subDropletLens; property: "fluidScaleX"; to: 0.90; duration: 90; easing.type: Easing.OutQuad }
+                }
+                ParallelAnimation {
+                    NumberAnimation { target: subDropletLens; property: "fluidScaleY"; to: 0.94; duration: 110; easing.type: Easing.InOutQuad }
+                    NumberAnimation { target: subDropletLens; property: "fluidScaleX"; to: 1.03; duration: 110; easing.type: Easing.InOutQuad }
+                }
+                ParallelAnimation {
+                    NumberAnimation { target: subDropletLens; property: "fluidScaleY"; to: 1.0; duration: 100; easing.type: Easing.OutBack }
+                    NumberAnimation { target: subDropletLens; property: "fluidScaleX"; to: 1.0; duration: 100; easing.type: Easing.OutBack }
+                }
+            }
 
             transform: Scale {
                 origin.x: subDropletLens.width / 2
@@ -681,17 +706,17 @@ ColumnLayout {
             Behavior on y {
                 enabled: !subListView.moving && !subListView.flicking && !root.isDraggingLens
                 SpringAnimation {
-                    spring: 4.5
-                    damping: 0.42
-                    epsilon: 0.15
+                    spring: 3.4
+                    damping: 0.28
+                    epsilon: 0.05
                 }
             }
 
             Behavior on height {
                 SpringAnimation {
-                    spring: 4.5
-                    damping: 0.42
-                    epsilon: 0.15
+                    spring: 3.4
+                    damping: 0.28
+                    epsilon: 0.05
                 }
             }
         }
