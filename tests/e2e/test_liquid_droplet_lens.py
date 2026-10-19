@@ -148,7 +148,7 @@ def test_ac04_status_badge_geometry_and_alignment(harness_lens):
 
 
 def test_ac05_context_inspector_fluid_dynamics(harness_lens):
-    """AC-05: Context Inspector Tab Bar có biến dạng chất lỏng (fluidScaleX/Y) và khóa z-index an toàn."""
+    """AC-05: Context Inspector Tab Bar có biến dạng chất lỏng (fluidScaleX/Y), bán kính bo capsule đồng tâm và activeHoverIndex thời gian thực."""
     driver = harness_lens.driver
     tab_container = driver.find("tabOuterContainer")
     sliding_pill = driver.find("slidingPill")
@@ -156,17 +156,32 @@ def test_ac05_context_inspector_fluid_dynamics(harness_lens):
     assert tab_container is not None, "tabOuterContainer must exist"
     assert sliding_pill is not None, "slidingPill must exist"
 
-    # Trạng thái tĩnh ban đầu
+    # Trạng thái tĩnh ban đầu và bán kính bo capsule đồng tâm (19px outer, 16px inner)
     assert tab_container.property("isDragging") is False
     assert tab_container.property("fluidScaleX") == 1.0
     assert tab_container.property("fluidScaleY") == 1.0
     assert sliding_pill.property("z") == 1
+    assert tab_container.property("radius") == pytest.approx(19.0, abs=0.1)
+    assert sliding_pill.property("radius") == pytest.approx(16.0, abs=0.1)
 
-    # Kéo trượt ngang: giãn trục X, nén trục Y
+    # Kéo trượt ngang: giãn trục X, nén trục Y và kiểm tra activeHoverIndex thời gian thực
     tab_container.setProperty("isDragging", True)
     tab_container.setProperty("fluidScaleX", 1.25)
     tab_container.setProperty("fluidScaleY", 0.875)
-    pump_events(0.25)
+
+    tab_width = tab_container.property("tabWidth")
+    assert tab_width > 0
+
+    # Hover tại tab 1 (INTELLIGENCE)
+    tab_container.setProperty("pillDragX", tab_width + 5)
+    pump_events(0.1)
+    assert tab_container.property("activeHoverIndex") == 1
+
+    # Hover tại tab 2 (SUMMARY)
+    tab_container.setProperty("pillDragX", tab_width * 2 + 5)
+    pump_events(0.1)
+    assert tab_container.property("activeHoverIndex") == 2
+
     assert tab_container.property("isDragging") is True
     assert tab_container.property("fluidScaleX") == pytest.approx(1.25, abs=0.02)
     assert tab_container.property("fluidScaleY") == pytest.approx(0.875, abs=0.02)
@@ -179,4 +194,5 @@ def test_ac05_context_inspector_fluid_dynamics(harness_lens):
     assert tab_container.property("isDragging") is False
     assert tab_container.property("fluidScaleX") == pytest.approx(1.0, abs=0.02)
     assert tab_container.property("fluidScaleY") == pytest.approx(1.0, abs=0.02)
+
 

@@ -62,18 +62,21 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.minimumWidth: 0
         implicitHeight: 38
-        radius: 14
+        radius: height / 2
         color: Qt.rgba(1.0, 1.0, 1.0, 0.16)
         border.color: Theme.glassBorderSpecularLower
         border.width: 1
 
         readonly property int tabCount: 3
-        readonly property real tabWidth: Math.floor((tabOuterContainer.width - 6) / tabCount)
+        readonly property real tabWidth: (tabOuterContainer.width - 6) / tabCount
         property bool isDragging: false
         property real pillDragX: 0
         property real fluidScaleX: 1.0
         property real fluidScaleY: 1.0
         property real fluidOriginX: tabWidth / 2
+        readonly property int activeHoverIndex: isDragging
+            ? Math.max(0, Math.min(tabCount - 1, Math.floor((pillDragX + tabWidth / 2 - 3) / tabWidth)))
+            : contextTabs.currentIndex
 
         Behavior on fluidScaleX { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
         Behavior on fluidScaleY { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
@@ -85,7 +88,7 @@ ColumnLayout {
             y: 3
             width: tabOuterContainer.tabWidth
             height: tabOuterContainer.height - 6
-            radius: 10
+            radius: height / 2
             gradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.55, 1.0, 0.88) }
@@ -132,20 +135,24 @@ ColumnLayout {
             spacing: 0
             implicitWidth: tabOuterContainer.width
             background: Item {}
+            clip: true
             z: 2
 
             TabButton {
                 id: tabTimeline
                 text: "TIMELINE"
+                width: tabOuterContainer.tabWidth
                 implicitWidth: tabOuterContainer.tabWidth
+                height: parent.height
                 contentItem: Text {
                     text: parent.text
                     font.pixelSize: 11
                     font.bold: true
-                    color: contextTabs.currentIndex === 0 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.85)
+                    color: tabOuterContainer.activeHoverIndex === 0 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.55)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
+                    Behavior on color { ColorAnimation { duration: 150 } }
                 }
                 background: Item {}
             }
@@ -153,15 +160,18 @@ ColumnLayout {
             TabButton {
                 id: tabIntelligence
                 text: "INTELLIGENCE"
+                width: tabOuterContainer.tabWidth
                 implicitWidth: tabOuterContainer.tabWidth
+                height: parent.height
                 contentItem: Text {
                     text: parent.text
                     font.pixelSize: 11
                     font.bold: true
-                    color: contextTabs.currentIndex === 1 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.85)
+                    color: tabOuterContainer.activeHoverIndex === 1 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.55)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
+                    Behavior on color { ColorAnimation { duration: 150 } }
                 }
                 background: Item {}
             }
@@ -169,15 +179,18 @@ ColumnLayout {
             TabButton {
                 id: tabSummary
                 text: "SUMMARY"
+                width: tabOuterContainer.tabWidth
                 implicitWidth: tabOuterContainer.tabWidth
+                height: parent.height
                 contentItem: Text {
                     text: parent.text
                     font.pixelSize: 11
                     font.bold: true
-                    color: contextTabs.currentIndex === 2 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.85)
+                    color: tabOuterContainer.activeHoverIndex === 2 ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.55)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
+                    Behavior on color { ColorAnimation { duration: 150 } }
                 }
                 background: Item {}
             }
