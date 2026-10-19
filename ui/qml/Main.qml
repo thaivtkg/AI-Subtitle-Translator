@@ -230,6 +230,8 @@ ApplicationWindow {
                 }
                 vramUsed: typeof translationController.vramUsed !== "undefined" ? translationController.vramUsed : -1.0
                 vramTotal: typeof translationController.vramTotal !== "undefined" ? translationController.vramTotal : -1.0
+                gpuName: typeof modelController !== "undefined" && modelController.hardwareSummary ? modelController.hardwareSummary.gpu_name : ""
+                backendStatus: typeof modelController !== "undefined" && modelController.hardwareSummary ? modelController.hardwareSummary.backend_status : ""
             }
         }
     }
@@ -275,26 +277,170 @@ ApplicationWindow {
 
     Dialog {
         id: qaConfirmDialog
-        title: "Cảnh báo chất lượng phụ đề (QA)"
+        title: ""
         anchors.centerIn: parent
         modal: true
-        standardButtons: Dialog.Yes | Dialog.No
+        dim: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        padding: 0
+        width: 460
 
         property string targetFilePath: ""
         property int errorCount: 0
 
-        ColumnLayout {
-            spacing: Theme.spaceMedium
-            Text {
-                text: "⚠️ Có " + qaConfirmDialog.errorCount + " dòng phụ đề vi phạm quy tắc hiển thị (Lỗi đỏ)."
-                color: Theme.danger
-                font.pixelSize: 14
-                font.bold: true
+        background: Rectangle {
+            color: Qt.rgba(0.97, 0.96, 0.99, 0.96)
+            radius: 20
+            border.color: Theme.glassBorderSpecularUpper
+            border.width: 1.5
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowBlur: 0.8
+                shadowColor: Qt.rgba(0, 0, 0, 0.35)
             }
-            Text {
-                text: "Bạn có chắc chắn muốn bỏ qua cảnh báo và tiếp tục xuất file SRT không?"
-                color: Theme.textSecondary
-                font.pixelSize: 13
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 0
+
+            // Header
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 48
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
+                radius: 20
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    height: 16
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
+                }
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    height: 1
+                    color: Qt.rgba(0, 0, 0, 0.08)
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 20
+                    anchors.rightMargin: 16
+
+                    Text {
+                        text: "🛡️ Cảnh Báo Chất Lượng Phụ Đề (QA)"
+                        color: Theme.textPrimary
+                        font.pixelSize: 14
+                        font.bold: true
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Rectangle {
+                        width: 28
+                        height: 28
+                        radius: 14
+                        color: closeArea.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : "transparent"
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "✕"
+                            color: closeArea.containsMouse ? "#EF4444" : Theme.textSecondary
+                            font.pixelSize: 13
+                        }
+
+                        MouseArea {
+                            id: closeArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: qaConfirmDialog.reject()
+                        }
+                    }
+                }
+            }
+
+            // Body
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.margins: 20
+                spacing: 16
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: warningCol.implicitHeight + 20
+                    color: Qt.rgba(0.94, 0.27, 0.27, 0.08)
+                    radius: 12
+                    border.color: Qt.rgba(0.94, 0.27, 0.27, 0.25)
+                    border.width: 1
+
+                    RowLayout {
+                        id: warningCol
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 12
+
+                        Text {
+                            text: "⚠️"
+                            font.pixelSize: 22
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+                            Text {
+                                text: "Có " + qaConfirmDialog.errorCount + " dòng phụ đề vi phạm quy tắc (Lỗi đỏ)"
+                                color: "#DC2626"
+                                font.pixelSize: 13
+                                font.bold: true
+                            }
+                            Text {
+                                text: "Các câu vượt giới hạn độ dài hoặc tốc độ đọc quá nhanh có thể gây khó chịu cho người xem."
+                                color: Theme.textSecondary
+                                font.pixelSize: 12
+                                wrapMode: Text.WordWrap
+                                Layout.fillWidth: true
+                            }
+                        }
+                    }
+                }
+
+                Text {
+                    text: "Bạn có chắc chắn muốn bỏ qua cảnh báo và tiếp tục xuất file SRT không?"
+                    color: Theme.textPrimary
+                    font.pixelSize: 13
+                    font.bold: true
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+
+                // Action buttons
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 8
+                    spacing: 12
+
+                    Item { Layout.fillWidth: true }
+
+                    AppButton {
+                        id: btnCancelExport
+                        text: "Hủy bỏ"
+                        isDarkGlass: true
+                        onClicked: qaConfirmDialog.reject()
+                    }
+
+                    AppButton {
+                        id: btnConfirmExport
+                        text: "Tiếp tục xuất ➔"
+                        isPrimary: true
+                        onClicked: qaConfirmDialog.accept()
+                    }
+                }
             }
         }
 

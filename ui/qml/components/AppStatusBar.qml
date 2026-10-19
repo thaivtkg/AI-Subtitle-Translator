@@ -12,6 +12,8 @@ Item {
     property string engineStatus: "Not loaded"
     property real vramUsed: -1.0
     property real vramTotal: -1.0
+    property string gpuName: ""
+    property string backendStatus: ""
     readonly property bool compactMode: width < 1150
 
     property real progressRatio: totalCount > 0 ? acceptedCount / totalCount : 0
@@ -69,7 +71,13 @@ Item {
                     }
 
                     Text {
-                        text: "GPU: NVIDIA RTX 4080 (Vulkan Active)"
+                        text: {
+                            if (root.gpuName !== "" && root.gpuName !== "Unknown") {
+                                var shortGpu = root.gpuName.replace("NVIDIA GeForce ", "").replace("AMD Radeon ", "")
+                                return "GPU: " + shortGpu + (root.backendStatus !== "" ? (" (" + root.backendStatus + ")") : "")
+                            }
+                            return root.backendStatus !== "" ? ("Bộ tăng tốc: " + root.backendStatus) : "GPU: Tự động phát hiện"
+                        }
                         color: Qt.rgba(1, 1, 1, 0.85)
                         font.pixelSize: 11
                         font.bold: true
