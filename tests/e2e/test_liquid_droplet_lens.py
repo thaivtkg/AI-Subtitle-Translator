@@ -196,3 +196,19 @@ def test_ac05_context_inspector_fluid_dynamics(harness_lens):
     assert tab_container.property("fluidScaleY") == pytest.approx(1.0, abs=0.02)
 
 
+def test_ac06_contrast_tokens_on_light_surfaces():
+    """AC-06: Guard against white-on-white contrast bug on luminous/frosted pods."""
+    from pathlib import Path
+    toast_content = Path("ui/qml/components/Toast.qml").read_text(encoding="utf-8")
+    assert "Theme.textOnLightPod" in toast_content, "Toast must use Theme.textOnLightPod for messageText"
+    assert "Theme.textPrimary" not in toast_content, "Toast must not use Theme.textPrimary (white on white)"
+
+    main_content = Path("ui/qml/Main.qml").read_text(encoding="utf-8")
+    dialog_start = main_content.find('id: qaConfirmDialog')
+    assert dialog_start != -1
+    dialog_chunk = main_content[dialog_start:dialog_start + 1800]
+    assert "Theme.textOnLightPod" in dialog_chunk, "qaConfirmDialog must use Theme.textOnLightPod for high contrast"
+    assert "Theme.textPrimary" not in dialog_chunk, "qaConfirmDialog must not use Theme.textPrimary (white on white)"
+
+
+

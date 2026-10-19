@@ -332,7 +332,7 @@ ApplicationWindow {
 
                     Text {
                         text: "🛡️ Cảnh Báo Chất Lượng Phụ Đề (QA)"
-                        color: Theme.textPrimary
+                        color: Theme.textOnLightPod
                         font.pixelSize: 14
                         font.bold: true
                         Layout.alignment: Qt.AlignVCenter
@@ -349,7 +349,7 @@ ApplicationWindow {
                         Text {
                             anchors.centerIn: parent
                             text: "✕"
-                            color: closeArea.containsMouse ? "#EF4444" : Theme.textSecondary
+                            color: closeArea.containsMouse ? "#EF4444" : Theme.textOnLightPodMuted
                             font.pixelSize: 13
                         }
 
@@ -401,7 +401,7 @@ ApplicationWindow {
                             }
                             Text {
                                 text: "Các câu vượt giới hạn độ dài hoặc tốc độ đọc quá nhanh có thể gây khó chịu cho người xem."
-                                color: Theme.textSecondary
+                                color: Theme.textOnLightPodMuted
                                 font.pixelSize: 12
                                 wrapMode: Text.WordWrap
                                 Layout.fillWidth: true
@@ -412,7 +412,7 @@ ApplicationWindow {
 
                 Text {
                     text: "Bạn có chắc chắn muốn bỏ qua cảnh báo và tiếp tục xuất file SRT không?"
-                    color: Theme.textPrimary
+                    color: Theme.textOnLightPod
                     font.pixelSize: 13
                     font.bold: true
                     wrapMode: Text.WordWrap

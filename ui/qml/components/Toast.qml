@@ -62,7 +62,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
             text: root.message
-            color: Theme.textPrimary
+            color: Theme.textOnLightPod
             font.pixelSize: 13
             font.bold: true
             wrapMode: Text.WordWrap
