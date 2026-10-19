@@ -191,6 +191,14 @@ class ProjectController(QObject):
         self.archetypeChanged.emit()
         self.markDirty()
 
+    @Slot(bool)
+    def setIsJaOrigin(self, value: bool) -> None:
+        """Cho phép người dùng chủ động đánh dấu hoặc bỏ đánh dấu phụ đề dịch từ tiếng Nhật."""
+        if self._is_ja_origin != value:
+            self._is_ja_origin = value
+            self.archetypeChanged.emit()
+            self.markDirty()
+
     @Slot(str)
     def dismissAutoTerm(self, source_term: str):
         entry = self.glossary.get(source_term)

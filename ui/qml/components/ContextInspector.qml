@@ -989,6 +989,49 @@ ColumnLayout {
                 }
             }
 
+            // Nút bấm tương tác: Đánh dấu phụ đề dịch từ tiếng Nhật (BẬT / TẮT)
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 28
+                radius: 14
+                color: (typeof projectController !== "undefined" && projectController.isJaOrigin)
+                       ? Qt.rgba(0.96, 0.45, 0.71, 0.15) 
+                       : Qt.rgba(0.58, 0.64, 0.72, 0.12)
+                border.color: (typeof projectController !== "undefined" && projectController.isJaOrigin)
+                             ? "#F472B6" 
+                             : "#94A3B8"
+                border.width: 1
+
+                RowLayout {
+                    anchors.centerIn: parent
+                    spacing: 6
+
+                    Text {
+                        text: (typeof projectController !== "undefined" && projectController.isJaOrigin) ? "🌸" : "🌐"
+                        font.pixelSize: 11
+                    }
+
+                    Text {
+                        text: (typeof projectController !== "undefined" && projectController.isJaOrigin)
+                              ? "Nguồn gốc: Dịch từ tiếng Nhật ('senior' ➔ 'tiền bối')"
+                              : "Nguồn gốc: Tiếng Anh bản ngữ ('senior' dịch tự nhiên)"
+                        color: (typeof projectController !== "undefined" && projectController.isJaOrigin) ? "#BE185D" : "#475569"
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (typeof projectController !== "undefined") {
+                            projectController.setIsJaOrigin(!projectController.isJaOrigin)
+                        }
+                    }
+                }
+            }
+
             // Đẩy thẻ Summary lên trên, giữ khoảng trống kính mờ bên dưới
             Item { Layout.fillHeight: true }
         }

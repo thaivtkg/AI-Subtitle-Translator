@@ -53,3 +53,26 @@ def test_prompt_builder_injects_japanese_artifacts_rule():
     assert "'senior' or 'seniors' used as a title, address" in prompt
     assert "tiền bối" in prompt
     assert "ABSOLUTELY DO NOT translate 'senior' as 'người lớn tuổi'" in prompt
+
+
+def test_senior_only_translated_as_tien_boi_when_marked_ja_origin():
+    current_sub = "What's wrong, senior, are you giving up?"
+    unmarked_prompt = PromptBuilder.build(
+        current_sub=current_sub,
+        source_lang="English",
+        target_lang="Vietnamese",
+        is_ja_origin=False,
+    )
+    assert "JAPANESE TRANSLATION ARTIFACTS" not in unmarked_prompt
+    assert "ABSOLUTELY DO NOT translate 'senior' as 'người lớn tuổi'" not in unmarked_prompt
+
+    marked_prompt = PromptBuilder.build(
+        current_sub=current_sub,
+        source_lang="English",
+        target_lang="Vietnamese",
+        is_ja_origin=True,
+    )
+    assert "JAPANESE TRANSLATION ARTIFACTS" in marked_prompt
+    assert "tiền bối" in marked_prompt
+    assert "ABSOLUTELY DO NOT translate 'senior' as 'người lớn tuổi'" in marked_prompt
+

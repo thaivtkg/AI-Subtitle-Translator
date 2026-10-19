@@ -87,16 +87,15 @@ def build_translation_prompt(
                 "1. STRICT PRONOUNS: ABSOLUTELY DO NOT use robotic literal pronouns like 'tôi', 'bạn', 'anh ấy', 'cô ấy' in casual dialogue. You MUST adapt pronouns naturally (e.g., anh, chị, em, mày, tao, ông, bà, hắn, nó) based strictly on the character relationships in the STORY SUMMARY."
             )
 
-        # Kích hoạt luật tiếng Nhật nếu có cờ JA origin hoặc đại từ Tiền bối / Hậu bối
-        is_japanese_context = (
+        # CHỈ kích hoạt luật ép dịch 'senior' -> 'tiền bối' KHI được đánh dấu là sub dịch từ Nhật
+        is_marked_ja_origin = (
             is_ja_origin 
-            or source_lang.lower() in ("ja", "japanese") 
-            or any(kw in active_pronoun_pair.lower() for kw in ("tiền bối", "hậu bối", "senpai"))
+            or source_lang.lower() in ("ja", "japanese")
         )
-        if is_japanese_context:
+        if is_marked_ja_origin:
             rules.append(
                 "JAPANESE TRANSLATION ARTIFACTS (CRITICAL):\n"
-                "- This dialogue originates from Japanese (Anime/Drama).\n"
+                "- This dialogue is explicitly marked as originating from Japanese (Anime/Drama).\n"
                 "- When encountering 'senior' or 'seniors' used as a title, address, or reference to colleagues/schoolmates, you MUST translate it as 'tiền bối' (or 'anh/chị tiền bối'). ABSOLUTELY DO NOT translate 'senior' as 'người lớn tuổi', 'người già', or 'học sinh lớp trên'.\n"
                 "- Translate 'senpai' as 'tiền bối'.\n"
                 "- Translate 'junior' as 'hậu bối' or 'em'.\n"

@@ -111,3 +111,30 @@ def test_translation_controller_binds_project_controller_and_cleans_hallucinated
     tc._current_index = 0
     tc.on_finished(0, "[Line 1]: Ngươi muốn gì ở ta?")
     assert tc.currentTranslation == "Ngươi muốn gì ở ta?"
+
+
+def test_project_controller_set_is_ja_origin():
+    mock_model = MagicMock()
+    pc = ProjectController(subtitle_model=mock_model)
+    pc._has_project = True
+    assert pc.isJaOrigin is False
+
+    signals_received = []
+    pc.archetypeChanged.connect(lambda: signals_received.append("archetypeChanged"))
+    pc.projectStateChanged.connect(lambda: signals_received.append("projectStateChanged"))
+
+    pc.setIsJaOrigin(True)
+    assert pc.isJaOrigin is True
+    assert pc.isDirty is True
+    assert "archetypeChanged" in signals_received
+
+    # Setting same value does not re-emit
+    signals_received.clear()
+    pc.setIsJaOrigin(True)
+    assert len(signals_received) == 0
+
+    # Setting False updates state and emits
+    pc.setIsJaOrigin(False)
+    assert pc.isJaOrigin is False
+    assert "archetypeChanged" in signals_received
+
