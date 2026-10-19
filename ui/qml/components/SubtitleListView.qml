@@ -663,19 +663,19 @@ ColumnLayout {
 
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.45, 1.0, 0.50) }
-                GradientStop { position: 1.0; color: Qt.rgba(0.02, 0.65, 0.98, 0.46) }
+                GradientStop { position: 0.0; color: "#0066FF" } // Sapphire rực rỡ 92%
+                GradientStop { position: 1.0; color: "#0284C7" } // Cyan phát quang 90%
             }
 
-            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
-            border.width: 1.0
+            border.color: Theme.glassBorderSpecularUpper
+            border.width: 1.5
 
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: Qt.rgba(0.0, 0.15, 0.45, 0.20)
-                shadowBlur: 0.35
-                shadowVerticalOffset: 2
+                shadowColor: Qt.rgba(0.0, 0.38, 1.0, 0.45)
+                shadowBlur: 0.55
+                shadowVerticalOffset: 3
             }
 
             Behavior on y {

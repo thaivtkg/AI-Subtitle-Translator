@@ -72,14 +72,12 @@ ColumnLayout {
         readonly property real baseTabWidth: Math.max(1, (tabOuterContainer.width - 6) / tabCount)
         readonly property real tabWidth: baseTabWidth
         property bool isDragging: false
-        property bool isRelaxingWidth: false
         property real pillDragX: 0
-        property real pillCustomWidth: baseTabWidth
         property real fluidScaleX: 1.0
         property real fluidScaleY: 1.0
         property real fluidOriginX: baseTabWidth / 2
         readonly property int activeHoverIndex: isDragging
-            ? Math.max(0, Math.min(tabCount - 1, Math.floor((pillDragX + pillCustomWidth / 2 - 3) / baseTabWidth)))
+            ? Math.max(0, Math.min(tabCount - 1, Math.floor((pillDragX + baseTabWidth / 2 - 3) / baseTabWidth)))
             : contextTabs.currentIndex
 
         Behavior on fluidScaleX { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
@@ -93,13 +91,18 @@ ColumnLayout {
             height: tabOuterContainer.height - 6 // = 30px
             radius: height / 2 // = 15px (Concentric: 18px - 3px = 15px)
 
-            // Dynamic X and Width with Liquid Geometric Stretch
+            // Dynamic X and constant width (True 1:1 Sliding Droplet Motion)
             x: tabOuterContainer.isDragging
                ? tabOuterContainer.pillDragX
                : (3 + contextTabs.currentIndex * tabOuterContainer.baseTabWidth)
-            width: tabOuterContainer.isDragging
-                   ? tabOuterContainer.pillCustomWidth
-                   : tabOuterContainer.baseTabWidth
+            width: tabOuterContainer.baseTabWidth
+
+            transform: Scale {
+                origin.x: tabOuterContainer.fluidOriginX
+                origin.y: slidingPill.height / 2
+                xScale: tabOuterContainer.fluidScaleX
+                yScale: tabOuterContainer.fluidScaleY
+            }
 
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -124,18 +127,6 @@ ColumnLayout {
                     spring: 4.5
                     damping: 0.42
                     epsilon: 0.15
-                }
-            }
-
-            Behavior on width {
-                enabled: tabOuterContainer.isRelaxingWidth
-                SpringAnimation {
-                    spring: 4.5
-                    damping: 0.42
-                    epsilon: 0.15
-                    onRunningChanged: {
-                        if (!running) tabOuterContainer.isRelaxingWidth = false
-                    }
                 }
             }
         }
@@ -231,7 +222,6 @@ ColumnLayout {
                 startMouseX = mouse.x
                 initialPillX = slidingPill.x
                 tabOuterContainer.pillDragX = initialPillX
-                tabOuterContainer.pillCustomWidth = tabOuterContainer.baseTabWidth
                 hasMoved = false
             }
 
@@ -244,25 +234,25 @@ ColumnLayout {
                     }
                     if (tabOuterContainer.isDragging) {
                         hasMoved = true
-                        var baseW = tabOuterContainer.baseTabWidth
-                        var maxStretch = baseW * 0.38 // Max 1.38 slots
-                        var stretch = Math.min(Math.abs(dx) * 0.35, maxStretch)
-                        if (dx >= 0) {
-                            tabOuterContainer.pillDragX = initialPillX + dx * 0.25
-                            tabOuterContainer.pillCustomWidth = baseW + stretch
-                        } else {
-                            tabOuterContainer.pillDragX = initialPillX + dx * 0.60
-                            tabOuterContainer.pillCustomWidth = baseW + stretch
-                        }
+                        var minX = 3
+                        var maxX = tabOuterContainer.width - 3 - tabOuterContainer.baseTabWidth
+                        var rawX = initialPillX + dx
+                        if (rawX < minX) rawX = minX - (minX - rawX) * 0.25
+                        else if (rawX > maxX) rawX = maxX + (rawX - maxX) * 0.25
+                        tabOuterContainer.pillDragX = rawX
+
+                        tabOuterContainer.fluidScaleX = 1.0 + Math.min(Math.abs(dx) * 0.002, 0.08)
+                        tabOuterContainer.fluidScaleY = Math.max(0.94, 1.0 - (tabOuterContainer.fluidScaleX - 1.0) * 0.75)
                     }
                 }
             }
 
             onReleased: function(mouse) {
                 if (tabOuterContainer.isDragging) {
-                    tabOuterContainer.isRelaxingWidth = true
                     tabOuterContainer.isDragging = false
-                    var pillCenter = tabOuterContainer.pillDragX + tabOuterContainer.pillCustomWidth / 2
+                    tabOuterContainer.fluidScaleX = 1.0
+                    tabOuterContainer.fluidScaleY = 1.0
+                    var pillCenter = tabOuterContainer.pillDragX + tabOuterContainer.baseTabWidth / 2
                     var targetIndex = Math.floor((pillCenter - 3) / tabOuterContainer.baseTabWidth)
                     targetIndex = Math.max(0, Math.min(tabOuterContainer.tabCount - 1, targetIndex))
                     contextTabs.currentIndex = targetIndex
