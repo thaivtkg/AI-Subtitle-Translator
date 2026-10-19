@@ -156,13 +156,13 @@ def test_ac05_context_inspector_fluid_dynamics(harness_lens):
     assert tab_container is not None, "tabOuterContainer must exist"
     assert sliding_pill is not None, "slidingPill must exist"
 
-    # Trạng thái tĩnh ban đầu và bán kính bo capsule đồng tâm (19px outer, 16px inner)
+    # Trạng thái tĩnh ban đầu và bán kính bo capsule đồng tâm (18px outer, 15px inner)
     assert tab_container.property("isDragging") is False
     assert tab_container.property("fluidScaleX") == 1.0
     assert tab_container.property("fluidScaleY") == 1.0
     assert sliding_pill.property("z") == 1
-    assert tab_container.property("radius") == pytest.approx(19.0, abs=0.1)
-    assert sliding_pill.property("radius") == pytest.approx(16.0, abs=0.1)
+    assert tab_container.property("radius") == pytest.approx(18.0, abs=0.1)
+    assert sliding_pill.property("radius") == pytest.approx(15.0, abs=0.1)
 
     # Kéo trượt ngang: giãn trục X, nén trục Y và kiểm tra activeHoverIndex thời gian thực
     tab_container.setProperty("isDragging", True)
