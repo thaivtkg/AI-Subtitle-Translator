@@ -68,7 +68,7 @@ ColumnLayout {
         border.width: 1
 
         readonly property int tabCount: 3
-        readonly property real tabWidth: (tabOuterContainer.width - 6) / tabCount
+        readonly property real tabWidth: Math.max(1, (tabOuterContainer.width - 6) / tabCount)
         property bool isDragging: false
         property real pillDragX: 0
         property real fluidScaleX: 1.0
@@ -81,7 +81,7 @@ ColumnLayout {
         Behavior on fluidScaleX { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
         Behavior on fluidScaleY { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
 
-        // SLIDING LIQUID PILL (D:\Liquid Effect.mp4)
+        // SLIDING LIQUID PILL (E:\Liquid Effect.mp4)
         Rectangle {
             id: slidingPill
             objectName: "slidingPill"
@@ -89,20 +89,22 @@ ColumnLayout {
             width: tabOuterContainer.tabWidth
             height: tabOuterContainer.height - 6
             radius: height / 2
+
+            // Kính xanh điện tử bán trong suốt (Electric Liquid Cyan)
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.55, 1.0, 0.88) }
-                GradientStop { position: 1.0; color: Qt.rgba(0.05, 0.75, 1.0, 0.85) }
+                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.48, 1.0, 0.78) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.02, 0.68, 0.98, 0.75) }
             }
-            border.color: Theme.glassBorderSpecularUpper
-            border.width: 1.5
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.90)
+            border.width: 1.2
             z: 1
 
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: tabOuterContainer.isDragging ? Qt.rgba(0.0, 0.25, 0.65, 0.45) : Qt.rgba(0.0, 0.20, 0.60, 0.32)
-                shadowBlur: tabOuterContainer.isDragging ? 0.50 : 0.42
+                shadowColor: Qt.rgba(0.0, 0.20, 0.55, 0.28)
+                shadowBlur: 0.45
                 shadowVerticalOffset: 2
             }
 
@@ -120,14 +122,14 @@ ColumnLayout {
             Behavior on x {
                 enabled: !tabOuterContainer.isDragging
                 SpringAnimation {
-                    spring: 4.0
-                    damping: 0.48
+                    spring: 3.0
+                    damping: 0.40
                     epsilon: 0.15
                 }
             }
         }
 
-        Row {
+        Item {
             id: contextTabs
             objectName: "contextTabs"
             property int currentIndex: 0
@@ -137,13 +139,13 @@ ColumnLayout {
             }
             anchors.fill: parent
             anchors.margins: 3
-            spacing: 0
             clip: true
             z: 2
 
             Item {
                 id: tabTimeline
                 objectName: "tabTimeline"
+                x: 0
                 width: tabOuterContainer.tabWidth
                 height: parent.height
 
@@ -156,13 +158,14 @@ ColumnLayout {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: 160 } }
                 }
             }
 
             Item {
                 id: tabIntelligence
                 objectName: "tabIntelligence"
+                x: tabOuterContainer.tabWidth
                 width: tabOuterContainer.tabWidth
                 height: parent.height
 
@@ -175,13 +178,14 @@ ColumnLayout {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: 160 } }
                 }
             }
 
             Item {
                 id: tabSummary
                 objectName: "tabSummary"
+                x: tabOuterContainer.tabWidth * 2
                 width: tabOuterContainer.tabWidth
                 height: parent.height
 
@@ -194,7 +198,7 @@ ColumnLayout {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: 160 } }
                 }
             }
         }

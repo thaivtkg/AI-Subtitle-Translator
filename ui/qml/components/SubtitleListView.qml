@@ -663,26 +663,26 @@ ColumnLayout {
 
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.55, 1.0, 0.88) }
-                GradientStop { position: 1.0; color: Qt.rgba(0.05, 0.75, 1.0, 0.85) }
+                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.48, 1.0, 0.78) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.02, 0.68, 0.98, 0.75) }
             }
 
-            border.color: Theme.glassBorderSpecularUpper
-            border.width: 1.5
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.90)
+            border.width: 1.2
 
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: root.isDraggingLens ? Qt.rgba(0.0, 0.20, 0.60, 0.42) : Qt.rgba(0.0, 0.18, 0.50, 0.30)
-                shadowBlur: root.isDraggingLens ? 0.50 : 0.40
+                shadowColor: root.isDraggingLens ? Qt.rgba(0.0, 0.20, 0.55, 0.35) : Qt.rgba(0.0, 0.18, 0.50, 0.25)
+                shadowBlur: root.isDraggingLens ? 0.48 : 0.40
                 shadowVerticalOffset: root.isDraggingLens ? 3 : 2
             }
 
             Behavior on y {
                 enabled: !subListView.moving && !subListView.flicking && !root.isDraggingLens
                 SpringAnimation {
-                    spring: 4.0
-                    damping: 0.48
+                    spring: 3.0
+                    damping: 0.40
                     epsilon: 0.15
                 }
             }
