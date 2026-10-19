@@ -211,4 +211,16 @@ def test_ac06_contrast_tokens_on_light_surfaces():
     assert "Theme.textPrimary" not in dialog_chunk, "qaConfirmDialog must not use Theme.textPrimary (white on white)"
 
 
+def test_ac07_launchpad_dropzone_hover_and_border():
+    """AC-07: StudioLaunchpad dropzone has solid specular border, no dashed line, and hover lift/glow."""
+    from pathlib import Path
+    launchpad_content = Path("ui/qml/components/StudioLaunchpad.qml").read_text(encoding="utf-8")
+    assert "ShapePath.DashLine" not in launchpad_content, "Dashed shape line must be eliminated"
+    assert "Translate" in launchpad_content and "dropZoneBox.isHoveredOrDragged ? -2 : 0" in launchpad_content, "Must have translateY -2px hover lift"
+    assert "Theme.accentSapphire" in launchpad_content, "Must use sapphire border when hovered/dragged"
+    assert "Theme.glassBorderSpecularUpper" in launchpad_content, "Must use specular border by default"
+    assert "MultiEffect" in launchpad_content, "Must use MultiEffect for 3D optical sapphire glow"
+
+
+
 
