@@ -101,29 +101,28 @@ ColumnLayout {
                    ? tabOuterContainer.pillCustomWidth
                    : tabOuterContainer.baseTabWidth
 
-            // Kính xanh điện tử bán trong suốt (Electric Liquid Cyan)
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.46, 1.0, 0.72) }
-                GradientStop { position: 1.0; color: Qt.rgba(0.02, 0.65, 0.96, 0.70) }
+                GradientStop { position: 0.0; color: Qt.rgba(0.0, 0.45, 1.0, 0.50) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.02, 0.65, 0.98, 0.46) }
             }
-            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.95) // Viền gương óng ánh
-            border.width: 1.2
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+            border.width: 1.0
             z: 1
 
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: Qt.rgba(0.0, 0.18, 0.50, 0.25) // Bóng đổ sâu, không bị chói
-                shadowBlur: 0.40
+                shadowColor: Qt.rgba(0.0, 0.15, 0.45, 0.20)
+                shadowBlur: 0.35
                 shadowVerticalOffset: 2
             }
 
             Behavior on x {
                 enabled: !tabOuterContainer.isDragging
                 SpringAnimation {
-                    spring: 3.2
-                    damping: 0.38
+                    spring: 4.5
+                    damping: 0.42
                     epsilon: 0.15
                 }
             }
@@ -131,8 +130,8 @@ ColumnLayout {
             Behavior on width {
                 enabled: tabOuterContainer.isRelaxingWidth
                 SpringAnimation {
-                    spring: 3.2
-                    damping: 0.38
+                    spring: 4.5
+                    damping: 0.42
                     epsilon: 0.15
                     onRunningChanged: {
                         if (!running) tabOuterContainer.isRelaxingWidth = false
@@ -246,27 +245,13 @@ ColumnLayout {
                     if (tabOuterContainer.isDragging) {
                         hasMoved = true
                         var baseW = tabOuterContainer.baseTabWidth
-                        var maxStretch = baseW * 0.75
-                        var minX = 3
-                        var maxX = tabOuterContainer.width - 3
-
+                        var maxStretch = baseW * 0.38 // Max 1.38 slots
+                        var stretch = Math.min(Math.abs(dx) * 0.35, maxStretch)
                         if (dx >= 0) {
-                            // Dragging right: trailing edge lags (dx * 0.35), leading edge stretches forward
-                            var stretch = Math.min(dx * 0.65, maxStretch)
-                            var rawX = initialPillX + dx * 0.35
-                            if (rawX + baseW + stretch > maxX) {
-                                rawX = maxX - (baseW + stretch)
-                            }
-                            tabOuterContainer.pillDragX = Math.max(minX, rawX)
+                            tabOuterContainer.pillDragX = initialPillX + dx * 0.25
                             tabOuterContainer.pillCustomWidth = baseW + stretch
                         } else {
-                            // Dragging left: leading edge pulls forward, trailing edge lags
-                            var stretch = Math.min(-dx * 0.65, maxStretch)
-                            var rawX = initialPillX + dx
-                            if (rawX < minX) {
-                                rawX = minX - (minX - rawX) * 0.25
-                            }
-                            tabOuterContainer.pillDragX = rawX
+                            tabOuterContainer.pillDragX = initialPillX + dx * 0.60
                             tabOuterContainer.pillCustomWidth = baseW + stretch
                         }
                     }
