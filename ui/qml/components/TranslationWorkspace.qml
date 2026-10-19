@@ -364,6 +364,43 @@ Item {
                                 }
                             }
 
+                            // Translating stream scanner divider
+                            Item {
+                                id: scannerContainer
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 2
+                                clip: true
+                                opacity: translationController.status === "TRANSLATING" ? 1.0 : 0.0
+                                Behavior on opacity { NumberAnimation { duration: 250 } }
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: Qt.rgba(Theme.accentCyan.r, Theme.accentCyan.g, Theme.accentCyan.b, 0.12)
+                                    radius: 1
+                                }
+
+                                Rectangle {
+                                    id: streamScanner
+                                    height: parent.height
+                                    width: Math.max(scannerContainer.width * 0.35, 60)
+                                    radius: 1
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0.0; color: "transparent" }
+                                        GradientStop { position: 0.5; color: Theme.accentCyan }
+                                        GradientStop { position: 1.0; color: "transparent" }
+                                    }
+
+                                    NumberAnimation on x {
+                                        from: -streamScanner.width
+                                        to: scannerContainer.width > 0 ? scannerContainer.width : 300
+                                        duration: 1200
+                                        loops: Animation.Infinite
+                                        running: translationController.status === "TRANSLATING"
+                                    }
+                                }
+                            }
+
                             ScrollView {
                                 id: transScroll
                                 Layout.fillWidth: true
@@ -491,32 +528,6 @@ Item {
                                     text: "AI Neural Engine đang giải mã token đầu tiên..."
                                     color: Theme.textMuted
                                     font.pixelSize: 11
-                                }
-                            }
-                        }
-
-                        // Top scanner bar when translating
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: 2
-                            color: "transparent"
-                            visible: translationController.status === "TRANSLATING"
-
-                            Rectangle {
-                                id: streamScanner
-                                height: 2
-                                width: Math.max(translationBox.width * 0.35, 60)
-                                color: Theme.accentCyan
-                                radius: 1
-
-                                NumberAnimation on x {
-                                    from: -streamScanner.width
-                                    to: translationBox.width
-                                    duration: 1200
-                                    loops: Animation.Infinite
-                                    running: translationController.status === "TRANSLATING"
                                 }
                             }
                         }
