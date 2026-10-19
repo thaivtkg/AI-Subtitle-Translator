@@ -1,8 +1,9 @@
-# Tài Liệu Thiết Kế Kỹ Thuật (Design Specification)
+# Tài Liệu Thiết Kế Kỹ Thuật (Design Specification) - Đã Qua Thẩm Định
 # Tính Năng: Auto-Glossary & Pronoun Biasing Offline (v1.0)
 **Mã tài liệu:** `SPEC-2026-10-19-AUTO-GLOSSARY-PRONOUN-BIASING`  
 **Nhánh git:** `feat/auto-glossary-pronoun-biasing`  
 **Tác giả:** Lead Solution Architect & BA  
+**Reviewer:** Sub-agent `Design Spec Reviewer` (Approved with Resolved Edge Cases)  
 **Ngày lập:** 19/10/2026  
 
 ---
@@ -35,16 +36,16 @@ Xây dựng module **Auto-Glossary & Pronoun Biasing Offline**:
 
 ### 2.2 Non-Goals (Không thuộc phạm vi)
 * Không tích hợp các thư viện NLP nặng hàng trăm MB (như spaCy, HuggingFace Transformers, Stanza).
-* Không thay đổi kiến trúc lưu trữ tệp `.aisrt` (chỉ mở rộng schema JSON nhẹ nhàng).
+* Không thay đổi cấu trúc cơ bản của tệp `.aisrt` (chỉ mở rộng trường metadata).
 
 ### 2.3 Anti-Goals (Tuyệt đối không làm)
 * **Không làm tràn prompt (No Prompt Bloat):** Giới hạn tối đa 25-30 thuật ngữ và 1 cặp đại từ chủ đạo để tránh gây hiện tượng sao nhãng (Attention Drift) ở LLM 3B/7B.
 * **Không cưỡng bức đại từ sai bối cảnh:** Nếu người dùng đã tự tay ghi rõ đại từ trong Summary (ví dụ: *"xưng anh - em"*), hệ thống tự động suy luận không được cãi lời người dùng.
-* **Không block UI thread:** Mọi thao tác Regex và bóc tách chạy qua Signal/Slot hoặc Worker thread an toàn.
+* **Không block UI thread:** Mọi thao tác Regex và bóc tách chạy qua Signal/Slot an toàn.
 
 ---
 
-## 3. Kiến Trúc Kỹ Thuật Chi Tiết (Architecture & Component Design)
+## 3. Kiến Trúc Kỹ Thuật Chi Tiết & Giải Quyết Toàn Bộ Điểm Biên
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -56,79 +57,74 @@ Xây dựng module **Auto-Glossary & Pronoun Biasing Offline**:
                                          │ Qt Signals / Slots
 ┌────────────────────────────────────────▼───────────────────────────────────────────────┐
 │ Controller Layer (Python)                                                              │
-│  └── TranslationController & ProjectController                                        │
-│       ├── auto_extract_context(summary_text, source_lang, target_lang)                │
-│       └── set_selected_archetype(archetype_id) / override_pronouns(pair)              │
+│  ├── ProjectController (Single Source of Truth for Archetype & Persistence):          │
+│  │    ├── active_archetype: str, active_pronoun_pair: str, is_archetype_locked: bool   │
+│  │    ├── dismissed_auto_terms: set[str] (Chống phục sinh chip đã bị bấm xóa)         │
+│  │    └── Lưu/Đọc trường metadata.archetype vào file dự án .aisrt                     │
+│  └── TranslationController: Nhận active_pronoun_pair truyền vào PromptBuilder          │
 └────────────────────────────────────────┬───────────────────────────────────────────────┘
                                          │
 ┌────────────────────────────────────────▼───────────────────────────────────────────────┐
 │ Core Domain Engine (100% Offline)                                                      │
 │  ├── ContextAnalyzer (app/core/context_analyzer.py):                                   │
-│  │    ├── Entity Extractor: Quotes ("..."), CJK Brackets (「...」), Katakana, Names   │
-│  │    └── Archetype Classifier: Keyword matching & pronoun mapping                     │
-│  │          - Cổ trang / Tiên hiệp  ➔ Ta - Ngươi, Huynh - Đệ, Bổn tọa                 │
-│  │          - Nữ sinh / Học đường   ➔ Tớ - Cậu, Mình - Bạn                             │
-│  │          - Đô thị / Hành động    ➔ Tôi - Bạn, Chúng tôi                             │
-│  │          - Gia đình / Thân mật   ➔ Anh - Em, Chị - Em, Bố - Con                     │
+│  │    ├── Entity Extractor:                                                           │
+│  │    │   - Cặp thuật ngữ có định dạng 'Source: Target' hoặc 'Source -> Target'         │
+│  │    │   - Ngoặc kép phương Tây "...", ngoặc Á Đông 「...」, 『...』, Katakana         │
+│  │    │   - Danh từ riêng / Tên nhân vật tiếng Việt ➔ Đưa vào Canonical Names         │
+│  │    └── Archetype Classifier:                                                       │
+│  │        - Cổ trang / Tiên hiệp  ➔ Ta - Ngươi                                        │
+│  │        - Nữ sinh / Học đường   ➔ Tớ - Cậu                                          │
+│  │        - Đô thị / Hành động    ➔ Tôi - Bạn (Default)                               │
+│  │        - Gia đình / Thân mật   ➔ Anh - Em                                          │
+│  │        - Mặc định / Tự do      ➔ Theo văn cảnh thoại                              │
 │  ├── ContextEngine (app/core/context_engine.py):                                        │
-│  │    └── Nạp bản dịch của câu trước (TRANSLATED / EDITED / ACCEPTED) vào prev_ctx    │
+│  │    └── Nạp bản dịch tiếng Việt của câu trước (TRANSLATED / EDITED / ACCEPTED)       │
+│  │        vào prev_ctx mà KHÔNG chèn tiền tố [Line X] để chống LLM nhại format        │
 │  └── PromptBuilder (app/core/prompt_builder.py):                                       │
-│       └── Bơm chỉ thị đại từ & ép đồng bộ mạch đối thoại vào System Prompt             │
+│       └── Chỉ áp dụng luật xưng hô khi target_lang == "Vietnamese"                     │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.1 Bóc tách thực thể & Nhận diện thể loại (`app/core/context_analyzer.py`)
-1. **Trích xuất tên riêng & trích dẫn:**
-   * Ngoặc kép phương Tây: `"([^"]+)"`, `'([^']+)'`.
-   * Ngoặc Á Đông: `「([^」]+)」`, `『([^』]+)』`, `【([^】]+)】`, `《([^》]+)》`.
-   * Katakana tiếng Nhật: `[\u30A0-\u30FF]{2,}`.
-   * Tên riêng tiếng Việt viết hoa: `([A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]+)+)`.
-2. **Bảng phân loại thể loại & Đại từ (Archetypes):**
-   * `ARCHETYPE_ANIME_SCHOOL`: Keywords (`học sinh`, `trường`, `nữ sinh`, `ma thuật`, `lớp học`) ➔ `Tớ - Cậu`.
-   * `ARCHETYPE_ANCIENT_FANTASY`: Keywords (`cổ trang`, `tiên hiệp`, `kiếm hiệp`, `hoàng đế`, `ma vương`, `dũng giả`, `tu tiên`) ➔ `Ta - Ngươi`.
-   * `ARCHETYPE_MODERN_ACTION`: Keywords (`thám tử`, `cảnh sát`, `đặc vụ`, `bác sĩ`, `luật sư`, `tội phạm`) ➔ `Tôi - Anh/Chị` hoặc `Tôi - Bạn`.
-   * `ARCHETYPE_ROMANCE_FAMILY`: Keywords (`tình yêu`, `hẹn hò`, `vợ chồng`, `gia đình`, `anh em`) ➔ `Anh - Em`.
-   * **Bộ lọc chống va chạm ngữ cảnh (Anti-Collision Filter):** Nếu xuất hiện từ khóa công nghệ (`lập trình`, `code`, `bug`, `máy tính`), vô hiệu hóa nhận diện kiếm hiệp/tiên hiệp.
+### 3.1 Quy Tắc Khớp Thuật Ngữ & Khóa Thực Thể (Rank 1 Resolution)
+1. **Thuật ngữ có cặp nguồn - đích:**
+   * Nếu trong Summary người dùng viết: `Naruto: Na Ruto` hoặc `"Tanaka" -> "Anh Tanaka"`, hệ thống tự tách: `source_term = "Naruto"`, `preferred_translation = "Na Ruto"` ➔ nạp vào `Glossary`.
+2. **Từ đơn trong ngoặc & Từ Katakana:**
+   * Ví dụ: `"Cyberpunk"`, `「ナルト」`. Hệ thống coi đây là thuật ngữ/tên riêng cần bảo toàn nguyên dạng: `preferred_translation = source_term` ➔ nạp vào `Glossary` hoặc `EntityDictionary`.
+3. **Tên riêng tiếng Việt (VD: *Tiêu Viêm, Dược Lão, Thanh Vân Tông*):**
+   * Được đưa vào mục chỉ dẫn tên nhân vật chuẩn trong prompt:
+     `CANONICAL CHARACTER NAMES: When referring to main characters, preserve names: Tiêu Viêm, Dược Lão.`
 
-### 3.2 Nâng cấp `ContextEngine` & `PromptBuilder`
-* `ContextEngine.get_context(subtitles, index)`:
-  ```python
-  # Thay đổi dòng 14-17 cũ:
-  if status in ["ACCEPTED", "TRANSLATED", "EDITED"] and sub.get("translation"):
-      prev_ctx.append(f"[Line {i+1}]: {sub.get('translation')}")
-  else:
-      prev_ctx.append(f"[Line {i+1}]: {sub.get('original', '')}")
-  ```
-* `PromptBuilder.build(...)`:
-  Thêm khối chỉ đạo:
+### 3.2 Thứ Bậc Ưu Tiên & Chống Tái Sinh Thuật Ngữ (Rank 4 Resolution)
+1. **Thứ bậc ưu tiên thể loại & đại từ:**
+   * **Mức 1 (Tối thượng):** Người dùng chọn thủ công trên Header Capsule (`is_archetype_locked = True`). Khi đã chọn thủ công, việc gõ Summary sẽ KHÔNG bao giờ tự ý đổi thể loại nữa. (Chỉ đổi lại khi chọn menu "Tự động nhận diện").
+   * **Mức 2:** Chỉ thị trực tiếp trong Summary (VD người dùng viết: *"xưng anh - em"*).
+   * **Mức 3:** AI Regex phân loại tự động.
+   * **Mức 4 (Fallback mặc định):** `ARCHETYPE_CUSTOM` / `Tự do (Theo ngữ cảnh thoại)`.
+2. **Chống tái sinh chip đã xóa (Anti-Resurrection):**
+   * Quản lý tập `dismissed_auto_terms = set()`. Khi người dùng click `✕` trên một chip tự động, từ đó được ghi vào tập này. Các vòng debounce 2000ms sau đó sẽ bỏ qua từ này.
+
+### 3.3 Chống Nhại Định Dạng Trong `ContextEngine` (Rank 5 Resolution)
+* Không dùng định dạng `[Line {i+1}]: ...` vì LLM 3B dễ nhại lại tiền tố này vào câu dịch.
+* Thay vào đó, dùng cấu trúc hội thoại tự nhiên:
   ```text
-  CONTINUITY & PRONOUN ALIGNMENT:
-  - If previous subtitle dialogue used specific pronouns (e.g. 'ta - ngươi' or 'tớ - cậu'), you MUST maintain the exact same pronoun hierarchy for continuing speakers in the current subtitle.
-  - Active Pronoun Pair: {active_pronoun_pair}
+  --- PREVIOUS DIALOGUE (FOR PRONOUN & FLOW CONTINUITY) ---
+  Ngươi muốn gì ở ta?
   ```
+* Bổ sung bộ lọc regex an toàn tại `TranslationController.on_finished` để tự động gọt sạch mọi tiền tố `[Line \d+]:` nếu chẳng may LLM sinh ra.
 
-### 3.3 Thiết kế Giao diện UI (QML)
-1. **Header Capsule trong `TranslationWorkspace.qml`:**
-   * Đặt tại vị trí khoảng đệm spacer, bên trái badge `⏳ CHỜ DUYỆT`.
-   * Capsule kính mờ bo tròn `14px`, nền `Qt.rgba(1, 1, 1, 0.45)`, viền `Theme.glassBorderSpecularUpper`.
-   * Nhãn text: `🎭 Cổ Trang • Ta - Ngươi ▾`.
-   * Click mở `Menu` Liquid Glass với danh sách các phong cách để người dùng đổi lại tức thì.
-2. **Tab 2 (Intelligence & Glossary) trong `ContextInspector.qml`:**
-   * Thay thế dòng text trống cũ bằng danh sách các chip kính mờ:
-     * Chip xanh Sapphire: Thuật ngữ / Thực thể tự động bóc tách (`is_auto: true`).
-     * Chip tím/vàng: Thuật ngữ người dùng tự tạo (`is_auto: false`).
-     * Mỗi chip có nút `✕` nhỏ để xóa nhanh từ thừa.
-3. **Tab 3 (Summary) trong `ContextInspector.qml`:**
-   * Bổ sung `Timer { id: summaryDebounceTimer; interval: 2000; repeat: false; onTriggered: controller.analyzeSummary(text) }`.
+### 3.4 Phân Vùng Ngôn Ngữ (Rank 6 Resolution)
+* Toàn bộ khối `PRONOUN BIASING & CONTINUITY` được đặt bên trong khối điều kiện:
+  `if target_lang.lower() == "vietnamese":`
+  đảm bảo không gây nhiễu cho các cặp ngôn ngữ khác.
 
 ---
 
 ## 4. Chiến Lược Kiểm Thử (Mandatory Testing Strategy)
 
-### 4.1 Bộ Test A/B Đối Chiếu Bắt Buộc (`test_comparative_translation.py`)
-Khóa cứng yêu cầu nghiệm thu của người dùng:
-* **Bước 1 (Baseline Test):** Chạy dịch câu mẫu khi `story_summary = ""` và `glossary = None`. Ghi nhận prompt và kết quả dịch mặc định.
-* **Bước 2 (Enriched Test):** Cung cấp `story_summary = "Phim cổ trang tu tiên, hai nhân vật đối đầu sinh tử"`. Kích hoạt bộ phân tích sau 2 giây. Kiểm tra xem:
+### 4.1 Bộ Test A/B Đối Chiếu Bắt Buộc (`tests/test_comparative_translation.py`)
+Khóa cứng yêu cầu nghiệm thu của người dùng (Chạy deterministic qua mock/prompt builder trong < 100ms, không phụ thuộc vào tải model GGUF nặng):
+* **Bước 1 (Baseline Test):** Chạy sinh prompt khi `story_summary = ""` và `glossary = None`.
+* **Bước 2 (Enriched Test):** Cung cấp `story_summary = "Phim cổ trang tu tiên, hai nhân vật đối đầu sinh tử"`. Kích hoạt bộ phân tích:
   * Thể loại `ARCHETYPE_ANCIENT_FANTASY` được nhận diện.
   * Cặp đại từ `Ta - Ngươi` được gán.
   * Prompt sinh ra chứa luật `Ta - Ngươi` và các câu thoại tiếng Việt câu trước.
@@ -142,19 +138,20 @@ Khóa cứng yêu cầu nghiệm thu của người dùng:
 * `test_context_analyzer_katakana()`: Bóc tách chính xác từ mượn tiếng Nhật.
 * `test_context_analyzer_anti_collision()`: Video công nghệ có từ "chiến đấu với bug" không bị nhận diện nhầm thành kiếm hiệp.
 * `test_preserve_manual_glossary()`: Sửa summary không làm mất từ người dùng nhập tay.
+* `test_dismissed_auto_terms_no_resurrect()`: Bấm xóa chip tự động không bị debounce hồi sinh.
 * `test_rolling_context_translated_status()`: Câu trước có trạng thái `TRANSLATED` được truyền bản dịch tiếng Việt vào `prev_context`.
 
 ---
 
 ## 5. Kế Hoạch Triển Khai (Milestones)
 
-1. **Giai đoạn 1: Core Domain Engine**  
-   Viết `app/core/context_analyzer.py` + Bộ unit test `tests/test_context_analyzer.py`.
-2. **Giai đoạn 2: Context & Prompt Continuity**  
-   Cập nhật `ContextEngine.py` và `PromptBuilder.py` + Bộ test đối chiếu A/B `tests/test_comparative_translation.py`.
-3. **Giai đoạn 3: Controller & Data Preservation**  
-   Cập nhật `TranslationController.py`, `ProjectController.py` (debounce signal, lưu schema project).
-4. **Giai đoạn 4: Liquid Glass UI & Visual Controls**  
-   Cập nhật `ContextInspector.qml` (Tab 2 chips & Tab 3 debounce), `TranslationWorkspace.qml` (Header Pill dropdown).
+1. **Giai đoạn 1: Core Domain Engine (`app/core/context_analyzer.py`)**  
+   Triển khai bộ phân tích Regex offline siêu nhẹ + Bộ unit test `tests/test_context_analyzer.py`.
+2. **Giai đoạn 2: Context & Prompt Continuity (`ContextEngine.py` & `PromptBuilder.py`)**  
+   Cập nhật truyền ngữ cảnh câu trước đã dịch + Bộ test đối chiếu A/B `tests/test_comparative_translation.py`.
+3. **Giai đoạn 3: Controller & Persistence (`ProjectController.py` & `TranslationController.py`)**  
+   Quản lý state archetype, lưu vào `.aisrt`, debounce 2000ms, cơ chế chống hồi sinh chip bị xóa.
+4. **Giai đoạn 4: Liquid Glass UI (`TranslationWorkspace.qml` & `ContextInspector.qml`)**  
+   Header Capsule chọn thể loại kèm dropdown menu; Danh sách chip kính mờ trong Tab 2 Glossary; Debounce timer ở Tab 3 Summary.
 5. **Giai đoạn 5: Kiểm Thử Toàn Diện & Nghiệm Thu**  
    Chạy toàn bộ test suite (`pytest`) và smoke test CLI.
