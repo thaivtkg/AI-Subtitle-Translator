@@ -420,3 +420,39 @@ def test_new_models_in_catalog_and_vietnamese_purity():
     assert "ABSOLUTELY DO NOT output Chinese Hanzi" in prompt
     assert "太天真了" in prompt
 
+
+# ==========================================
+# TC-MM-15: NO MODEL LIST CHANGED SPAM DURING PROGRESS
+# ==========================================
+def test_tc_mm_15_no_model_list_changed_spam_during_progress(qapp, monkeypatch):
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        settings = AppSettings(os.path.join(tmp_dir, "test_settings.json"))
+        controller = ModelController(models_dir=tmp_dir, settings=settings)
+
+        spy_progress = SignalSpy(controller.downloadProgress)
+        spy_list_changed = SignalSpy(controller.modelListChanged)
+
+        # 1. Khi gọi _on_download_progress: downloadProgress được phát, nhưng modelListChanged KHÔNG bị phát
+        controller._on_download_progress("test_model", 50, "10 MB/s", "00:30")
+        assert len(spy_progress) == 1
+        assert spy_progress[0] == ["test_model", 50, "10 MB/s", "00:30"]
+        assert len(spy_list_changed) == 0
+
+        # 2. Khi gọi startDownload: modelListChanged VẪN được phát
+        monkeypatch.setattr(controller._download_manager, "start_download", lambda **kwargs: True)
+        start_res = controller.startDownload("qwen2.5-3b-instruct-q4_k_m")
+        assert start_res is True
+        assert len(spy_list_changed) == 1
+
+        # 3. Khi gọi cancelDownload: modelListChanged VẪN được phát
+        monkeypatch.setattr(controller._download_manager, "cancel_download", lambda model_id: True)
+        cancel_res = controller.cancelDownload("qwen2.5-3b-instruct-q4_k_m")
+        assert cancel_res is True
+        assert len(spy_list_changed) == 2
+
+        # 4. Khi gọi _on_download_finished: modelListChanged VẪN được phát
+        spy_finished = SignalSpy(controller.downloadFinished)
+        controller._on_download_finished("qwen2.5-3b-instruct-q4_k_m", os.path.join(tmp_dir, "dummy.gguf"))
+        assert len(spy_finished) == 1
+        assert len(spy_list_changed) == 3
+

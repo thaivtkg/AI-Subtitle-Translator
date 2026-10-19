@@ -34,6 +34,18 @@ Rectangle {
     signal selectClicked(string modelId)
     signal deleteClicked(string modelId)
 
+    // Lắng nghe trực tiếp tiến trình tải mà không làm giật/reset danh sách
+    Connections {
+        target: root.controller
+        function onDownloadProgress(mId, percent, speed, eta) {
+            if (mId === root.modelId) {
+                root.downloadPercent = percent
+                root.downloadSpeed = speed
+                root.downloadEta = eta
+            }
+        }
+    }
+
     implicitHeight: mainLayout.implicitHeight + Theme.spaceLarge
     color: root.isActive ? Qt.rgba(0.92, 0.96, 1.0, 0.95) : Qt.rgba(1.0, 1.0, 1.0, 0.68)
     radius: 16

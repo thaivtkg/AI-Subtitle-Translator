@@ -266,7 +266,6 @@ class ModelController(QObject):
     def _on_download_progress(self, model_id: str, percent: int, speed: str, eta: str):
         self._download_states[model_id] = (percent, speed, eta)
         self.downloadProgress.emit(model_id, percent, speed, eta)
-        self.modelListChanged.emit()
 
     def _on_download_finished(self, model_id: str, file_path: str):
         self._download_states.pop(model_id, None)
