@@ -154,6 +154,15 @@ def main():
         print("[SMOKE TEST] Application initialized successfully. Root objects verified.")
         sys.exit(0)
 
+    # Đưa cửa sổ lên trên cùng để người dùng thấy ngay lập tức
+    root_window = engine.rootObjects()[0]
+    root_window.show()
+    root_window.raise_()
+    root_window.requestActivate()
+
+    # Flush stdout để không bị nghẽn log
+    sys.stdout.flush()
+
     sys.exit(app.exec())
 
 if __name__ == "__main__":
