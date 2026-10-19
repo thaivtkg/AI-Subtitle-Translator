@@ -1,7 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Shapes 1.15
+import QtQuick.Effects
 import "../theme"
 
 Item {
@@ -142,40 +142,39 @@ Item {
 
         Item { Layout.preferredHeight: 4 }
 
-        // 3. DASHED TRANSLUCENT UPLOAD BOX (ROUNDED FROSTED CARD)
+        // 3. TRANSLUCENT UPLOAD BOX (ROUNDED FROSTED CARD)
         Rectangle {
             id: dropZoneBox
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: Math.min(centerContent.width, 580)
             Layout.preferredHeight: 175
             radius: 20
-            color: dropArea.containsDrag ? Qt.rgba(1.0, 1.0, 1.0, 0.55) : Qt.rgba(1.0, 1.0, 1.0, 0.38)
-            border.color: "transparent"
-            border.width: 0
-            clip: true
 
-            Behavior on color { ColorAnimation { duration: 150 } }
+            readonly property bool isHoveredOrDragged: dropArea.containsDrag || dropZoneMouse.containsMouse
 
-            Shape {
-                anchors.fill: parent
-                layer.enabled: true
-                layer.samples: 4
-                ShapePath {
-                    strokeColor: dropArea.containsDrag ? Theme.accentSapphire : Qt.rgba(1.0, 1.0, 1.0, 0.90)
-                    strokeWidth: 2
-                    strokeStyle: ShapePath.DashLine
-                    dashPattern: [5, 4]
-                    fillColor: "transparent"
-                    startX: 20; startY: 0
-                    PathLine { x: dropZoneBox.width - 20; y: 0 }
-                    PathArc { x: dropZoneBox.width; y: 20; radiusX: 20; radiusY: 20 }
-                    PathLine { x: dropZoneBox.width; y: dropZoneBox.height - 20 }
-                    PathArc { x: dropZoneBox.width - 20; y: dropZoneBox.height; radiusX: 20; radiusY: 20 }
-                    PathLine { x: 20; y: dropZoneBox.height }
-                    PathArc { x: 0; y: dropZoneBox.height - 20; radiusX: 20; radiusY: 20 }
-                    PathLine { x: 0; y: 20 }
-                    PathArc { x: 20; y: 0; radiusX: 20; radiusY: 20 }
-                }
+            // 1. Nền kính bừng sáng mượt mà khi hover (Khớp CSS .drop-target-pod:hover)
+            color: isHoveredOrDragged ? Qt.rgba(1.0, 1.0, 1.0, 0.75) : Qt.rgba(1.0, 1.0, 1.0, 0.45)
+            Behavior on color { ColorAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
+            // 2. Viền gương chuyển dần sang viền Sapphire phát quang
+            border.color: isHoveredOrDragged ? Theme.accentSapphire : Theme.glassBorderSpecularUpper
+            border.width: isHoveredOrDragged ? 2.0 : 1.5
+            Behavior on border.color { ColorAnimation { duration: 200 } }
+
+            // 3. Hiệu ứng nhấc bổng 2px (translateY -2px) như bản web mẫu
+            transform: Translate {
+                y: dropZoneBox.isHoveredOrDragged ? -2 : 0
+                Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            }
+
+            // 4. Bóng quang học Sapphire tỏa khối 3D (Deep Optical Glow)
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: dropZoneBox.isHoveredOrDragged ? Qt.rgba(0.0, 0.40, 1.0, 0.35) : Qt.rgba(0.08, 0.04, 0.22, 0.12)
+                shadowBlur: dropZoneBox.isHoveredOrDragged ? 0.65 : 0.42
+                shadowVerticalOffset: dropZoneBox.isHoveredOrDragged ? 6 : 3
+                Behavior on shadowColor { ColorAnimation { duration: 200 } }
             }
 
             ColumnLayout {
@@ -193,7 +192,7 @@ Item {
                     text: dropArea.containsDrag ? "Thả tệp vào đây ngay!" : "Kéo thả file vào đây hoặc Click để nạp dữ liệu mẫu"
                     font.pixelSize: 14
                     font.bold: true
-                    color: "#0F172A"
+                    color: Theme.textOnLightPod
                 }
 
                 // Extension format pills (.SRT, .AISRT, .MP4)
@@ -226,7 +225,9 @@ Item {
             }
 
             MouseArea {
+                id: dropZoneMouse
                 anchors.fill: parent
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: launchpadRoot.openSrtClicked()
             }

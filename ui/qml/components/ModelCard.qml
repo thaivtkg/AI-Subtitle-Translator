@@ -149,7 +149,7 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 6
-                color: Theme.bgSurfaceSoft
+                color: Qt.rgba(0.0, 0.4, 1.0, 0.12)
                 radius: 3
                 clip: true
 
