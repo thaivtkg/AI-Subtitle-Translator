@@ -118,6 +118,11 @@ def test_translation_controller_binds_project_controller_and_cleans_hallucinated
     tc.on_finished(0, "Em không đầu hàngEither this subtitle continues with 'Em không' or switches to...")
     assert tc.currentTranslation == "Em không đầu hàng"
 
+    tc._active_translation_index = 0
+    tc._current_index = 0
+    tc.on_finished(0, "Tôi sẽ không đầu hàng. Note: Here I used 'Tôi' because...")
+    assert tc.currentTranslation == "Tôi sẽ không đầu hàng."
+
 
 def test_project_controller_set_is_ja_origin():
     mock_model = MagicMock()

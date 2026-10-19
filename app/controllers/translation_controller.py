@@ -285,7 +285,7 @@ class TranslationController(QObject):
         
         # Cắt bỏ phần rò rỉ reasoning tiếng Anh nếu LLM vô tình sinh ra
         clean_text = re.split(
-            r'(?i)(?:Either\s+(?:this|switch)|Given\s+the|Note:|Explanation:|Translation:)\b', 
+            r'(?i)(?:(?:Either\s+(?:this|switch)|Given\s+the|Switch\s+to)\b|Note:|Explanation:|Translation:)', 
             clean_text
         )[0].strip()
         # Loại bỏ ngoặc kép bao quanh nếu có

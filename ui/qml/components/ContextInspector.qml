@@ -595,7 +595,7 @@ ColumnLayout {
                                         }
                                         return "⚡ Tự động phân loại dựa trên nội dung Story Summary đã nhập."
                                     }
-                                    color: Theme.textMuted
+                                    color: Theme.textOnLightPodMuted
                                     font.pixelSize: 10
                                     wrapMode: Text.WordWrap
                                     Layout.fillWidth: true
