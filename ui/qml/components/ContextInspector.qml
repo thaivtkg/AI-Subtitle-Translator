@@ -460,14 +460,14 @@ ColumnLayout {
                             spacing: 6
 
                             Text {
-                                text: "🎭 ĐỊNH HƯỚNG BỐI CẢNH & XƯNG HÔ"
+                                text: "🎭 BỐI CẢNH & XƯNG HÔ"
                                 color: Theme.accentSapphire
                                 font.pixelSize: 11
                                 font.bold: true
                                 font.letterSpacing: 0.5
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
                             }
-
-                            Item { Layout.fillWidth: true }
 
                             Rectangle {
                                 id: archetypeStatusBadge
@@ -488,8 +488,8 @@ ColumnLayout {
                                     objectName: "statusBadgeText"
                                     anchors.centerIn: parent
                                     text: (typeof projectController !== "undefined" && projectController.isArchetypeLocked)
-                                          ? "🔒 Đã khóa thủ công"
-                                          : "✨ Tự động nhận diện"
+                                          ? "🔒 Đã khóa"
+                                          : "✨ Tự động"
                                     color: (typeof projectController !== "undefined" && projectController.isArchetypeLocked)
                                            ? "#D97706"
                                            : "#16A34A"
@@ -511,6 +511,7 @@ ColumnLayout {
                                 color: Theme.textOnLightPod
                                 font.pixelSize: 12
                                 font.bold: true
+                                elide: Text.ElideRight
                             }
 
                             Text {
@@ -526,9 +527,9 @@ ColumnLayout {
                                 color: Theme.accentSapphire
                                 font.pixelSize: 12
                                 font.bold: true
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
                             }
-
-                            Item { Layout.fillWidth: true }
                         }
 
                         // Selector ComboBox
@@ -561,9 +562,16 @@ ColumnLayout {
                                 }
 
                                 Text {
-                                    text: typeof projectController !== "undefined"
-                                          ? (projectController.archetypeDisplayLabel + " (" + projectController.activePronounPair + ")")
-                                          : ""
+                                    text: {
+                                        if (typeof projectController === "undefined") return ""
+                                        var list = projectController.archetypeList || []
+                                        for (var i = 0; i < list.length; i++) {
+                                            if (list[i].id === projectController.activeArchetype) {
+                                                return list[i].name + " (" + list[i].pronouns + ")"
+                                            }
+                                        }
+                                        return projectController.archetypeDisplayLabel
+                                    }
                                     color: Theme.textOnLightPod
                                     font.pixelSize: 11
                                     font.bold: true

@@ -29,7 +29,7 @@ DEFAULT_PRONOUNS: dict[str, str] = {
 ARCHETYPE_METADATA: dict[str, dict[str, Any]] = {
     ARCHETYPE_ANCIENT_FANTASY: {
         "id": ARCHETYPE_ANCIENT_FANTASY,
-        "name": "Cổ Trang / Kiếm Hiệp / Tu Tiên",
+        "name": "Cổ Trang / Kiếm Hiệp",
         "pronouns": "Ta - Ngươi",
         "icon": "⚔️",
     },
@@ -41,20 +41,20 @@ ARCHETYPE_METADATA: dict[str, dict[str, Any]] = {
     },
     ARCHETYPE_MODERN_ACTION: {
         "id": ARCHETYPE_MODERN_ACTION,
-        "name": "Hiện Đại / Hành Động / Hình Sự",
+        "name": "Hiện Đại / Hành Động",
         "pronouns": "Tôi - Bạn",
         "icon": "🔫",
     },
     ARCHETYPE_ROMANCE_FAMILY: {
         "id": ARCHETYPE_ROMANCE_FAMILY,
-        "name": "Tình Cảm / Gia Đình / Đô Thị",
+        "name": "Tình Cảm / Gia Đình",
         "pronouns": "Anh - Em",
         "icon": "❤️",
     },
     ARCHETYPE_CUSTOM: {
         "id": ARCHETYPE_CUSTOM,
-        "name": "Tự Do (Theo ngữ cảnh)",
-        "pronouns": "Tự do (Theo ngữ cảnh)",
+        "name": "Tự Do",
+        "pronouns": "Theo ngữ cảnh",
         "icon": "🎭",
     },
 }
