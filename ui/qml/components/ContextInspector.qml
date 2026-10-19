@@ -532,104 +532,73 @@ ColumnLayout {
                             }
                         }
 
-                        // Selector ComboBox
-                        ComboBox {
-                            id: archetypeSelectorCombo
-                            objectName: "archetypeSelectorCombo"
+                        // THAY THẾ COMBOBOX BẰNG THẺ BỐI CẢNH ĐỘNG PHÂN LOẠI TỰ ĐỘNG
+                        Rectangle {
+                            id: dynamicContextPod
+                            objectName: "dynamicContextPod"
                             Layout.fillWidth: true
-                            implicitHeight: 32
-                            model: typeof projectController !== "undefined" ? projectController.archetypeList : []
-                            textRole: "name"
-
-                            leftPadding: 8
-                            rightPadding: 24
-
-                            contentItem: RowLayout {
-                                spacing: 6
-
-                                Text {
-                                    text: {
-                                        if (typeof projectController === "undefined") return "🎭"
-                                        var list = projectController.archetypeList || []
-                                        for (var i = 0; i < list.length; i++) {
-                                            if (list[i].id === projectController.activeArchetype) {
-                                                return list[i].icon || "🎭"
-                                            }
-                                        }
-                                        return "🎭"
-                                    }
-                                    font.pixelSize: 12
-                                }
-
-                                Text {
-                                    text: {
-                                        if (typeof projectController === "undefined") return ""
-                                        var list = projectController.archetypeList || []
-                                        for (var i = 0; i < list.length; i++) {
-                                            if (list[i].id === projectController.activeArchetype) {
-                                                return list[i].name + " (" + list[i].pronouns + ")"
-                                            }
-                                        }
-                                        return projectController.archetypeDisplayLabel
-                                    }
-                                    color: Theme.textOnLightPod
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                    elide: Text.ElideRight
+                            implicitHeight: dynamicContextCol.implicitHeight + 16
+                            radius: 12
+                            color: Qt.rgba(0.96, 0.97, 0.99, 0.7)
+                            border.color: Theme.glassBorderSpecularLower
+                            border.width: 1
+                            ColumnLayout {
+                                id: dynamicContextCol
+                                anchors.fill: parent
+                                anchors.margins: 10
+                                spacing: 4
+                                RowLayout {
                                     Layout.fillWidth: true
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-                            }
-
-                            delegate: ItemDelegate {
-                                width: archetypeSelectorCombo.width
-                                implicitHeight: 32
-                                highlighted: typeof projectController !== "undefined" && projectController.activeArchetype === modelData.id
-                                contentItem: RowLayout {
                                     spacing: 6
                                     Text {
-                                        text: modelData.icon || ""
-                                        font.pixelSize: 12
+                                        text: {
+                                            if (typeof projectController === "undefined" || !projectController.storySummary.trim()) {
+                                                return "🎭"
+                                            }
+                                            return projectController.isJaOrigin ? "🌸" : "✨"
+                                        }
+                                        font.pixelSize: 13
                                     }
                                     Text {
-                                        text: modelData.name + " (" + modelData.pronouns + ")"
-                                        color: highlighted ? Theme.accentSapphire : Theme.textOnLightPod
-                                        font.pixelSize: 11
-                                        font.bold: highlighted
-                                        Layout.fillWidth: true
-                                        elide: Text.ElideRight
-                                    }
-                                }
-                                background: Rectangle {
-                                    color: highlighted ? Qt.rgba(0.0, 0.4, 1.0, 0.12) : (hovered ? Qt.rgba(0, 0, 0, 0.05) : "transparent")
-                                }
-                            }
-
-                            background: Rectangle {
-                                radius: 8
-                                color: Qt.rgba(1, 1, 1, 0.75)
-                                border.color: Theme.glassBorderSpecularUpper
-                                border.width: 1
-                            }
-
-                            onActivated: function(index) {
-                                if (typeof projectController !== "undefined" && model && model[index]) {
-                                    projectController.selectArchetype(model[index].id, true)
-                                }
-                            }
-
-                            Connections {
-                                target: typeof projectController !== "undefined" ? projectController : null
-                                function onArchetypeChanged() {
-                                    if (typeof projectController === "undefined" || !archetypeSelectorCombo.model) return
-                                    for (var i = 0; i < archetypeSelectorCombo.model.length; i++) {
-                                        if (archetypeSelectorCombo.model[i].id === projectController.activeArchetype) {
-                                            if (archetypeSelectorCombo.currentIndex !== i) {
-                                                archetypeSelectorCombo.currentIndex = i
+                                        text: {
+                                            if (typeof projectController === "undefined" || !projectController.storySummary.trim()) {
+                                                return "Tự do (Theo ngữ cảnh thoại)"
                                             }
-                                            break
+                                            return "Thể loại: " + projectController.archetypeDisplayLabel
+                                        }
+                                        color: Theme.textOnLightPod
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+                                    Rectangle {
+                                        implicitWidth: pronounTagText.implicitWidth + 12
+                                        implicitHeight: 18
+                                        radius: 9
+                                        color: Qt.rgba(0.2, 0.4, 0.9, 0.12)
+                                        visible: typeof projectController !== "undefined" && projectController.activePronounPair.length > 0
+                                        Text {
+                                            id: pronounTagText
+                                            anchors.centerIn: parent
+                                            text: projectController.activePronounPair
+                                            color: Theme.accentSapphire
+                                            font.pixelSize: 10
+                                            font.bold: true
                                         }
                                     }
+                                }
+                                Text {
+                                    text: {
+                                        if (typeof projectController === "undefined" || !projectController.storySummary.trim()) {
+                                            return "💡 Hãy nhập tóm tắt tại Tab Tóm Tắt để hệ thống tự động phân loại bối cảnh & xưng hô."
+                                        }
+                                        return "⚡ Tự động phân loại dựa trên nội dung Story Summary đã nhập."
+                                    }
+                                    color: Theme.textMuted
+                                    font.pixelSize: 10
+                                    wrapMode: Text.WordWrap
+                                    Layout.fillWidth: true
                                 }
                             }
                         }

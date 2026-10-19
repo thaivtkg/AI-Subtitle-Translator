@@ -72,4 +72,4 @@ def test_real_srt_30_lines_comparative_prompt():
         # 2. Enriched prompt bắt buộc phải chứa chỉ thị cấm dịch 'người lớn tuổi', ép dịch 'tiền bối'
         assert "JAPANESE TRANSLATION ARTIFACTS" in enriched_prompt
         assert "tiền bối" in enriched_prompt
-        assert "ABSOLUTELY DO NOT translate 'senior' as 'người lớn tuổi'" in enriched_prompt
+        assert "NEVER translate as 'người lớn tuổi'" in enriched_prompt

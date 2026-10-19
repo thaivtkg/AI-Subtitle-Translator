@@ -52,6 +52,7 @@ class ProjectController(QObject):
         self._is_archetype_locked = False
         self.dismissed_auto_terms = set()
         self._is_ja_origin = False
+        self._story_summary = ""
         if self._subtitle_model is not None:
             self._subtitle_model.dataChanged.connect(self._on_model_changed)
             self._subtitle_model.modelReset.connect(self.projectStateChanged.emit)
@@ -81,6 +82,10 @@ class ProjectController(QObject):
     @Property(bool, notify=archetypeChanged)
     def isJaOrigin(self) -> bool:
         return getattr(self, "_is_ja_origin", False)
+
+    @Property(str, notify=archetypeChanged)
+    def storySummary(self) -> str:
+        return getattr(self, "_story_summary", "")
 
     @Property(str, notify=archetypeChanged)
     def archetypeDisplayLabel(self):
@@ -123,6 +128,8 @@ class ProjectController(QObject):
     @Slot(str)
     def analyzeSummary(self, summary_text: str):
         summary_clean = (summary_text or "").strip()
+        old_summary = getattr(self, "_story_summary", "")
+        self._story_summary = summary_clean
         terms_changed = False
         if summary_clean:
             extracted = ContextAnalyzer.extract_entities(summary_clean)
@@ -149,7 +156,7 @@ class ProjectController(QObject):
         old_is_ja = self._is_ja_origin
         self._is_ja_origin = ja_detection.get("is_ja_origin", False)
 
-        archetype_changed = False
+        archetype_changed = old_summary != summary_clean
         if not self._is_archetype_locked:
             if self._is_ja_origin and not summary_clean:
                 target_archetype = ARCHETYPE_ANIME_SCHOOL
@@ -266,6 +273,7 @@ class ProjectController(QObject):
         self._set_project_state(True, True)
         
         # 2. Reset trạng thái giao diện để tránh kẹt dữ liệu cũ
+        self._story_summary = ""
         self.projectLoaded.emit("")          # Xóa Story Summary cũ
         self.languageLoaded.emit("English") # Đưa dropdown về mặc định
 
@@ -293,6 +301,7 @@ class ProjectController(QObject):
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
     @Slot(str, str, str, str)
     def saveProject(self, file_url, story_summary, source_lang="English", target_lang="Vietnamese"):
+        self._story_summary = (story_summary or "").strip()
         file_path = _normalize_file_path(file_url)
 
         if not file_path.endswith('.aisrt'):
@@ -402,6 +411,8 @@ class ProjectController(QObject):
                 loaded_dismissed = set()
                 loaded_is_ja = False
 
+            story_summary = data.get("story_summary", "")
+            self._story_summary = (story_summary or "").strip()
             subtitles = data.get("subtitles", [])
             self._subtitle_model.load_data(subtitles)
             self.glossary = loaded_glossary
@@ -415,7 +426,7 @@ class ProjectController(QObject):
             self.archetypeChanged.emit()
             self.glossaryChanged.emit()
             print(f"[PROJECT_LOAD] Loaded {len(subtitles)} subtitles from {os.path.basename(file_path)}")
-            self.projectLoaded.emit(data.get("story_summary", ""))
+            self.projectLoaded.emit(story_summary)
             
             # --- ĐOẠN ĐÃ SỬA: DỌN DẸP DUPLICATE EMIT ---
             metadata = data.get("metadata", {})

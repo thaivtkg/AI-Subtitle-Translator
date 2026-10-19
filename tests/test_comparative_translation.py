@@ -63,8 +63,8 @@ def test_mandatory_ab_comparative_prompt_difference():
     assert "Ta - Ngươi" in enriched_prompt, (
         "CRITICAL FAILURE: Enriched prompt MUST contain active pronoun pair 'Ta - Ngươi'!"
     )
-    assert "MANDATORY PRONOUN PAIR" in enriched_prompt, (
-        "CRITICAL FAILURE: Enriched prompt MUST contain MANDATORY PRONOUN PAIR rule!"
+    assert "PRONOUN RELATIONSHIP" in enriched_prompt, (
+        "CRITICAL FAILURE: Enriched prompt MUST contain PRONOUN RELATIONSHIP rule!"
     )
     assert "Tiêu Viêm" in enriched_prompt, (
         "CRITICAL FAILURE: Enriched prompt MUST contain canonical character name 'Tiêu Viêm'!"
@@ -123,7 +123,7 @@ def test_active_pronoun_pair_only_injected_for_vietnamese():
         active_pronoun_pair="Ta - Ngươi",
     )
     assert "VIETNAMESE LOCALIZATION RULES" not in prompt_en
-    assert "MANDATORY PRONOUN PAIR" not in prompt_en
+    assert "PRONOUN RELATIONSHIP" not in prompt_en
 
 
 def test_custom_archetype_omits_mandatory_pronoun_rule():
@@ -141,5 +141,5 @@ def test_custom_archetype_omits_mandatory_pronoun_rule():
         active_pronoun_pair="Tự do (Theo ngữ cảnh)",
     )
     assert "VIETNAMESE LOCALIZATION RULES" in prompt
-    assert "MANDATORY PRONOUN PAIR" not in prompt
-    assert "STRICT PRONOUNS" in prompt
+    assert "PRONOUN RELATIONSHIP" not in prompt
+    assert "NATURAL PRONOUNS" in prompt

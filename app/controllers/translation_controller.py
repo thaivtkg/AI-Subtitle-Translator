@@ -282,6 +282,14 @@ class TranslationController(QObject):
             return
         clean_text = (text or "").strip()
         clean_text = re.sub(r'^\[Line \d+\]:\s*', '', clean_text, flags=re.IGNORECASE).strip()
+        
+        # Cắt bỏ phần rò rỉ reasoning tiếng Anh nếu LLM vô tình sinh ra
+        clean_text = re.split(
+            r'(?i)(?:Either\s+(?:this|switch)|Given\s+the|Note:|Explanation:|Translation:)\b', 
+            clean_text
+        )[0].strip()
+        # Loại bỏ ngoặc kép bao quanh nếu có
+        clean_text = clean_text.strip('"\'')
         print(
             f"[TRANSLATION_CALLBACK] target={index} "
             f"clean_len={len(clean_text)} clean_text={clean_text!a} "

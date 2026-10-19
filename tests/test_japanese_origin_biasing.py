@@ -50,9 +50,9 @@ def test_prompt_builder_injects_japanese_artifacts_rule():
         is_ja_origin=True,
     )
     assert "JAPANESE TRANSLATION ARTIFACTS" in prompt
-    assert "'senior' or 'seniors' used as a title, address" in prompt
+    assert "Translate 'senior' / 'seniors' as 'tiền bối'" in prompt
     assert "tiền bối" in prompt
-    assert "ABSOLUTELY DO NOT translate 'senior' as 'người lớn tuổi'" in prompt
+    assert "NEVER translate as 'người lớn tuổi'" in prompt
 
 
 def test_senior_only_translated_as_tien_boi_when_marked_ja_origin():
@@ -64,7 +64,7 @@ def test_senior_only_translated_as_tien_boi_when_marked_ja_origin():
         is_ja_origin=False,
     )
     assert "JAPANESE TRANSLATION ARTIFACTS" not in unmarked_prompt
-    assert "ABSOLUTELY DO NOT translate 'senior' as 'người lớn tuổi'" not in unmarked_prompt
+    assert "NEVER translate as 'người lớn tuổi'" not in unmarked_prompt
 
     marked_prompt = PromptBuilder.build(
         current_sub=current_sub,
@@ -74,5 +74,22 @@ def test_senior_only_translated_as_tien_boi_when_marked_ja_origin():
     )
     assert "JAPANESE TRANSLATION ARTIFACTS" in marked_prompt
     assert "tiền bối" in marked_prompt
-    assert "ABSOLUTELY DO NOT translate 'senior' as 'người lớn tuổi'" in marked_prompt
+    assert "NEVER translate as 'người lớn tuổi'" in marked_prompt
+
+
+def test_dialogue_alternation_allows_toi_for_senior():
+    prompt = PromptBuilder.build(
+        story_summary="Anime học đường",
+        source_lang="English",
+        target_lang="Vietnamese",
+        prev_context=["Chuyện gì vậy tiền bối, tiền bối định bỏ cuộc sao?"],
+        current_sub="I will not give up.",
+        active_pronoun_pair="Em - Tiền bối",
+        is_ja_origin=True,
+    )
+    assert "ALTERNATING SPEAKERS" in prompt
+    assert "Tôi sẽ không đầu hàng" in prompt
+    assert "STRICT OUTPUT FORMAT" in prompt
+    assert "Either this..." in prompt
+
 

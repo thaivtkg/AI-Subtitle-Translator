@@ -70,46 +70,41 @@ def build_translation_prompt(
                 rule = f'- "{hit.matched_form}" ({hit.entity_type}, canonical name: "{hit.entity_name}") MUST be translated as "{hit.canonical_translation}".'
                 system_prompt += rule + "\n"
 
-    # 4. BỘ LUẬT "THÉP" DÀNH RIÊNG CHO TIẾNG VIỆT (PRONOUN BIASING & DIALOGUE CONTINUITY)
+    # 4. BỘ LUẬT DÀNH CHO TIẾNG VIỆT (TỰ NHIÊN, KHÔNG CỨNG NHẮC, KHÔNG RÒ RỈ SUY NGHĨ)
     if target_lang.lower() == "vietnamese":
         rules = ["\nVIETNAMESE LOCALIZATION RULES (MUST FOLLOW):"]
         
-        # Định hướng cặp đại từ xưng hô nếu có thể loại xác định
+        # Khóa chống rò rỉ suy luận / commentary
+        rules.append(
+            "1. STRICT OUTPUT FORMAT: Output ONLY the direct translated Vietnamese subtitle. ABSOLUTELY DO NOT output any reasoning, explanation, alternatives, or English notes (e.g., NEVER output 'Either this...', 'Given the...', 'Switch to...', 'Note:')."
+        )
+        # Định hướng xưng hô linh hoạt, cho phép 'tôi' tự nhiên
         if active_pronoun_pair and active_pronoun_pair.strip() and "tự do" not in active_pronoun_pair.lower():
             rules.append(
-                f"1. MANDATORY PRONOUN PAIR: You MUST prioritize the pronoun pair '{active_pronoun_pair.strip()}' for addressing between the main characters. Ensure consistent addressing throughout dialogue."
-            )
-            rules.append(
-                "2. STRICT PRONOUNS: ABSOLUTELY DO NOT use robotic literal pronouns like 'tôi', 'bạn', 'anh ấy', 'cô ấy' in casual dialogue unless matching the active pronoun pair. Adapt pronouns naturally based on character relationships."
+                f"2. PRONOUN RELATIONSHIP: Main character relationship is '{active_pronoun_pair.strip()}'. "
+                "However, dialogue has ALTERNATING SPEAKERS: When the junior speaks, they address the other as 'tiền bối' and refer to themselves as 'em'. "
+                "When the senior replies (e.g. 'I will not give up'), they refer to themselves naturally as 'tôi' or 'chị/anh' (e.g. 'Tôi sẽ không đầu hàng'). "
+                "NEVER refer to oneself as 'Tiền bối không đầu hàng'!"
             )
         else:
             rules.append(
-                "1. STRICT PRONOUNS: ABSOLUTELY DO NOT use robotic literal pronouns like 'tôi', 'bạn', 'anh ấy', 'cô ấy' in casual dialogue. You MUST adapt pronouns naturally (e.g., anh, chị, em, mày, tao, ông, bà, hắn, nó) based strictly on the character relationships in the STORY SUMMARY."
+                "2. NATURAL PRONOUNS: Use natural pronouns suitable for the context. 'Tôi' is completely valid and natural for self-affirmation (e.g., 'Tôi sẽ không đầu hàng')."
             )
-
-        # CHỈ kích hoạt luật ép dịch 'senior' -> 'tiền bối' KHI được đánh dấu là sub dịch từ Nhật
+        # Luật tiếng Nhật khi được đánh dấu
         is_marked_ja_origin = (
             is_ja_origin 
             or source_lang.lower() in ("ja", "japanese")
         )
         if is_marked_ja_origin:
             rules.append(
-                "JAPANESE TRANSLATION ARTIFACTS (CRITICAL):\n"
-                "- This dialogue is explicitly marked as originating from Japanese (Anime/Drama).\n"
-                "- When encountering 'senior' or 'seniors' used as a title, address, or reference to colleagues/schoolmates, you MUST translate it as 'tiền bối' (or 'anh/chị tiền bối'). ABSOLUTELY DO NOT translate 'senior' as 'người lớn tuổi', 'người già', or 'học sinh lớp trên'.\n"
+                "3. JAPANESE TRANSLATION ARTIFACTS:\n"
+                "- Subtitle originates from Japanese (Anime/Drama).\n"
+                "- Translate 'senior' / 'seniors' as 'tiền bối' (or 'anh/chị tiền bối') when addressing schoolmates/colleagues. NEVER translate as 'người lớn tuổi' or 'học sinh lớp trên'.\n"
                 "- Translate 'senpai' as 'tiền bối'.\n"
-                "- Translate 'junior' as 'hậu bối' or 'em'.\n"
-                "- Translate 'master' (when addressing a mentor) as 'sư phụ' or 'tiên sinh'."
+                "- Translate 'junior' as 'hậu bối' or 'em'."
             )
-            
         rules.append(
-            "3. DIALOGUE CONTINUITY: Follow the tone, pronouns, and terminology of the preceding translated subtitles (in --- PREVIOUS SUBTITLES ---). If the previous line used a specific pronoun pair, you MUST continue using that exact pair."
-        )
-        rules.append(
-            "4. HONORIFICS: Completely REMOVE Japanese/Korean honorific suffixes (like -san, -kun, -chan, -sama, -ssi) OR translate them naturally into Vietnamese kinship terms. DO NOT leave them as literal words (e.g., never output 'Tanaka anh')."
-        )
-        rules.append(
-            "5. NATURAL TONE: The dialogue must flow naturally like native Vietnamese speakers. Use appropriate sentence-ending particles (nhé, nha, đi, thôi) for casual speech."
+            "4. NATURAL DIALOGUE: The translation must sound like native spoken Vietnamese in movies/anime. Avoid unnatural word-by-word phrasing."
         )
         system_prompt += "\n".join(rules) + "\n"
 
@@ -121,7 +116,7 @@ def build_translation_prompt(
     if next_context:
         user_prompt += "--- NEXT SUBTITLES ---\n" + "\n".join(next_context) + "\n\n"
         
-    user_prompt += f"Provide the exact natural {target_lang} translation for the current subtitle directly."
+    user_prompt += f"Output ONLY the final {target_lang} translation for the current subtitle directly. No extra words."
 
     # 6. CHATML WRAPPER
     prompt = (
