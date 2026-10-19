@@ -149,3 +149,24 @@ def test_project_controller_set_is_ja_origin():
     assert pc.isJaOrigin is False
     assert "archetypeChanged" in signals_received
 
+
+def test_close_project_returns_to_launchpad_and_cleans_state():
+    """Kiểm tra tính năng đóng dự án srt, xóa dữ liệu và trở về trạng thái khởi động."""
+    from app.controllers.project_controller import ProjectController
+    from app.models.subtitle import SubtitleModel
+    model = SubtitleModel()
+    model.load_data([
+        {"index": 1, "start_time": "00:00:01,000", "end_time": "00:00:02,000", "original": "Hello", "translation": ""}
+    ])
+    controller = ProjectController(model)
+    assert controller.hasProject is True
+    assert model.rowCount() == 1
+    # Thực thi đóng dự án
+    controller.closeProject()
+    # Xác nhận toàn bộ dữ liệu phụ đề và trạng thái dự án đã được dọn sạch
+    assert model.rowCount() == 0
+    assert controller.hasProject is False
+    assert controller.isDirty is False
+    assert controller.storySummary == ""
+
+

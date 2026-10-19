@@ -113,6 +113,11 @@ ApplicationWindow {
                 onArchetypeClicked: {
                     contextInspector.switchToTab(1)
                 }
+                onCloseProjectClicked: {
+                    if (!batchController.executionLocked) {
+                        projectController.closeProject()
+                    }
+                }
             }
 
             StudioLaunchpad {
@@ -484,6 +489,13 @@ ApplicationWindow {
         onActivated: {
             if (!batchController.executionLocked) loadProjectDialog.open()
         }
+    }
+
+    Shortcut {
+        objectName: "shortcutCloseProject"
+        sequence: "Ctrl+W"
+        enabled: appHeader.hasProject && !batchController.executionLocked
+        onActivated: projectController.closeProject()
     }
 
     Shortcut {

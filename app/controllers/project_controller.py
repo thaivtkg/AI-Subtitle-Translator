@@ -216,6 +216,31 @@ class ProjectController(QObject):
             self.glossaryChanged.emit()
             self.markDirty()
 
+    @Slot()
+    def closeProject(self):
+        """Đóng dự án hiện tại, giải phóng dữ liệu phụ đề và quay về màn hình khởi động (StudioLaunchpad)."""
+        if self._subtitle_model:
+            self._subtitle_model.load_data([])
+        self._original_source_file = "unknown.srt"
+        self._story_summary = ""
+        self._is_ja_origin = False
+        self._is_archetype_locked = False
+        self._active_archetype = ARCHETYPE_CUSTOM
+        self._active_pronoun_pair = DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
+        self.dismissed_auto_terms.clear()
+        if hasattr(self.glossary, "_entries"):
+            self.glossary._entries.clear()
+        if hasattr(self.entity_dictionary, "_entities"):
+            self.entity_dictionary._entities.clear()
+        if hasattr(self.translation_memory, "_cache"):
+            self.translation_memory._cache.clear()
+        self._set_project_state(False, False)
+        self.projectLoaded.emit("")
+        self.languageLoaded.emit("English")
+        self.archetypeChanged.emit()
+        self.glossaryChanged.emit()
+        self.notify.emit("INFO", "Đã đóng dự án và trở về màn hình khởi động.")
+
     @Slot(result=bool)
     def validateBeforeExport(self):
         """Hàm này sẽ được QML gọi ĐẦU TIÊN khi bấm nút Xuất SRT"""

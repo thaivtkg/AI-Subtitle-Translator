@@ -116,6 +116,19 @@ Item {
                     running: true
                 }
 
+                Timer {
+                    id: fpsSampler
+                    interval: 500
+                    running: true
+                    repeat: true
+                    onTriggered: {
+                        if (frameAnim.smoothFrameTime > 0) {
+                            var liveFps = 1.0 / frameAnim.smoothFrameTime
+                            fpsText.text = "FPS: " + liveFps.toFixed(1)
+                        }
+                    }
+                }
+
                 Text {
                     objectName: "vramStatusText"
                     id: vramText
@@ -130,7 +143,8 @@ Item {
                 }
 
                 Text {
-                    text: "FPS: " + (frameAnim.smoothFrameRate > 0 ? frameAnim.smoothFrameRate.toFixed(1) : "60.0")
+                    id: fpsText
+                    text: "FPS: 60.0"
                     color: Qt.rgba(1, 1, 1, 0.85)
                     font.pixelSize: 11
                     font.bold: true

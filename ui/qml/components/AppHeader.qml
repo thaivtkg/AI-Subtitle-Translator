@@ -25,6 +25,7 @@ ToolBar {
     signal exportClicked()
     signal modelManagerClicked()
     signal archetypeClicked()
+    signal closeProjectClicked()
 
     implicitHeight: 48
     padding: 0
@@ -245,9 +246,20 @@ ToolBar {
                 AppButton {
                     objectName: "btnOpenSrt"
                     text: root.isCompact ? "SRT" : "📁 Mở SRT"
-                    tooltip: "Mở file SRT — Ctrl + O"
+                    tooltip: "Mở hoặc đổi file SRT khác — Ctrl + O"
                     enabled: !root.projectMutationLocked
                     onClicked: root.openSrtClicked()
+                }
+                AppButton {
+                    id: btnCloseProject
+                    objectName: "btnCloseProject"
+                    visible: root.hasProject
+                    text: root.isCompact ? "⌂" : "⌂ Đóng & Khởi động"
+                    tooltip: "Đóng file phụ đề hiện tại và quay về màn hình khởi động — Ctrl + W"
+                    isPrimary: false
+                    isDarkGlass: true
+                    enabled: !root.projectMutationLocked
+                    onClicked: root.closeProjectClicked()
                 }
                 AppButton {
                     objectName: "btnOpenProject"
@@ -342,7 +354,7 @@ ToolBar {
                     Rectangle {
                         id: archetypeHeaderCapsule
                         objectName: "archetypeHeaderCapsule"
-                        visible: root.hasProject && typeof projectController !== "undefined" && centerCluster.width >= 320
+                        visible: root.hasProject && typeof projectController !== "undefined" && centerCluster.width >= 280
                         implicitHeight: 26
                         implicitWidth: archetypeHeaderRow.implicitWidth + 20
                         radius: 13
