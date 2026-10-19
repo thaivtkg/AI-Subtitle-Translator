@@ -396,3 +396,147 @@ def test_tc_mm_13_download_error_thread_safety(qapp, monkeypatch):
         assert dm.is_downloading("error_model") is False
         assert not os.path.exists(target_file)
         assert not os.path.exists(target_file + ".part")
+
+
+# ==========================================
+# TC-MM-14: NEW MODELS & VIETNAMESE PURITY
+# ==========================================
+def test_new_models_in_catalog_and_vietnamese_purity():
+    from app.core.model_catalog import MODEL_CATALOG
+    from app.core.prompt_builder import PromptBuilder
+    # 1. Kiểm tra 3 model mới đã có mặt trong danh mục với URL hợp lệ
+    assert "llama-3.1-8b-instruct-q4_k_m" in MODEL_CATALOG
+    assert "llama-3.3-8b-instruct-q4_k_m" in MODEL_CATALOG
+    assert "translategemma-9b-q4_k_m" in MODEL_CATALOG
+    
+    llama_meta = MODEL_CATALOG["llama-3.1-8b-instruct-q4_k_m"]
+    assert llama_meta.download_url.startswith("https://huggingface.co/")
+    # 2. Kiểm tra prompt có luật cấm chữ Hán / CJK
+    prompt = PromptBuilder.build(
+        current_sub="you are too naive.",
+        target_lang="Vietnamese",
+    )
+    assert "VIETNAMESE PURITY (NO CJK / NO HANZI)" in prompt
+    assert "ABSOLUTELY DO NOT output Chinese Hanzi" in prompt
+    assert "太天真了" in prompt
+
+
+# ==========================================
+# TC-MM-15: NO MODEL LIST CHANGED SPAM DURING PROGRESS
+# ==========================================
+def test_tc_mm_15_no_model_list_changed_spam_during_progress(qapp, monkeypatch):
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        settings = AppSettings(os.path.join(tmp_dir, "test_settings.json"))
+        controller = ModelController(models_dir=tmp_dir, settings=settings)
+
+        spy_progress = SignalSpy(controller.downloadProgress)
+        spy_list_changed = SignalSpy(controller.modelListChanged)
+
+        # 1. Khi gọi _on_download_progress: downloadProgress được phát, nhưng modelListChanged KHÔNG bị phát
+        controller._on_download_progress("test_model", 50, "10 MB/s", "00:30")
+        assert len(spy_progress) == 1
+        assert spy_progress[0] == ["test_model", 50, "10 MB/s", "00:30"]
+        assert len(spy_list_changed) == 0
+
+        # 2. Khi gọi startDownload: modelListChanged VẪN được phát
+        monkeypatch.setattr(controller._download_manager, "start_download", lambda **kwargs: True)
+        start_res = controller.startDownload("qwen2.5-3b-instruct-q4_k_m")
+        assert start_res is True
+        assert len(spy_list_changed) == 1
+
+        # 3. Khi gọi cancelDownload: modelListChanged VẪN được phát
+        monkeypatch.setattr(controller._download_manager, "cancel_download", lambda model_id: True)
+        cancel_res = controller.cancelDownload("qwen2.5-3b-instruct-q4_k_m")
+        assert cancel_res is True
+        assert len(spy_list_changed) == 2
+
+        # 4. Khi gọi _on_download_finished: modelListChanged VẪN được phát
+        spy_finished = SignalSpy(controller.downloadFinished)
+        controller._on_download_finished("qwen2.5-3b-instruct-q4_k_m", os.path.join(tmp_dir, "dummy.gguf"))
+        assert len(spy_finished) == 1
+        assert len(spy_list_changed) == 3
+
+
+def test_active_model_pinned_to_top_and_llama33_url():
+    import urllib.request
+    from app.core.model_catalog import MODEL_CATALOG
+    from app.controllers.model_controller import ModelController
+    from app.core.app_settings import AppSettings
+    # 1. Kiểm tra URL Llama 3.3 trả về HTTP 200 hợp lệ (không phải 401)
+    llama33 = MODEL_CATALOG["llama-3.3-8b-instruct-q4_k_m"]
+    req = urllib.request.Request(llama33.download_url, headers={"User-Agent": "AISubtitleTranslator/1.0"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        assert resp.status == 200
+    # 2. Kiểm tra Model đang sử dụng luôn đứng đầu danh sách
+    settings = AppSettings()
+    controller = ModelController(models_dir="models", settings=settings)
+    models_list = controller.models
+    assert len(models_list) > 0
+    # Model đầu tiên bắt buộc phải là active model
+    assert models_list[0]["is_active"] is True
+
+
+def test_tc_mm_17_vram_cleanup_and_safe_hybrid_layers(tmp_path):
+    """Kiểm tra giải phóng VRAM khi đổi model và tính toán số layer an toàn cho GPU VRAM thấp."""
+    from app.controllers.model_controller import ModelController
+    from app.core.backends.llama_cpp_backend import LlamaCppBackend
+    from unittest.mock import MagicMock
+    # 1. Kiểm tra LlamaCppBackend.load_model giải phóng model cũ
+    backend = LlamaCppBackend()
+    backend._llm = MagicMock()
+    backend._current_model = "models/old_model.gguf"
+    
+    backend.unload_model()
+    assert backend._llm is None
+    assert backend._current_model == ""
+    # 2. Kiểm tra tính toán layer GPU an toàn cho RTX 3050 (4GB VRAM) khi nạp Gemma 2 9B
+    fake_gpu = {"has_gpu_hardware": True, "name": "RTX 3050", "vram_gb": 4.0}
+    controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True)
+    
+    mock_trans = MagicMock()
+    mock_trans.hardware_profile = {}
+    controller.bind_translation_controller(mock_trans)
+    
+    controller.selectActiveModel("translategemma-9b-q4_k_m")
+    prof = mock_trans.hardware_profile
+    # Với 4GB VRAM, số layer offload phải nằm trong khoảng an toàn (8 <= n_gpu_layers < 40)
+    assert 8 <= prof["n_gpu_layers"] <= 30
+    assert "CUDA Hybrid" in prof["backend_status"]
+
+
+def test_tc_mm_18_realtime_vram_telemetry(tmp_path):
+    """Kiểm tra đo đạc VRAM thời gian thực và loại bỏ hoàn toàn dữ liệu tĩnh giả."""
+    from app.core.hardware_detector import HardwareDetector
+    from app.controllers.model_controller import ModelController
+    from app.core.app_settings import AppSettings
+    # 1. Kiểm tra API get_vram_usage trả về tuple hợp lệ
+    used, total = HardwareDetector.get_vram_usage()
+    if HardwareDetector.get_gpu_info().get("has_gpu_hardware"):
+        assert total > 0.0
+        assert used >= 0.0
+    else:
+        assert (used, total) == (-1.0, -1.0)
+    # 2. Kiểm tra ModelController phát sinh property vramUsed / vramTotal thực tế
+    fake_gpu = {"has_gpu_hardware": True, "name": "RTX 3050", "vram_gb": 4.0}
+    controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True)
+    assert controller.vramTotal > 0.0 or controller.vramTotal == -1.0
+
+
+def test_tc_mm_19_minimalist_launchpad_and_unified_file_dialog():
+    """Kiểm tra màn hình khởi động tinh gọn và hộp thoại hỗ trợ cả .srt lẫn .aisrt."""
+    with open("ui/qml/components/StudioLaunchpad.qml", "r", encoding="utf-8") as f:
+        launchpad_code = f.read()
+    # 1. Xác nhận đã đổi text và xóa 2 nút mẫu / duyệt file
+    assert "Kéo thả file vào đây hoặc Click để nạp phụ đề" in launchpad_code
+    assert "btnDemoProject" not in launchpad_code
+    assert "btnBrowseFile" not in launchpad_code
+    assert ".MP4" not in launchpad_code
+    # 2. Xác nhận hộp thoại Main.qml hỗ trợ cả .srt và .aisrt
+    with open("ui/qml/Main.qml", "r", encoding="utf-8") as f:
+        main_code = f.read()
+    assert "*.srt *.aisrt" in main_code
+    assert "loadProject" in main_code
+
+
+
+

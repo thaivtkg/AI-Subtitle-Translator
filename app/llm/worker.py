@@ -47,7 +47,15 @@ class TranslationWorker(QThread):
             n_ctx = self.profile.get("n_ctx", 4096)
             n_gpu_layers = self.profile.get("n_gpu_layers", -1)
             
-            manager.load_model(self.model_path, n_ctx=n_ctx, n_gpu_layers=n_gpu_layers)
+            try:
+                manager.load_model(self.model_path, n_ctx=n_ctx, n_gpu_layers=n_gpu_layers)
+            except Exception as load_err:
+                if n_gpu_layers != 0 and backend_type == "llama_cpp":
+                    print(f"[Worker Warning] GPU load failed ({load_err}), falling back to CPU...")
+                    manager.unload_model()
+                    manager.load_model(self.model_path, n_ctx=min(n_ctx, 2048), n_gpu_layers=0)
+                else:
+                    raise load_err
             
             # Tăng max_tokens lên 1024 để model có đủ không gian suy luận và trả kết quả
             stream = manager.generate_stream(self.prompt, max_tokens=1024)

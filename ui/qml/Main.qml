@@ -110,6 +110,14 @@ ApplicationWindow {
                     }
                 }
                 onModelManagerClicked: modelManagerDialog.open()
+                onArchetypeClicked: {
+                    contextInspector.switchToTab(1)
+                }
+                onCloseProjectClicked: {
+                    if (!batchController.executionLocked) {
+                        projectController.closeProject()
+                    }
+                }
             }
 
             StudioLaunchpad {
@@ -228,8 +236,8 @@ ApplicationWindow {
                 engineStatus: {
                     return translationController.engineStatus
                 }
-                vramUsed: typeof translationController.vramUsed !== "undefined" ? translationController.vramUsed : -1.0
-                vramTotal: typeof translationController.vramTotal !== "undefined" ? translationController.vramTotal : -1.0
+                vramUsed: typeof modelController !== "undefined" ? modelController.vramUsed : -1.0
+                vramTotal: typeof modelController !== "undefined" ? modelController.vramTotal : -1.0
                 gpuName: typeof modelController !== "undefined" && modelController.hardwareSummary ? modelController.hardwareSummary.gpu_name : ""
                 backendStatus: typeof modelController !== "undefined" && modelController.hardwareSummary ? modelController.hardwareSummary.backend_status : ""
             }
@@ -240,10 +248,29 @@ ApplicationWindow {
     // ==========================================
     // DIALOGS & CONNECTIONS
     // ==========================================
+    // Đưa Toast vào lớp Overlay trên cùng để không bị che bởi các Dialog modal
     Toast {
         id: appToast
+        parent: Overlay.overlay
+        z: 99999
     }
-    FileDialog { id: importSrtDialog; title: "Chọn file SRT gốc"; nameFilters: ["Subtitle files (*.srt)"]; onAccepted: projectController.importSrt(selectedFile) }
+    FileDialog {
+        id: importSrtDialog
+        title: "Chọn file phụ đề hoặc dự án"
+        nameFilters: [
+            "Tất cả định dạng phụ đề (*.srt *.aisrt)",
+            "File phụ đề SRT (*.srt)",
+            "File dự án AISRT (*.aisrt)"
+        ]
+        onAccepted: {
+            var path = selectedFile.toString().toLowerCase()
+            if (path.endsWith(".aisrt")) {
+                projectController.loadProject(selectedFile)
+            } else {
+                projectController.importSrt(selectedFile)
+            }
+        }
+    }
     FileDialog { id: loadProjectDialog; title: "Mở file dự án"; nameFilters: ["AI Subtitle Project (*.aisrt)"]; onAccepted: projectController.loadProject(selectedFile) }
 
     FileDialog {
@@ -478,6 +505,13 @@ ApplicationWindow {
         onActivated: {
             if (!batchController.executionLocked) loadProjectDialog.open()
         }
+    }
+
+    Shortcut {
+        objectName: "shortcutCloseProject"
+        sequence: "Ctrl+W"
+        enabled: appHeader.hasProject && !batchController.executionLocked
+        onActivated: projectController.closeProject()
     }
 
     Shortcut {

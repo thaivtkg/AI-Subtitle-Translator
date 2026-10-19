@@ -13,6 +13,10 @@ class LlamaCppBackend(BaseInferenceBackend):
         if self._llm is not None and self._current_model == model_identifier:
             return True
 
+        # Giải phóng model cũ và thu hồi 100% VRAM trước khi nạp model mới
+        if self._llm is not None:
+            self.unload_model()
+
         from llama_cpp import Llama
 
         self._llm = Llama(
@@ -25,8 +29,17 @@ class LlamaCppBackend(BaseInferenceBackend):
         return True
 
     def unload_model(self) -> None:
-        self._llm = None
+        if self._llm is not None:
+            try:
+                if hasattr(self._llm, "close"):
+                    self._llm.close()
+            except Exception:
+                pass
+            del self._llm
+            self._llm = None
         self._current_model = ""
+        import gc
+        gc.collect()
 
     def generate(self, prompt: str, system_prompt: str = "", **kwargs) -> str:
         if self._llm is None:
@@ -34,7 +47,7 @@ class LlamaCppBackend(BaseInferenceBackend):
         result = self._llm(
             prompt,
             max_tokens=kwargs.get("max_tokens", 256),
-            stop=["<|im_end|>", "</current_subtitle_to_translate>"],
+            stop=["<|im_end|>", "<end_of_turn>", "<|eot_id|>", "</current_subtitle_to_translate>"],
             stream=False,
         )
         return result["choices"][0]["text"]
@@ -46,7 +59,7 @@ class LlamaCppBackend(BaseInferenceBackend):
         yield from self._llm(
             prompt,
             max_tokens=kwargs.get("max_tokens", 256),
-            stop=["<|im_end|>", "</current_subtitle_to_translate>"],
+            stop=["<|im_end|>", "<end_of_turn>", "<|eot_id|>", "</current_subtitle_to_translate>"],
             stream=True,
         )
 

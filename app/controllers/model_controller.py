@@ -1,6 +1,6 @@
 import os
 from typing import Dict, List, Optional
-from PySide6.QtCore import QObject, Property, Signal, Slot
+from PySide6.QtCore import QObject, Property, Signal, Slot, QTimer
 
 from app.core.app_settings import AppSettings
 from app.core.hardware_detector import HardwareDetector
@@ -20,6 +20,7 @@ class ModelController(QObject):
     downloadFinished = Signal(str)                 # model_id
     downloadFailed = Signal(str, str)              # model_id, error_message
     notify = Signal(str, str)                      # type, message
+    vramChanged = Signal()
 
     def __init__(
         self,
@@ -29,6 +30,8 @@ class ModelController(QObject):
         settings: Optional[AppSettings] = None,
         download_manager: Optional[DownloadManager] = None,
         parent: Optional[QObject] = None,
+        gpu_info: Optional[dict] = None,
+        llama_has_cuda: Optional[bool] = None,
     ):
         super().__init__(parent)
         self.models_dir = models_dir or os.path.join(
@@ -43,8 +46,18 @@ class ModelController(QObject):
         self._download_states: Dict[str, tuple] = {}
 
         # Thông tin phần cứng
-        self._gpu_info = HardwareDetector.get_gpu_info()
-        self._llama_has_cuda = HardwareDetector.check_llama_cuda_backend()
+        self._gpu_info = gpu_info if gpu_info is not None else HardwareDetector.get_gpu_info()
+        self._llama_has_cuda = llama_has_cuda if llama_has_cuda is not None else HardwareDetector.check_llama_cuda_backend()
+
+        # Giám sát VRAM thời gian thực
+        self._vram_used = -1.0
+        self._vram_total = -1.0
+        if self._gpu_info.get("has_gpu_hardware"):
+            self._update_vram_usage()
+            self._vram_timer = QTimer(self)
+            self._vram_timer.setInterval(2000)
+            self._vram_timer.timeout.connect(self._update_vram_usage)
+            self._vram_timer.start()
 
         # Kết nối sự kiện DownloadManager
         self._download_manager.downloadProgress.connect(self._on_download_progress)
@@ -53,6 +66,10 @@ class ModelController(QObject):
 
         # Khởi tạo active model id từ settings hoặc fallback thông minh
         self._active_model_id = self._determine_initial_active_model()
+        self._apply_active_model_profile()
+
+    def bind_translation_controller(self, controller: QObject) -> None:
+        self._translation_controller = controller
         self._apply_active_model_profile()
 
     def _determine_initial_active_model(self) -> str:
@@ -87,7 +104,22 @@ class ModelController(QObject):
             return
 
         full_model_path = os.path.join(self.models_dir, meta.filename)
-        n_gpu_layers = -1 if (self._gpu_info.get("has_gpu_hardware") and self._llama_has_cuda) else 0
+
+        has_gpu = bool(self._gpu_info.get("has_gpu_hardware")) and self._llama_has_cuda
+        vram_gb = float(self._gpu_info.get("vram_gb", 0.0))
+        if not has_gpu:
+            n_gpu_layers = 0
+            backend_status = "CPU Backend"
+        elif vram_gb >= meta.min_vram_gb:
+            n_gpu_layers = -1
+            backend_status = "CUDA Enabled (Full Offload)"
+        else:
+            # Dynamic layer offloading cho GPU VRAM thấp (RTX 3050 4GB chạy model 8B/9B)
+            safe_vram = max(0.5, vram_gb - 0.8)
+            model_size_gb = meta.size_bytes / (1024 ** 3)
+            ratio = min(1.0, safe_vram / max(1.0, model_size_gb))
+            n_gpu_layers = max(8, int(ratio * 40))
+            backend_status = f"CUDA Hybrid ({n_gpu_layers} layers on GPU)"
 
         profile = getattr(self._translation_controller, "hardware_profile", {})
         profile.update({
@@ -96,7 +128,7 @@ class ModelController(QObject):
             "n_ctx": meta.recommended_ctx,
             "n_gpu_layers": n_gpu_layers,
             "gpu_info": self._gpu_info,
-            "backend_status": "CUDA Enabled (Full Offload)" if n_gpu_layers == -1 else "CPU Backend",
+            "backend_status": backend_status,
         })
         self._translation_controller.hardware_profile = profile
 
@@ -127,6 +159,23 @@ class ModelController(QObject):
             "has_cuda": self._llama_has_cuda,
             "backend_status": "CUDA Acceleration" if self._llama_has_cuda else "CPU Only",
         }
+
+    @Slot()
+    def _update_vram_usage(self) -> None:
+        used, total = HardwareDetector.get_vram_usage()
+        if used >= 0 and total > 0:
+            if self._vram_used != used or self._vram_total != total:
+                self._vram_used = used
+                self._vram_total = total
+                self.vramChanged.emit()
+
+    @Property(float, notify=vramChanged)
+    def vramUsed(self) -> float:
+        return self._vram_used
+
+    @Property(float, notify=vramChanged)
+    def vramTotal(self) -> float:
+        return self._vram_total
 
     @Property("QVariantList", notify=modelListChanged)
     def models(self) -> list:
@@ -179,6 +228,16 @@ class ModelController(QObject):
                 "can_delete": is_downloaded and not is_active and not is_locked,
             })
 
+        # Ghim model đang sử dụng lên đầu tiên, kế đến là đang tải và đã tải về
+        result.sort(key=lambda m: (
+            0 if m["is_active"] else (
+                1 if m["is_downloading"] else (
+                    2 if m["is_downloaded"] else (
+                        3 if m["recommendation"] == "RECOMMENDED" else 4
+                    )
+                )
+            )
+        ))
         return result
 
     @Slot(str)
@@ -223,18 +282,19 @@ class ModelController(QObject):
             self.notify.emit("ERROR", "Không tìm thấy thông tin model.")
             return False
 
-        target_file = os.path.join(self.models_dir, meta.filename)
-        if not os.path.exists(target_file):
-            self.notify.emit("ERROR", f"File model {meta.filename} chưa được tải về máy.")
-            return False
-
-        self._active_model_id = model_id
-        self._settings.active_model_id = model_id
-        self._apply_active_model_profile()
-
-        self.activeModelChanged.emit(model_id)
-        self.modelListChanged.emit()
-        self.notify.emit("SUCCESS", f"Đã chuyển sang mô hình: {meta.display_name}")
+        if self._active_model_id != model_id:
+            # Thu hồi VRAM của model cũ ngay khi người dùng bấm chọn model khác
+            try:
+                from app.llm.model_manager import ModelManager
+                ModelManager.get_instance("llama_cpp").unload_model()
+            except Exception:
+                pass
+            self._active_model_id = model_id
+            self._settings.active_model_id = model_id
+            self._apply_active_model_profile()
+            self.activeModelChanged.emit(model_id)
+            self.modelListChanged.emit()
+            self.notify.emit("SUCCESS", f"Đã chuyển sang mô hình: {meta.display_name}")
         return True
 
     @Slot(str, result=bool)
@@ -266,11 +326,12 @@ class ModelController(QObject):
     def _on_download_progress(self, model_id: str, percent: int, speed: str, eta: str):
         self._download_states[model_id] = (percent, speed, eta)
         self.downloadProgress.emit(model_id, percent, speed, eta)
-        self.modelListChanged.emit()
 
     def _on_download_finished(self, model_id: str, file_path: str):
         self._download_states.pop(model_id, None)
         self.downloadFinished.emit(model_id)
+        # Tự động kích hoạt model vừa tải về làm model mặc định
+        self.selectActiveModel(model_id)
         self.modelListChanged.emit()
         meta = MODEL_CATALOG.get(model_id)
         name = meta.display_name if meta else model_id

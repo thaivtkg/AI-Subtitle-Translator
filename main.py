@@ -104,6 +104,7 @@ def main():
         glossary=project_controller.glossary,
         entities=project_controller.entity_dictionary,
         translation_memory=project_controller.translation_memory,
+        project_controller=project_controller,
     )
 
     if getattr(sys, "frozen", False):
@@ -152,6 +153,15 @@ def main():
     if "--smoke-test" in sys.argv:
         print("[SMOKE TEST] Application initialized successfully. Root objects verified.")
         sys.exit(0)
+
+    # Đưa cửa sổ lên trên cùng để người dùng thấy ngay lập tức
+    root_window = engine.rootObjects()[0]
+    root_window.show()
+    root_window.raise_()
+    root_window.requestActivate()
+
+    # Flush stdout để không bị nghẽn log
+    sys.stdout.flush()
 
     sys.exit(app.exec())
 

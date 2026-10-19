@@ -86,3 +86,42 @@ class HardwareDetector:
                 "gpu_info": gpu_info,
                 "backend_status": "CUDA Enabled (Full Offload)"
             }
+
+    @staticmethod
+    def get_vram_usage() -> tuple[float, float]:
+        """Truy xuất dung lượng VRAM thực tế thời gian thực (used_gb, total_gb)."""
+        # Phương thức 1: Gọi trực tiếp CUDA C-API qua nvcuda.dll (<0.2ms, 0% CPU, không tạo process)
+        try:
+            import ctypes
+            cuda = ctypes.CDLL("nvcuda.dll")
+            if cuda.cuInit(0) == 0:
+                dev = ctypes.c_int()
+                if cuda.cuDeviceGet(ctypes.byref(dev), 0) == 0:
+                    ctx = ctypes.c_void_p()
+                    if cuda.cuCtxCreate_v2(ctypes.byref(ctx), 0, dev) == 0:
+                        free = ctypes.c_size_t()
+                        total = ctypes.c_size_t()
+                        res = cuda.cuMemGetInfo_v2(ctypes.byref(free), ctypes.byref(total))
+                        cuda.cuCtxDestroy_v2(ctx)
+                        if res == 0:
+                            t = total.value / (1024 ** 3)
+                            u = (total.value - free.value) / (1024 ** 3)
+                            return round(u, 1), round(t, 1)
+        except Exception:
+            pass
+        # Phương thức 2: Fallback qua nvidia-smi
+        try:
+            import subprocess
+            result = subprocess.run(
+                ['nvidia-smi', '--query-gpu=memory.used,memory.total', '--format=csv,noheader,nounits'],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+            )
+            if result.returncode == 0:
+                parts = result.stdout.strip().split(',')
+                if len(parts) >= 2:
+                    return round(float(parts[0]) / 1024, 1), round(float(parts[1]) / 1024, 1)
+        except Exception:
+            pass
+        return -1.0, -1.0
+

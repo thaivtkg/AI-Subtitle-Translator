@@ -170,60 +170,56 @@ Dialog {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            ScrollView {
+            ListView {
+                id: modelListView
                 anchors.fill: parent
                 clip: true
-                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                spacing: Theme.spaceMedium
+                topMargin: Theme.spaceMedium
+                bottomMargin: Theme.spaceMedium
+                leftMargin: Theme.spaceLarge
+                rightMargin: Theme.spaceLarge
 
-                ListView {
-                    id: modelListView
-                    width: parent.width
-                    spacing: Theme.spaceMedium
-                    topMargin: Theme.spaceMedium
-                    bottomMargin: Theme.spaceMedium
-                    leftMargin: Theme.spaceLarge
-                    rightMargin: Theme.spaceLarge
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-                    model: root.controller ? root.controller.models : []
+                model: root.controller ? root.controller.models : []
 
-                    delegate: ModelCard {
-                        width: modelListView.width - (modelListView.leftMargin + modelListView.rightMargin)
-                        controller: root.controller
-                        
-                        property var itemData: modelListView.model[index]
-                        modelData: itemData
+                delegate: ModelCard {
+                    width: modelListView.width - (modelListView.leftMargin + modelListView.rightMargin)
+                    controller: root.controller
+                    
+                    property var itemData: modelListView.model[index]
+                    modelData: itemData
 
-                        modelId: itemData ? (itemData.model_id || "") : ""
-                        displayName: itemData ? (itemData.display_name || "") : ""
-                        sizeText: itemData ? (itemData.size_gb_formatted || itemData.size_formatted || "") : ""
-                        description: itemData ? (itemData.description || "") : ""
-                        recommendationBadge: itemData ? (itemData.recommendation || itemData.badge || "") : ""
-                        recommendationReason: itemData ? (itemData.recommendation_reason || itemData.reason || "") : ""
-                        status: itemData ? (itemData.status || "NOT_DOWNLOADED") : "NOT_DOWNLOADED"
-                        downloadPercent: itemData ? (itemData.download_percent !== undefined ? itemData.download_percent : (itemData.progress_percent || 0)) : 0
-                        downloadSpeed: itemData ? (itemData.download_speed || itemData.speed || "") : ""
-                        downloadEta: itemData ? (itemData.download_eta || itemData.eta || "") : ""
+                    modelId: itemData ? (itemData.model_id || "") : ""
+                    displayName: itemData ? (itemData.display_name || "") : ""
+                    sizeText: itemData ? (itemData.size_gb_formatted || itemData.size_formatted || "") : ""
+                    description: itemData ? (itemData.description || "") : ""
+                    recommendationBadge: itemData ? (itemData.recommendation || itemData.badge || "") : ""
+                    recommendationReason: itemData ? (itemData.recommendation_reason || itemData.reason || "") : ""
+                    status: itemData ? (itemData.status || "NOT_DOWNLOADED") : "NOT_DOWNLOADED"
+                    downloadPercent: itemData ? (itemData.download_percent !== undefined ? itemData.download_percent : (itemData.progress_percent || 0)) : 0
+                    downloadSpeed: itemData ? (itemData.download_speed || itemData.speed || "") : ""
+                    downloadEta: itemData ? (itemData.download_eta || itemData.eta || "") : ""
 
-                        onDownloadClicked: function(mId) {
-                            var id = mId || (itemData ? itemData.model_id : "")
-                            if (root.controller) root.controller.startDownload(id)
-                        }
+                    onDownloadClicked: function(mId) {
+                        var id = mId || (itemData ? itemData.model_id : "")
+                        if (root.controller) root.controller.startDownload(id)
+                    }
 
-                        onCancelClicked: function(mId) {
-                            var id = mId || (itemData ? itemData.model_id : "")
-                            if (root.controller) root.controller.cancelDownload(id)
-                        }
+                    onCancelClicked: function(mId) {
+                        var id = mId || (itemData ? itemData.model_id : "")
+                        if (root.controller) root.controller.cancelDownload(id)
+                    }
 
-                        onSelectClicked: function(mId) {
-                            var id = mId || (itemData ? itemData.model_id : "")
-                            if (root.controller) root.controller.selectActiveModel(id)
-                        }
+                    onSelectClicked: function(mId) {
+                        var id = mId || (itemData ? itemData.model_id : "")
+                        if (root.controller) root.controller.selectActiveModel(id)
+                    }
 
-                        onDeleteClicked: function(mId) {
-                            var id = mId || (itemData ? itemData.model_id : "")
-                            if (root.controller) root.controller.deleteModelFile(id)
-                        }
+                    onDeleteClicked: function(mId) {
+                        var id = mId || (itemData ? itemData.model_id : "")
+                        if (root.controller) root.controller.deleteModelFile(id)
                     }
                 }
             }

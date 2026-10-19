@@ -227,6 +227,40 @@ ColumnLayout {
                         onClicked: root.showAdvancedFilters = !root.showAdvancedFilters
                     }
                 }
+
+                // NÚT ĐÓNG DỰ ÁN & VỀ MÀN HÌNH KHỞI ĐỘNG (THEO PHƯƠNG ÁN 1)
+                Rectangle {
+                    id: btnCloseSub
+                    objectName: "btnCloseSub"
+                    implicitWidth: 26
+                    implicitHeight: 20
+                    radius: 10
+                    color: closeSubMouse.containsMouse ? Qt.rgba(1.0, 0.2, 0.2, 0.35) : Qt.rgba(1.0, 1.0, 1.0, 0.22)
+                    border.color: closeSubMouse.containsMouse ? "#EF4444" : Qt.rgba(1.0, 1.0, 1.0, 0.5)
+                    border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
+                    Text {
+                        anchors.centerIn: parent
+                        text: "⌂"
+                        font.pixelSize: 11
+                        font.bold: true
+                        color: "#FFFFFF"
+                    }
+                    ToolTip.visible: closeSubMouse.containsMouse
+                    ToolTip.text: "Đóng file phụ đề và quay về màn hình khởi động — Ctrl + W"
+                    ToolTip.delay: 300
+                    MouseArea {
+                        id: closeSubMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (typeof projectController !== "undefined") {
+                                projectController.closeProject()
+                            }
+                        }
+                    }
+                }
             }
 
             // Search Row - 100% FULL WIDTH SPACIOUS FROSTED GLASS TUBE

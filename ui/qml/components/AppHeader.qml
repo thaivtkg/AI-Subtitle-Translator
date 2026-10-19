@@ -24,6 +24,8 @@ ToolBar {
     signal saveClicked()
     signal exportClicked()
     signal modelManagerClicked()
+    signal archetypeClicked()
+    signal closeProjectClicked()
 
     implicitHeight: 48
     padding: 0
@@ -240,13 +242,28 @@ ToolBar {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: root.isCompact ? Theme.spaceXs : Theme.spaceSmall
                 z: 10
+                // ẨN TOÀN BỘ KHI Ở MÀN HÌNH KHỞI ĐỘNG
+                visible: root.hasProject
 
+                // Ẩn Mở SRT và Đóng khỏi thanh Header để chống chật chội
                 AppButton {
                     objectName: "btnOpenSrt"
+                    visible: false
                     text: root.isCompact ? "SRT" : "📁 Mở SRT"
-                    tooltip: "Mở file SRT — Ctrl + O"
+                    tooltip: "Mở hoặc đổi file SRT khác — Ctrl + O"
                     enabled: !root.projectMutationLocked
                     onClicked: root.openSrtClicked()
+                }
+                AppButton {
+                    id: btnCloseProject
+                    objectName: "btnCloseProject"
+                    visible: false
+                    text: root.isCompact ? "⌂" : "⌂ Đóng & Khởi động"
+                    tooltip: "Đóng file phụ đề hiện tại và quay về màn hình khởi động — Ctrl + W"
+                    isPrimary: false
+                    isDarkGlass: true
+                    enabled: !root.projectMutationLocked
+                    onClicked: root.closeProjectClicked()
                 }
                 AppButton {
                     objectName: "btnOpenProject"
@@ -257,6 +274,7 @@ ToolBar {
                     onClicked: root.openProjectClicked()
                 }
 
+                // CHỈ HIỂN THỊ 2 NÚT THỰC THI CHÍNH KHI ĐANG DỊCH
                 HeaderBatchControl {
                     id: headerBatch
                     visible: true
@@ -305,7 +323,7 @@ ToolBar {
 
                     Rectangle {
                         id: langCapsule
-                        visible: centerCluster.width >= 120
+                        visible: root.hasProject && centerCluster.width >= 120
                         implicitHeight: 26
                         implicitWidth: langContent.implicitWidth + 20
                         radius: 13
@@ -338,14 +356,83 @@ ToolBar {
                         }
                     }
 
+                    Rectangle {
+                        id: archetypeHeaderCapsule
+                        objectName: "archetypeHeaderCapsule"
+                        visible: root.hasProject && typeof projectController !== "undefined" && centerCluster.width >= 280
+                        implicitHeight: 26
+                        implicitWidth: archetypeHeaderRow.implicitWidth + 20
+                        radius: 13
+                        color: archetypeHeaderMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.65) : Qt.rgba(1, 1, 1, 0.45)
+                        border.color: Theme.glassBorderSpecularUpper
+                        border.width: 1
+
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        RowLayout {
+                            id: archetypeHeaderRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Text {
+                                text: {
+                                    if (typeof projectController === "undefined") return "🎭"
+                                    var list = projectController.archetypeList || []
+                                    for (var i = 0; i < list.length; i++) {
+                                        if (list[i].id === projectController.activeArchetype) {
+                                            return list[i].icon || "🎭"
+                                        }
+                                    }
+                                    return "🎭"
+                                }
+                                font.pixelSize: 12
+                            }
+
+                            Text {
+                                text: {
+                                    if (typeof projectController === "undefined") return "Tự do"
+                                    var pair = projectController.activePronounPair || ""
+                                    return pair.startsWith("Tự do") ? "Tự do" : pair
+                                }
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: Theme.textOnLightPod
+                            }
+                        }
+
+                        ToolTip.visible: archetypeHeaderMouse.containsMouse
+                        ToolTip.text: typeof projectController !== "undefined"
+                                      ? ("Thể loại: " + projectController.archetypeDisplayLabel + " (" + projectController.activePronounPair + ") - Click để tùy chỉnh")
+                                      : ""
+
+                        MouseArea {
+                            id: archetypeHeaderMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.archetypeClicked()
+                                if (typeof contextTabs !== "undefined") {
+                                    contextTabs.setCurrentIndex(1)
+                                }
+                            }
+                        }
+                    }
+
                     AppButton {
+                        id: btnModelManager
                         objectName: "btnModelManager"
-                        visible: centerCluster.width >= 160
+                        visible: centerCluster.width >= 140
+                        Layout.maximumWidth: 175
                         text: {
                             if (typeof modelController === "undefined") return "🔮 Qwen 2.5 3B ▼"
                             var name = modelController.activeModelDisplayName || "Mô hình AI"
-                            var shortName = name.replace(/\s+Instruct.*$/i, "").replace(/\s*\(.*\)$/, "").trim()
-                            if (centerCluster.width < 280) return "🔮 " + shortName.substring(0, 10) + " ▼"
+                            var shortName = name.split('/')[0].replace(/\s+(?:Instruct|Distill|Default|IT).*$/i, "").replace(/\s*\(.*\)$/, "").trim()
+                            if (centerCluster.width < 280) {
+                                if (shortName.length > 10) shortName = shortName.substring(0, 10) + "…"
+                            } else {
+                                if (shortName.length > 14) shortName = shortName.substring(0, 14) + "…"
+                            }
                             return "🔮 " + shortName + " ▼"
                         }
                         tooltip: typeof modelController !== "undefined"
