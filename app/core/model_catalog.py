@@ -93,14 +93,14 @@ MODEL_CATALOG: Dict[str, ModelMetadata] = {
     "llama-3.3-8b-instruct-q4_k_m": ModelMetadata(
         model_id="llama-3.3-8b-instruct-q4_k_m",
         display_name="Llama 3.3 8B Instruct (Q4_K_M)",
-        filename="Llama-3.3-8B-Instruct-Q4_K_M.gguf",
-        size_bytes=4920000000,
+        filename="allura-forge_Llama-3.3-8B-Instruct-Q4_K_M.gguf",
+        size_bytes=4920734720,
         size_gb_formatted="4.58 GB",
         min_vram_gb=6.5,
         min_ram_gb=8.0,
         recommended_ctx=4096,
-        download_url="https://huggingface.co/bartowski/Llama-3.3-8B-Instruct-GGUF/resolve/main/Llama-3.3-8B-Instruct-Q4_K_M.gguf",
-        description="Phiên bản tinh chỉnh 8B kiến trúc Llama 3.3 mới nhất. Nắm bắt xuất sắc ẩn ý hội thoại và cấu trúc phụ đề dài.",
+        download_url="https://huggingface.co/bartowski/allura-forge_Llama-3.3-8B-Instruct-GGUF/resolve/main/allura-forge_Llama-3.3-8B-Instruct-Q4_K_M.gguf",
+        description="Phiên bản tinh chỉnh 8B kiến trúc Llama 3.3 mở công khai. Nắm bắt xuất sắc ẩn ý hội thoại và cấu trúc phụ đề dài.",
     ),
     "translategemma-9b-q4_k_m": ModelMetadata(
         model_id="translategemma-9b-q4_k_m",

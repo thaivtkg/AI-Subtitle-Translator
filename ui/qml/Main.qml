@@ -243,8 +243,11 @@ ApplicationWindow {
     // ==========================================
     // DIALOGS & CONNECTIONS
     // ==========================================
+    // Đưa Toast vào lớp Overlay trên cùng để không bị che bởi các Dialog modal
     Toast {
         id: appToast
+        parent: Overlay.overlay
+        z: 99999
     }
     FileDialog { id: importSrtDialog; title: "Chọn file SRT gốc"; nameFilters: ["Subtitle files (*.srt)"]; onAccepted: projectController.importSrt(selectedFile) }
     FileDialog { id: loadProjectDialog; title: "Mở file dự án"; nameFilters: ["AI Subtitle Project (*.aisrt)"]; onAccepted: projectController.loadProject(selectedFile) }

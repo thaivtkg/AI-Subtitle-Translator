@@ -179,6 +179,16 @@ class ModelController(QObject):
                 "can_delete": is_downloaded and not is_active and not is_locked,
             })
 
+        # Ghim model đang sử dụng lên đầu tiên, kế đến là đang tải và đã tải về
+        result.sort(key=lambda m: (
+            0 if m["is_active"] else (
+                1 if m["is_downloading"] else (
+                    2 if m["is_downloaded"] else (
+                        3 if m["recommendation"] == "RECOMMENDED" else 4
+                    )
+                )
+            )
+        ))
         return result
 
     @Slot(str)
@@ -270,6 +280,8 @@ class ModelController(QObject):
     def _on_download_finished(self, model_id: str, file_path: str):
         self._download_states.pop(model_id, None)
         self.downloadFinished.emit(model_id)
+        # Tự động kích hoạt model vừa tải về làm model mặc định
+        self.selectActiveModel(model_id)
         self.modelListChanged.emit()
         meta = MODEL_CATALOG.get(model_id)
         name = meta.display_name if meta else model_id

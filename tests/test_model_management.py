@@ -456,3 +456,22 @@ def test_tc_mm_15_no_model_list_changed_spam_during_progress(qapp, monkeypatch):
         assert len(spy_finished) == 1
         assert len(spy_list_changed) == 3
 
+
+def test_active_model_pinned_to_top_and_llama33_url():
+    import urllib.request
+    from app.core.model_catalog import MODEL_CATALOG
+    from app.controllers.model_controller import ModelController
+    from app.core.app_settings import AppSettings
+    # 1. Kiểm tra URL Llama 3.3 trả về HTTP 200 hợp lệ (không phải 401)
+    llama33 = MODEL_CATALOG["llama-3.3-8b-instruct-q4_k_m"]
+    req = urllib.request.Request(llama33.download_url, headers={"User-Agent": "AISubtitleTranslator/1.0"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        assert resp.status == 200
+    # 2. Kiểm tra Model đang sử dụng luôn đứng đầu danh sách
+    settings = AppSettings()
+    controller = ModelController(models_dir="models", settings=settings)
+    models_list = controller.models
+    assert len(models_list) > 0
+    # Model đầu tiên bắt buộc phải là active model
+    assert models_list[0]["is_active"] is True
+
