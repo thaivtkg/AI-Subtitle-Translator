@@ -1,3 +1,4 @@
+import re
 from PySide6.QtCore import QObject, Slot, Signal, Property, QTimer, QCoreApplication
 from app.llm.worker import TranslationWorker
 from app.core.context_engine import ContextEngine
@@ -36,6 +37,7 @@ class TranslationController(QObject):
         self._glossary = None
         self._entities = None
         self._translation_memory = None
+        self._project_controller = None
         self._subtitle_model.modelReset.connect(self._emit_progress)
         self._subtitle_model.dataChanged.connect(self._emit_progress)
         self._subtitle_model.modelReset.connect(self._emit_qa_status)
@@ -53,11 +55,12 @@ class TranslationController(QObject):
     def _emit_qa_status(self, *args):
         self.qaStatusChanged.emit()
 
-    def bind_intelligence(self, glossary=None, entities=None, translation_memory=None):
-        """Kết nối các thành phần trí tuệ: glossary, entities, translation_memory."""
+    def bind_intelligence(self, glossary=None, entities=None, translation_memory=None, project_controller=None):
+        """Kết nối các thành phần trí tuệ: glossary, entities, translation_memory, project_controller."""
         self._glossary = glossary
         self._entities = entities
         self._translation_memory = translation_memory
+        self._project_controller = project_controller
 
     @property
     def _worker(self):
@@ -227,6 +230,11 @@ class TranslationController(QObject):
                 enriched_glossary_hits.append((hit, forbidden))
 
         entity_hits = self._entities.match(current) if self._entities else ()
+        active_pronoun = (
+            getattr(self._project_controller, "activePronounPair", "")
+            if self._project_controller
+            else ""
+        )
         prompt = PromptBuilder.build(
             story_summary,
             source_lang,
@@ -236,10 +244,11 @@ class TranslationController(QObject):
             next_ctx,
             glossary_hits=tuple(enriched_glossary_hits),
             entity_hits=tuple(entity_hits),
+            active_pronoun_pair=active_pronoun,
         )
 
         if hasattr(self._worker_factory, "create_worker"):
-            self.worker = self._worker_factory.create_worker(index, prompt, self.hardware_profile)
+            self.worker = self._worker_factory(index, prompt, self.hardware_profile) if not hasattr(self._worker_factory, "create_worker") else self._worker_factory.create_worker(index, prompt, self.hardware_profile)
         else:
             self.worker = self._worker_factory(index, prompt, self.hardware_profile)
         self.worker.progress.connect(self.on_progress)
@@ -266,6 +275,7 @@ class TranslationController(QObject):
         if sender is not None and sender is not self.worker:
             return
         clean_text = (text or "").strip()
+        clean_text = re.sub(r'^\[Line \d+\]:\s*', '', clean_text, flags=re.IGNORECASE).strip()
         print(
             f"[TRANSLATION_CALLBACK] target={index} "
             f"clean_len={len(clean_text)} clean_text={clean_text!a} "

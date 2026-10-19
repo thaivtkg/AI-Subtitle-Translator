@@ -6,6 +6,7 @@ class GlossaryEntry:
     source_term: str
     preferred_translation: str
     forbidden_alternatives: tuple[str, ...] = ()
+    is_auto: bool = False
 
     def __post_init__(self):
         _validate_text(self.source_term, "source_term")
@@ -19,6 +20,7 @@ class GlossaryEntry:
             if value not in values:
                 values.append(value)
         object.__setattr__(self, "forbidden_alternatives", tuple(values))
+        object.__setattr__(self, "is_auto", bool(self.is_auto))
 
 
 @dataclass(frozen=True)
@@ -51,18 +53,20 @@ class Glossary:
                 raise ValueError("missing preferred_translation")
             if "forbidden_alternatives" not in value:
                 raise ValueError("missing forbidden_alternatives")
+            is_auto = bool(value.get("is_auto", False))
             entries.append(
                 GlossaryEntry(
                     source_term,
                     value["preferred_translation"],
                     value["forbidden_alternatives"],
+                    is_auto=is_auto,
                 )
             )
         return cls(entries)
 
-    def add(self, source_term, preferred_translation, forbidden_alternatives=()):
+    def add(self, source_term, preferred_translation, forbidden_alternatives=(), is_auto=False):
         self.add_entries(
-            [(source_term, preferred_translation, forbidden_alternatives)]
+            [(source_term, preferred_translation, forbidden_alternatives, is_auto)]
         )
 
     def add_entries(self, entries):
@@ -83,11 +87,11 @@ class Glossary:
                 )
         self._entries = candidate
 
-    def update(self, source_term, preferred_translation, forbidden_alternatives=()):
+    def update(self, source_term, preferred_translation, forbidden_alternatives=(), is_auto=False):
         if source_term not in self._entries:
             raise KeyError(source_term)
         entry = GlossaryEntry(
-            source_term, preferred_translation, forbidden_alternatives
+            source_term, preferred_translation, forbidden_alternatives, is_auto=is_auto
         )
         candidate = dict(self._entries)
         candidate[source_term] = entry
@@ -99,12 +103,12 @@ class Glossary:
         self._entries = candidate
 
     def replace_source_term(
-        self, old_source_term, new_source_term, preferred_translation, forbidden_alternatives=()
+        self, old_source_term, new_source_term, preferred_translation, forbidden_alternatives=(), is_auto=False
     ):
         if old_source_term not in self._entries:
             raise KeyError(old_source_term)
         replacement = GlossaryEntry(
-            new_source_term, preferred_translation, forbidden_alternatives
+            new_source_term, preferred_translation, forbidden_alternatives, is_auto=is_auto
         )
         candidate = dict(self._entries)
         del candidate[old_source_term]
@@ -118,13 +122,16 @@ class Glossary:
         return self._entries.get(source_term, default)
 
     def to_payload(self):
-        return {
-            source_term: {
+        payload = {}
+        for source_term, entry in self._entries.items():
+            item = {
                 "preferred_translation": entry.preferred_translation,
                 "forbidden_alternatives": list(entry.forbidden_alternatives),
             }
-            for source_term, entry in self._entries.items()
-        }
+            if getattr(entry, "is_auto", False):
+                item["is_auto"] = True
+            payload[source_term] = item
+        return payload
 
     def match(self, source_text):
         if not isinstance(source_text, str):
@@ -158,13 +165,18 @@ class Glossary:
 def _coerce_entry(raw_entry):
     if isinstance(raw_entry, GlossaryEntry):
         return raw_entry
-    try:
-        source_term, preferred_translation, forbidden_alternatives = raw_entry
-    except (TypeError, ValueError) as error:
-        raise ValueError("glossary entry must have three values") from error
-    return GlossaryEntry(
-        source_term, preferred_translation, forbidden_alternatives
-    )
+    if isinstance(raw_entry, (list, tuple)):
+        if len(raw_entry) == 4:
+            source_term, preferred_translation, forbidden_alternatives, is_auto = raw_entry
+            return GlossaryEntry(
+                source_term, preferred_translation, forbidden_alternatives, is_auto=bool(is_auto)
+            )
+        if len(raw_entry) == 3:
+            source_term, preferred_translation, forbidden_alternatives = raw_entry
+            return GlossaryEntry(
+                source_term, preferred_translation, forbidden_alternatives
+            )
+    raise ValueError("glossary entry must have three or four values")
 
 
 def _validate_text(value, field_name):

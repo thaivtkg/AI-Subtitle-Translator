@@ -9,6 +9,12 @@ from app.core.srt_validator import SRTValidator
 from app.core.glossary import Glossary
 from app.core.entity_dictionary import EntityDictionary
 from app.core.translation_memory import TranslationMemory
+from app.core.context_analyzer import (
+    ARCHETYPE_CUSTOM,
+    DEFAULT_PRONOUNS,
+    ARCHETYPE_METADATA,
+    ContextAnalyzer,
+)
 
 def _normalize_file_path(url_or_path: str) -> str:
     if not url_or_path:
@@ -27,8 +33,10 @@ class ProjectController(QObject):
     languageLoaded = Signal(str)
     # Tín hiệu xác nhận xuất file khi tồn tại lỗi QA nghiêm trọng
     qaExportWarningRequired = Signal(str, int)
+    archetypeChanged = Signal()
+    glossaryChanged = Signal()
 
-    def __init__(self, subtitle_model):
+    def __init__(self, subtitle_model=None):
         super().__init__()
         self._subtitle_model = subtitle_model
         self._original_source_file = "unknown.srt"
@@ -38,10 +46,15 @@ class ProjectController(QObject):
         self.glossary = Glossary()
         self.entity_dictionary = EntityDictionary()
         self.translation_memory = TranslationMemory()
-        self._subtitle_model.dataChanged.connect(self._on_model_changed)
-        self._subtitle_model.modelReset.connect(self.projectStateChanged.emit)
-        self._subtitle_model.rowsInserted.connect(self.projectStateChanged.emit)
-        self._subtitle_model.rowsRemoved.connect(self.projectStateChanged.emit)
+        self._active_archetype = ARCHETYPE_CUSTOM
+        self._active_pronoun_pair = DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
+        self._is_archetype_locked = False
+        self.dismissed_auto_terms = set()
+        if self._subtitle_model is not None:
+            self._subtitle_model.dataChanged.connect(self._on_model_changed)
+            self._subtitle_model.modelReset.connect(self.projectStateChanged.emit)
+            self._subtitle_model.rowsInserted.connect(self.projectStateChanged.emit)
+            self._subtitle_model.rowsRemoved.connect(self.projectStateChanged.emit)
 
     @Property(bool, notify=projectStateChanged)
     def hasProject(self):
@@ -50,6 +63,40 @@ class ProjectController(QObject):
     @Property(bool, notify=projectStateChanged)
     def isDirty(self):
         return self._is_dirty
+
+    @Property(str, notify=archetypeChanged)
+    def activeArchetype(self):
+        return self._active_archetype
+
+    @Property(str, notify=archetypeChanged)
+    def activePronounPair(self):
+        return self._active_pronoun_pair
+
+    @Property(bool, notify=archetypeChanged)
+    def isArchetypeLocked(self):
+        return self._is_archetype_locked
+
+    @Property(str, notify=archetypeChanged)
+    def archetypeDisplayLabel(self):
+        meta = ARCHETYPE_METADATA.get(self._active_archetype)
+        if meta:
+            return meta.get("name", self._active_archetype)
+        return self._active_archetype
+
+    @Property("QVariantList", notify=archetypeChanged)
+    def archetypeList(self):
+        return list(ARCHETYPE_METADATA.values())
+
+    @Property("QVariantList", notify=glossaryChanged)
+    def glossaryTerms(self):
+        return [
+            {
+                "source_term": e.source_term,
+                "preferred_translation": e.preferred_translation,
+                "is_auto": getattr(e, "is_auto", False),
+            }
+            for e in self.glossary._entries.values()
+        ]
 
     def _set_project_state(self, has_project, is_dirty):
         if self._has_project == has_project and self._is_dirty == is_dirty:
@@ -66,6 +113,62 @@ class ProjectController(QObject):
         if self._loading_project or not self._has_project:
             return
         self._set_project_state(True, True)
+
+    @Slot(str)
+    def analyzeSummary(self, summary_text: str):
+        if not summary_text or not summary_text.strip():
+            return
+        terms_changed = False
+        extracted = ContextAnalyzer.extract_entities(summary_text)
+        for item in extracted:
+            src = item.get("source_term") or item.get("source", "")
+            target = item.get("preferred_translation") or item.get("target", src)
+            if not src:
+                continue
+            if src in self.dismissed_auto_terms:
+                continue
+            if self.glossary.get(src) is None:
+                self.glossary.add(src, target, (), is_auto=True)
+                terms_changed = True
+
+        archetype_changed = False
+        if not self._is_archetype_locked:
+            archetype_id, pronoun_pair = ContextAnalyzer.classify_archetype(summary_text)
+            if (
+                archetype_id != self._active_archetype
+                or pronoun_pair != self._active_pronoun_pair
+            ):
+                self._active_archetype = archetype_id
+                self._active_pronoun_pair = pronoun_pair
+                archetype_changed = True
+
+        if terms_changed:
+            self.glossaryChanged.emit()
+            self.markDirty()
+        if archetype_changed:
+            self.archetypeChanged.emit()
+            self.markDirty()
+
+    @Slot(str)
+    @Slot(str, bool)
+    def selectArchetype(self, archetype_id: str, manual_lock: bool = True):
+        self._active_archetype = archetype_id
+        self._active_pronoun_pair = DEFAULT_PRONOUNS.get(
+            archetype_id, DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
+        )
+        self._is_archetype_locked = manual_lock
+        self.archetypeChanged.emit()
+        self.markDirty()
+
+    @Slot(str)
+    def dismissAutoTerm(self, source_term: str):
+        entry = self.glossary.get(source_term)
+        if entry is not None:
+            if getattr(entry, "is_auto", False):
+                self.dismissed_auto_terms.add(source_term)
+            self.glossary.remove(source_term)
+            self.glossaryChanged.emit()
+            self.markDirty()
 
     @Slot(result=bool)
     def validateBeforeExport(self):
@@ -141,6 +244,22 @@ class ProjectController(QObject):
             for sub in self._subtitle_model.get_all_data()
         ]
 
+        intelligence = {
+            "glossary": self.glossary.to_payload(),
+            "entities": self.entity_dictionary.to_payload(),
+            "translation_memory": self.translation_memory.to_payload(),
+        }
+        if (
+            self._active_archetype != ARCHETYPE_CUSTOM
+            or self._is_archetype_locked
+            or bool(self.dismissed_auto_terms)
+            or self._active_pronoun_pair != DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
+        ):
+            intelligence["archetype"] = self._active_archetype
+            intelligence["pronoun_pair"] = self._active_pronoun_pair
+            intelligence["is_archetype_locked"] = self._is_archetype_locked
+            intelligence["dismissed_auto_terms"] = list(self.dismissed_auto_terms)
+
         data = {
             "metadata": {
                 # FIX: Dùng biến state đã lưu, không tự đoán từ file_path
@@ -151,11 +270,7 @@ class ProjectController(QObject):
             },
             "story_summary": story_summary,
             "subtitles": clean_subtitles,
-            "intelligence": {
-                "glossary": self.glossary.to_payload(),
-                "entities": self.entity_dictionary.to_payload(),
-                "translation_memory": self.translation_memory.to_payload(),
-            },
+            "intelligence": intelligence,
         }
         # Log tổng hợp 1 dòng duy nhất thay vì vòng lặp 2.000 dòng gây đơ UI
         print(f"[PROJECT_SAVE] Saving {len(clean_subtitles)} subtitles to {os.path.basename(file_path)}")
@@ -209,11 +324,32 @@ class ProjectController(QObject):
             loaded_entities = self._load_entities(data)
             loaded_tm = self._load_translation_memory(data)
 
+            intelligence = data.get("intelligence", {})
+            if isinstance(intelligence, dict):
+                loaded_archetype = intelligence.get("archetype", ARCHETYPE_CUSTOM)
+                loaded_pronoun = intelligence.get(
+                    "pronoun_pair",
+                    DEFAULT_PRONOUNS.get(loaded_archetype, DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]),
+                )
+                loaded_locked = bool(intelligence.get("is_archetype_locked", False))
+                loaded_dismissed = set(intelligence.get("dismissed_auto_terms", []))
+            else:
+                loaded_archetype = ARCHETYPE_CUSTOM
+                loaded_pronoun = DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
+                loaded_locked = False
+                loaded_dismissed = set()
+
             subtitles = data.get("subtitles", [])
             self._subtitle_model.load_data(subtitles)
             self.glossary = loaded_glossary
             self.entity_dictionary = loaded_entities
             self.translation_memory = loaded_tm
+            self._active_archetype = loaded_archetype
+            self._active_pronoun_pair = loaded_pronoun
+            self._is_archetype_locked = loaded_locked
+            self.dismissed_auto_terms = loaded_dismissed
+            self.archetypeChanged.emit()
+            self.glossaryChanged.emit()
             print(f"[PROJECT_LOAD] Loaded {len(subtitles)} subtitles from {os.path.basename(file_path)}")
             self.projectLoaded.emit(data.get("story_summary", ""))
             
