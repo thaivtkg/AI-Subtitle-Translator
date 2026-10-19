@@ -106,6 +106,12 @@ def build_translation_prompt(
         rules.append(
             "4. NATURAL DIALOGUE: The translation must sound like native spoken Vietnamese in movies/anime. Avoid unnatural word-by-word phrasing."
         )
+        # CẤM TUYỆT ĐỐI CHỮ HÁN / CJK TRONG BẢN DỊCH TIẾNG VIỆT
+        rules.append(
+            "5. VIETNAMESE PURITY (NO CJK / NO HANZI): You MUST translate 100% into natural Vietnamese using the Latin alphabet (chữ Quốc ngữ). "
+            "ABSOLUTELY DO NOT output Chinese Hanzi (e.g., NEVER output '太天真了', translate as 'quá ngây thơ' or 'ngây thơ quá'), "
+            "Japanese Kanji/Kana, or mixed script. Every single word in the output must be proper Vietnamese."
+        )
         system_prompt += "\n".join(rules) + "\n"
 
     # 5. USER PROMPT

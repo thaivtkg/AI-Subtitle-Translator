@@ -190,10 +190,10 @@ Rectangle {
 
             Item { Layout.fillWidth: true }
 
-            // Nút: Tải về
+            // Nút: Tải về (Đồng bộ 100% màu xanh Sapphire nổi bật)
             AppButton {
                 text: "Tải model"
-                isPrimary: root.recommendationBadge === "RECOMMENDED"
+                isPrimary: true
                 visible: root.canDownload
                 onClicked: root.downloadClicked(root.modelId)
             }

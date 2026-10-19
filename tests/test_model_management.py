@@ -396,3 +396,27 @@ def test_tc_mm_13_download_error_thread_safety(qapp, monkeypatch):
         assert dm.is_downloading("error_model") is False
         assert not os.path.exists(target_file)
         assert not os.path.exists(target_file + ".part")
+
+
+# ==========================================
+# TC-MM-14: NEW MODELS & VIETNAMESE PURITY
+# ==========================================
+def test_new_models_in_catalog_and_vietnamese_purity():
+    from app.core.model_catalog import MODEL_CATALOG
+    from app.core.prompt_builder import PromptBuilder
+    # 1. Kiểm tra 3 model mới đã có mặt trong danh mục với URL hợp lệ
+    assert "llama-3.1-8b-instruct-q4_k_m" in MODEL_CATALOG
+    assert "llama-3.3-8b-instruct-q4_k_m" in MODEL_CATALOG
+    assert "translategemma-9b-q4_k_m" in MODEL_CATALOG
+    
+    llama_meta = MODEL_CATALOG["llama-3.1-8b-instruct-q4_k_m"]
+    assert llama_meta.download_url.startswith("https://huggingface.co/")
+    # 2. Kiểm tra prompt có luật cấm chữ Hán / CJK
+    prompt = PromptBuilder.build(
+        current_sub="you are too naive.",
+        target_lang="Vietnamese",
+    )
+    assert "VIETNAMESE PURITY (NO CJK / NO HANZI)" in prompt
+    assert "ABSOLUTELY DO NOT output Chinese Hanzi" in prompt
+    assert "太天真了" in prompt
+
