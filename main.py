@@ -106,6 +106,7 @@ def main():
         translation_memory=project_controller.translation_memory,
         project_controller=project_controller,
     )
+    project_controller.bind_translation_controller(translation_controller)
 
     if getattr(sys, "frozen", False):
         base_dir = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))

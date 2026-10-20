@@ -15,6 +15,7 @@ def build_translation_prompt(
     active_pronoun_pair: str = "",
     canonical_names: tuple[str, ...] = (),
     is_ja_origin: bool = False,
+    model_family: str = "qwen",
 ) -> str:
     # 1. Nâng cấp vai trò thành Chuyên gia Bản địa hóa
     system_prompt = (
@@ -124,14 +125,31 @@ def build_translation_prompt(
         
     user_prompt += f"Output ONLY the final {target_lang} translation for the current subtitle directly. No extra words."
 
-    # 6. CHATML WRAPPER
-    prompt = (
-        f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
-        f"<|im_start|>user\n{user_prompt}<|im_end|>\n"
-        f"<|im_start|>assistant\n" 
-    )
-    return prompt
+    # 6. MODEL-SPECIFIC CHAT TEMPLATE WRAPPER
+    return format_chat(system_prompt, user_prompt, model_family)
+
+
+def format_chat(system_prompt: str, user_prompt: str, model_family: str = "qwen") -> str:
+    family = (model_family or "qwen").lower()
+    if "gemma" in family:
+        return (
+            f"<start_of_turn>user\n{system_prompt}\n\n{user_prompt}<end_of_turn>\n"
+            f"<start_of_turn>model\n"
+        )
+    elif "llama" in family:
+        return (
+            f"<|start_header_id|>system<|end_header_id|>\n\n{system_prompt}<|eot_id|>"
+            f"<|start_header_id|>user<|end_header_id|>\n\n{user_prompt}<|eot_id|>"
+            f"<|start_header_id|>assistant<|end_header_id|>\n\n"
+        )
+    else:
+        return (
+            f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
+            f"<|im_start|>user\n{user_prompt}<|im_end|>\n"
+            f"<|im_start|>assistant\n"
+        )
 
 
 class PromptBuilder:
     build = staticmethod(build_translation_prompt)
+    format_chat = staticmethod(format_chat)

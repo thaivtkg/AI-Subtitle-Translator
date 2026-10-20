@@ -73,3 +73,25 @@ def test_real_srt_30_lines_comparative_prompt():
         assert "JAPANESE TRANSLATION ARTIFACTS" in enriched_prompt
         assert "tiền bối" in enriched_prompt
         assert "NEVER translate as 'người lớn tuổi'" in enriched_prompt
+
+
+def test_srt_parser_multi_encoding_fallback(tmp_path):
+    """Kiểm tra SRTParser fallback tự động qua UTF-16, CP1252, Latin-1 khi file không phải UTF-8."""
+    from app.core.srt_parser import SRTParser
+
+    sample_srt = "1\n00:00:01,000 --> 00:00:04,000\nHello from encoded subtitle!\n\n"
+
+    # 1. UTF-16 LE (phổ biến từ Aegisub Windows)
+    p_utf16 = tmp_path / "sub_utf16.srt"
+    p_utf16.write_bytes(sample_srt.encode("utf-16"))
+    parsed_utf16 = SRTParser.parse(str(p_utf16))
+    assert len(parsed_utf16) == 1
+    assert parsed_utf16[0]["original"] == "Hello from encoded subtitle!"
+
+    # 2. CP1252
+    p_cp1252 = tmp_path / "sub_cp1252.srt"
+    p_cp1252.write_bytes("1\n00:00:01,000 --> 00:00:04,000\nCafé résumé\n\n".encode("cp1252"))
+    parsed_cp1252 = SRTParser.parse(str(p_cp1252))
+    assert len(parsed_cp1252) == 1
+    assert "Café" in parsed_cp1252[0]["original"]
+

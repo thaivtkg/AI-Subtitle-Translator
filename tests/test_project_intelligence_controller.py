@@ -170,3 +170,63 @@ def test_close_project_returns_to_launchpad_and_cleans_state():
     assert controller.storySummary == ""
 
 
+def test_dynamic_intelligence_sync_after_project_load_and_safe_close():
+    """Kiểm chứng sau khi load .aisrt, TranslationController đồng bộ động glossary/entities/TM từ ProjectController (BUG-01) và closeProject an toàn (BUG-02)."""
+    mock_model = MagicMock()
+    mock_model.get_all_data.return_value = [
+        {"id": 1, "start_time": "00:00:01,000", "end_time": "00:00:02,000", "original": "Senpai", "translation": "Tiền bối", "status": "TRANSLATED"}
+    ]
+    mock_model.rowCount.return_value = 1
+
+    pc = ProjectController(subtitle_model=mock_model)
+    tc = TranslationController(subtitle_model=mock_model)
+    tc.bind_intelligence(
+        glossary=pc.glossary,
+        entities=pc.entity_dictionary,
+        translation_memory=pc.translation_memory,
+        project_controller=pc,
+    )
+    pc.bind_translation_controller(tc)
+
+    # Thêm thuật ngữ và lưu project
+    pc.glossary.add("Senpai", "Tiền bối", ("Đàn anh",), is_auto=False)
+    pc.entity_dictionary.add("Tokyo", "LOCATION", "Tokyo")
+    pc.translation_memory.add("Hello", "Xin chào")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        save_path = os.path.join(tmpdir, "sync_test.aisrt")
+        pc.saveProject(save_path, "Sync Test", "Japanese", "Vietnamese")
+
+        # Nạp lại file vào pc (thay thế hoàn toàn đối tượng glossary/entities/TM)
+        pc.loadProject(save_path)
+
+        # Kiểm chứng BUG-01: tc.glossary, tc.entities, tc.translation_memory trỏ tới đối tượng mới nạp
+        assert tc.glossary.get("Senpai") is not None
+        assert tc.glossary.get("Senpai").preferred_translation == "Tiền bối"
+        assert len(tc.entities.match("Đi tới Tokyo")) == 1
+        assert tc.translation_memory.lookup("Hello") is not None
+
+        # Kiểm chứng BUG-02: closeProject an toàn và gọi shutdown translation worker nếu có
+        mock_worker = MagicMock()
+        mock_worker.isRunning.return_value = True
+        tc.worker = mock_worker
+        pc.closeProject()
+        assert mock_worker.cancel.called or mock_worker.wait.called
+
+
+def test_dirty_project_close_confirmation_contract():
+    """Kiểm tra BUG-08: Main.qml và SubtitleListView khai báo dirtyCloseConfirmDialog và handleCloseProject."""
+    with open("ui/qml/Main.qml", "r", encoding="utf-8") as f:
+        main_qml = f.read()
+    assert "dirtyCloseConfirmDialog" in main_qml
+    assert "handleCloseProject" in main_qml
+    assert "Đóng không lưu" in main_qml
+    assert "Lưu dự án" in main_qml
+
+    with open("ui/qml/components/SubtitleListView.qml", "r", encoding="utf-8") as f:
+        sub_view_qml = f.read()
+    assert "handleCloseProject" in sub_view_qml
+
+
+
+

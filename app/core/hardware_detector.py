@@ -3,6 +3,8 @@ import re
 
 class HardwareDetector:
     _cuda_backend_cache = None
+    _cuda_lib = None
+    _cuda_ctx = None
 
     @classmethod
     def check_llama_cuda_backend(cls) -> bool:
@@ -87,26 +89,29 @@ class HardwareDetector:
                 "backend_status": "CUDA Enabled (Full Offload)"
             }
 
-    @staticmethod
-    def get_vram_usage() -> tuple[float, float]:
+    @classmethod
+    def get_vram_usage(cls) -> tuple[float, float]:
         """Truy xuất dung lượng VRAM thực tế thời gian thực (used_gb, total_gb)."""
-        # Phương thức 1: Gọi trực tiếp CUDA C-API qua nvcuda.dll (<0.2ms, 0% CPU, không tạo process)
+        # Phương thức 1: Gọi trực tiếp CUDA C-API qua nvcuda.dll (<0.05ms, 0% CPU, không tạo process)
         try:
             import ctypes
-            cuda = ctypes.CDLL("nvcuda.dll")
-            if cuda.cuInit(0) == 0:
-                dev = ctypes.c_int()
-                if cuda.cuDeviceGet(ctypes.byref(dev), 0) == 0:
-                    ctx = ctypes.c_void_p()
-                    if cuda.cuCtxCreate_v2(ctypes.byref(ctx), 0, dev) == 0:
-                        free = ctypes.c_size_t()
-                        total = ctypes.c_size_t()
-                        res = cuda.cuMemGetInfo_v2(ctypes.byref(free), ctypes.byref(total))
-                        cuda.cuCtxDestroy_v2(ctx)
-                        if res == 0:
-                            t = total.value / (1024 ** 3)
-                            u = (total.value - free.value) / (1024 ** 3)
-                            return round(u, 1), round(t, 1)
+            if cls._cuda_lib is None:
+                cls._cuda_lib = ctypes.CDLL("nvcuda.dll")
+                if cls._cuda_lib.cuInit(0) == 0:
+                    dev = ctypes.c_int()
+                    if cls._cuda_lib.cuDeviceGet(ctypes.byref(dev), 0) == 0:
+                        ctx = ctypes.c_void_p()
+                        if cls._cuda_lib.cuDevicePrimaryCtxRetain(ctypes.byref(ctx), dev) == 0:
+                            cls._cuda_ctx = ctx
+                            cls._cuda_lib.cuCtxSetCurrent(ctx)
+            if cls._cuda_lib and cls._cuda_ctx:
+                cls._cuda_lib.cuCtxSetCurrent(cls._cuda_ctx)
+                free = ctypes.c_size_t()
+                total = ctypes.c_size_t()
+                if cls._cuda_lib.cuMemGetInfo_v2(ctypes.byref(free), ctypes.byref(total)) == 0:
+                    t = total.value / (1024 ** 3)
+                    u = (total.value - free.value) / (1024 ** 3)
+                    return round(u, 1), round(t, 1)
         except Exception:
             pass
         # Phương thức 2: Fallback qua nvidia-smi

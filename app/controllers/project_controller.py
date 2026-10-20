@@ -53,6 +53,7 @@ class ProjectController(QObject):
         self.dismissed_auto_terms = set()
         self._is_ja_origin = False
         self._story_summary = ""
+        self._translation_controller = None
         if self._subtitle_model is not None:
             self._subtitle_model.dataChanged.connect(self._on_model_changed)
             self._subtitle_model.modelReset.connect(self.projectStateChanged.emit)
@@ -216,9 +217,17 @@ class ProjectController(QObject):
             self.glossaryChanged.emit()
             self.markDirty()
 
-    @Slot()
+    def bind_translation_controller(self, translation_controller):
+        self._translation_controller = translation_controller
+
+    @Slot(result=bool)
     def closeProject(self):
         """Đóng dự án hiện tại, giải phóng dữ liệu phụ đề và quay về màn hình khởi động (StudioLaunchpad)."""
+        if hasattr(self, "_translation_controller") and self._translation_controller:
+            try:
+                self._translation_controller.shutdown()
+            except Exception:
+                pass
         if self._subtitle_model:
             self._subtitle_model.load_data([])
         self._original_source_file = "unknown.srt"

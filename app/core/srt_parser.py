@@ -5,11 +5,19 @@ class SRTParser:
 
     @staticmethod
     def parse(file_path: str) -> list:
-        try:
-            with open(file_path, 'r', encoding='utf-8-sig') as f:
-                content = f.read()
-        except Exception as e:
-            print(f"Error reading file: {e!a}")
+        content = None
+        for enc in ("utf-8-sig", "utf-16", "cp1252", "latin-1"):
+            try:
+                with open(file_path, 'r', encoding=enc) as f:
+                    content = f.read()
+                break
+            except (UnicodeDecodeError, UnicodeError):
+                continue
+            except Exception as e:
+                print(f"Error reading file: {e!a}")
+                return []
+
+        if content is None:
             return []
 
         blocks = re.split(r'\n\s*\n', content.strip())

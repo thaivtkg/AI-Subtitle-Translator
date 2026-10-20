@@ -29,5 +29,29 @@ class TestPromptBuilder(unittest.TestCase):
         # 3. Xác thực cờ Thinking OFF
         self.assertIn("DO NOT use reasoning", prompt)
 
+    def test_prompt_format_gemma2_and_llama3(self):
+        """Kiểm tra BUG-05: Định dạng prompt chuẩn theo dòng Gemma 2 và Llama 3."""
+        # Gemma 2
+        gemma_prompt = PromptBuilder.build(
+            story_summary="Summary",
+            current_sub="Hello world",
+            model_family="gemma",
+        )
+        self.assertIn("<start_of_turn>user", gemma_prompt)
+        self.assertIn("<end_of_turn>", gemma_prompt)
+        self.assertIn("<start_of_turn>model", gemma_prompt)
+        self.assertNotIn("<|im_start|>", gemma_prompt)
+
+        # Llama 3
+        llama_prompt = PromptBuilder.build(
+            story_summary="Summary",
+            current_sub="Hello world",
+            model_family="llama",
+        )
+        self.assertIn("<|start_header_id|>system<|end_header_id|>", llama_prompt)
+        self.assertIn("<|start_header_id|>user<|end_header_id|>", llama_prompt)
+        self.assertIn("<|start_header_id|>assistant<|end_header_id|>", llama_prompt)
+        self.assertNotIn("<|im_start|>", llama_prompt)
+
 if __name__ == "__main__":
     unittest.main()

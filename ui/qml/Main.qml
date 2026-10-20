@@ -18,6 +18,13 @@ ApplicationWindow {
     title: "AI Subtitle Translator - Professional Workspace"
     color: "transparent"
 
+    onClosing: (close) => {
+        if (typeof projectController !== "undefined" && projectController.hasProject && projectController.isDirty) {
+            close.accepted = false
+            dirtyCloseConfirmDialog.open()
+        }
+    }
+
     // THÊM MỚI: Biến toàn cục hứng Story Summary (đặt ở cấp cao nhất)
     property string globalStorySummary: ""
     property var selectedSubtitleIndices: []
@@ -113,11 +120,7 @@ ApplicationWindow {
                 onArchetypeClicked: {
                     contextInspector.switchToTab(1)
                 }
-                onCloseProjectClicked: {
-                    if (!batchController.executionLocked) {
-                        projectController.closeProject()
-                    }
-                }
+                onCloseProjectClicked: handleCloseProject()
             }
 
             StudioLaunchpad {
@@ -478,6 +481,149 @@ ApplicationWindow {
         }
     }
 
+    function handleCloseProject() {
+        if (typeof batchController !== "undefined" && batchController.executionLocked) return
+        if (typeof projectController !== "undefined" && projectController.hasProject) {
+            if (projectController.isDirty) {
+                dirtyCloseConfirmDialog.open()
+            } else {
+                projectController.closeProject()
+            }
+        }
+    }
+
+    Dialog {
+        id: dirtyCloseConfirmDialog
+        objectName: "dirtyCloseConfirmDialog"
+        modal: true
+        anchors.centerIn: Overlay.overlay
+        width: 440
+        padding: 0
+        closePolicy: Dialog.CloseOnEscape
+
+        background: Rectangle {
+            color: Qt.rgba(0.97, 0.96, 0.99, 0.96)
+            radius: 20
+            border.color: Theme.glassBorderSpecularUpper
+            border.width: 1.5
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowBlur: 0.8
+                shadowColor: Qt.rgba(0, 0, 0, 0.35)
+            }
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 0
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 48
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
+                radius: 20
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    height: 16
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
+                }
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    height: 1
+                    color: Qt.rgba(0, 0, 0, 0.08)
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 20
+                    anchors.rightMargin: 16
+
+                    Text {
+                        text: "💾 Lưu Thay Đổi Trước Khi Đóng?"
+                        color: Theme.textOnLightPod
+                        font.pixelSize: 14
+                        font.bold: true
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Rectangle {
+                        width: 28
+                        height: 28
+                        radius: 14
+                        color: closeDirtyArea.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.15) : "transparent"
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "✕"
+                            color: closeDirtyArea.containsMouse ? "#EF4444" : Theme.textOnLightPodMuted
+                            font.pixelSize: 13
+                        }
+
+                        MouseArea {
+                            id: closeDirtyArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: dirtyCloseConfirmDialog.close()
+                        }
+                    }
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.margins: 20
+                spacing: 16
+
+                Text {
+                    text: "Dự án hiện tại có các thay đổi chưa được lưu. Nếu đóng bây giờ, toàn bộ bản dịch và chỉnh sửa chưa lưu sẽ bị mất."
+                    color: Theme.textOnLightPodMuted
+                    font.pixelSize: 13
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 8
+                    spacing: 10
+
+                    AppButton {
+                        text: "Hủy"
+                        isDarkGlass: true
+                        onClicked: dirtyCloseConfirmDialog.close()
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    AppButton {
+                        text: "Đóng không lưu"
+                        isDarkGlass: true
+                        onClicked: {
+                            dirtyCloseConfirmDialog.close()
+                            projectController.closeProject()
+                        }
+                    }
+
+                    AppButton {
+                        text: "Lưu dự án"
+                        isPrimary: true
+                        onClicked: {
+                            dirtyCloseConfirmDialog.close()
+                            saveProjectDialog.open()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     ModelManagerDialog {
         id: modelManagerDialog
     }
@@ -511,7 +657,7 @@ ApplicationWindow {
         objectName: "shortcutCloseProject"
         sequence: "Ctrl+W"
         enabled: appHeader.hasProject && !batchController.executionLocked
-        onActivated: projectController.closeProject()
+        onActivated: handleCloseProject()
     }
 
     Shortcut {

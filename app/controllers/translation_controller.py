@@ -63,6 +63,24 @@ class TranslationController(QObject):
         self._project_controller = project_controller
 
     @property
+    def glossary(self):
+        if self._project_controller and hasattr(self._project_controller, "glossary"):
+            return self._project_controller.glossary
+        return self._glossary
+
+    @property
+    def entities(self):
+        if self._project_controller and hasattr(self._project_controller, "entity_dictionary"):
+            return self._project_controller.entity_dictionary
+        return self._entities
+
+    @property
+    def translation_memory(self):
+        if self._project_controller and hasattr(self._project_controller, "translation_memory"):
+            return self._project_controller.translation_memory
+        return self._translation_memory
+
+    @property
     def _worker(self):
         return self.worker
 
@@ -205,8 +223,8 @@ class TranslationController(QObject):
         prev_ctx, current, next_ctx = ContextEngine.get_context(subtitles, index)
 
         # TM short-circuit: 100% exact match
-        if self._translation_memory:
-            hit = self._translation_memory.lookup(current)
+        if self.translation_memory:
+            hit = self.translation_memory.lookup(current)
             if hit:
                 self._subtitle_model.update_translation(index, hit.target_text, "TRANSLATED")
                 self._status = "TRANSLATED"
@@ -223,13 +241,13 @@ class TranslationController(QObject):
 
         # Thu thập các matches từ Glossary và Entity Dictionary
         enriched_glossary_hits = []
-        if self._glossary:
-            for hit in self._glossary.match(current):
-                entry = self._glossary.get(hit.source_term)
+        if self.glossary:
+            for hit in self.glossary.match(current):
+                entry = self.glossary.get(hit.source_term)
                 forbidden = entry.forbidden_alternatives if entry else ()
                 enriched_glossary_hits.append((hit, forbidden))
 
-        entity_hits = self._entities.match(current) if self._entities else ()
+        entity_hits = self.entities.match(current) if self.entities else ()
         active_pronoun = (
             getattr(self._project_controller, "activePronounPair", "")
             if self._project_controller
@@ -240,6 +258,14 @@ class TranslationController(QObject):
             if self._project_controller
             else False
         )
+        model_name = (self.hardware_profile.get("model_name") or "").lower()
+        if "gemma" in model_name:
+            model_family = "gemma"
+        elif "llama" in model_name:
+            model_family = "llama"
+        else:
+            model_family = "qwen"
+
         prompt = PromptBuilder.build(
             story_summary,
             source_lang,
@@ -251,6 +277,7 @@ class TranslationController(QObject):
             entity_hits=tuple(entity_hits),
             active_pronoun_pair=active_pronoun,
             is_ja_origin=is_ja,
+            model_family=model_family,
         )
 
         if hasattr(self._worker_factory, "create_worker"):

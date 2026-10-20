@@ -235,6 +235,9 @@ ColumnLayout {
                     implicitWidth: 26
                     implicitHeight: 20
                     radius: 10
+                    enabled: (typeof batchController === "undefined" || !batchController.executionLocked) &&
+                             (typeof translationController === "undefined" || translationController.status !== "TRANSLATING")
+                    opacity: enabled ? 1.0 : 0.4
                     color: closeSubMouse.containsMouse ? Qt.rgba(1.0, 0.2, 0.2, 0.35) : Qt.rgba(1.0, 1.0, 1.0, 0.22)
                     border.color: closeSubMouse.containsMouse ? "#EF4444" : Qt.rgba(1.0, 1.0, 1.0, 0.5)
                     border.width: 1
@@ -252,10 +255,13 @@ ColumnLayout {
                     MouseArea {
                         id: closeSubMouse
                         anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
+                        enabled: btnCloseSub.enabled
+                        hoverEnabled: enabled
+                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                         onClicked: {
-                            if (typeof projectController !== "undefined") {
+                            if (typeof mainWindow !== "undefined" && typeof mainWindow.handleCloseProject === "function") {
+                                mainWindow.handleCloseProject()
+                            } else if (typeof projectController !== "undefined") {
                                 projectController.closeProject()
                             }
                         }
@@ -676,7 +682,7 @@ ColumnLayout {
             width: Math.max(0, subListView.width - 20)
             radius: 16
 
-            property real targetY: subListView.currentItem ? subListView.currentItem.y + 4 : y
+            property real targetY: subListView.currentItem ? subListView.currentItem.y + 4 : 0
             y: root.isDraggingLens ? y : targetY
             height: subListView.currentItem ? (subListView.currentItem.hasTranslation ? 74 : 54) : 54
             visible: subListView.count > 0 && subListView.currentIndex >= 0 && subListView.currentItem !== null

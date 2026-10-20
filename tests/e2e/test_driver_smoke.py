@@ -17,16 +17,16 @@ def harness():
 
 
 def test_find_child_smoke(harness):
-    for object_name in ("btnOpenSrt", "searchInput", "btnTranslate"):
+    for object_name in ("btnModelManager", "searchInput", "btnTranslate"):
         assert harness.driver.find(object_name) is not None
 
 
 def test_qtest_click_reaches_button_signal(harness):
     clicked = []
-    button = harness.driver.find("btnOpenSrt")
+    button = harness.driver.find("btnModelManager")
     button.clicked.connect(lambda: clicked.append(True))
 
-    harness.driver.click("btnOpenSrt")
+    harness.driver.click("btnModelManager")
 
     assert clicked == [True]
     harness.driver.key(Qt.Key_Escape)

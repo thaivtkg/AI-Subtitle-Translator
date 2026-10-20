@@ -282,6 +282,11 @@ class ModelController(QObject):
             self.notify.emit("ERROR", "Không tìm thấy thông tin model.")
             return False
 
+        local_models = scan_local_models(self.models_dir)
+        if not local_models.get(model_id, False):
+            self.notify.emit("ERROR", "Model này chưa được tải về máy.")
+            return False
+
         if self._active_model_id != model_id:
             # Thu hồi VRAM của model cũ ngay khi người dùng bấm chọn model khác
             try:

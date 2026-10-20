@@ -491,6 +491,8 @@ def test_tc_mm_17_vram_cleanup_and_safe_hybrid_layers(tmp_path):
     assert backend._current_model == ""
     # 2. Kiểm tra tính toán layer GPU an toàn cho RTX 3050 (4GB VRAM) khi nạp Gemma 2 9B
     fake_gpu = {"has_gpu_hardware": True, "name": "RTX 3050", "vram_gb": 4.0}
+    # Tạo dummy model file cho translategemma
+    (tmp_path / "gemma-2-9b-it-Q4_K_M.gguf").write_bytes(b"dummy weights")
     controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True)
     
     mock_trans = MagicMock()
@@ -518,6 +520,8 @@ def test_tc_mm_18_realtime_vram_telemetry(tmp_path):
         assert (used, total) == (-1.0, -1.0)
     # 2. Kiểm tra ModelController phát sinh property vramUsed / vramTotal thực tế
     fake_gpu = {"has_gpu_hardware": True, "name": "RTX 3050", "vram_gb": 4.0}
+    # Tạo dummy model file cho translategemma
+    (tmp_path / "gemma-2-9b-it-Q4_K_M.gguf").write_bytes(b"dummy weights")
     controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True)
     assert controller.vramTotal > 0.0 or controller.vramTotal == -1.0
 
@@ -536,6 +540,17 @@ def test_tc_mm_19_minimalist_launchpad_and_unified_file_dialog():
         main_code = f.read()
     assert "*.srt *.aisrt" in main_code
     assert "loadProject" in main_code
+
+
+def test_tc_mm_20_select_model_guard_against_missing_file(tmp_path):
+    """Kiểm tra BUG-07: Chặn kích hoạt model nếu file GGUF chưa tải về máy."""
+    controller = ModelController(models_dir=str(tmp_path))
+    # Chưa có file trên đĩa -> Từ chối
+    assert controller.selectActiveModel("qwen2.5-3b-instruct-q4_k_m") is False
+    # Sau khi có file trên đĩa -> Kích hoạt thành công
+    (tmp_path / "qwen2.5-3b-instruct-q4_k_m.gguf").write_bytes(b"dummy")
+    assert controller.selectActiveModel("qwen2.5-3b-instruct-q4_k_m") is True
+
 
 
 
