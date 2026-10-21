@@ -21,12 +21,10 @@ class TranslationWorker(QThread):
     @staticmethod
     def _visible_translation(raw_text):
         """Return only translated text; keep model reasoning out of the UI."""
-        think_start = raw_text.find("<think>")
-        if think_start >= 0:
-            think_end = raw_text.find("</think>", think_start + len("<think>"))
-            if think_end < 0:
-                return ""
-            raw_text = raw_text[think_end + len("</think>"):]
+        if "</think>" in raw_text:
+            raw_text = raw_text.split("</think>", 1)[1]
+        elif "<think>" in raw_text:
+            return ""
         else:
             for size in range(len("<think>") - 1, 0, -1):
                 if raw_text.endswith("<think>"[:size]):

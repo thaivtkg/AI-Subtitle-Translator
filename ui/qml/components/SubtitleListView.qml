@@ -820,6 +820,9 @@ ColumnLayout {
                 if (count === 0) {
                     root.selectedIndices = []
                     root.selectionChanged([])
+                    if (typeof translationController !== "undefined") {
+                        translationController.loadSubtitle(-1)
+                    }
                 }
                 if (!root.isProxyModel) {
                     root.updatePagination()
@@ -835,6 +838,8 @@ ColumnLayout {
                         root.selectedIndices = [raw]
                         root.selectionChanged(root.selectedIndices)
                     }
+                } else if (count === 0 && typeof translationController !== "undefined") {
+                    translationController.loadSubtitle(-1)
                 }
             }
 

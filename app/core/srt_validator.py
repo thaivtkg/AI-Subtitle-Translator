@@ -2,7 +2,7 @@ import re
 
 
 class SRTValidator:
-    TIME_PATTERN = re.compile(r"^(\d{2}):(\d{2}):(\d{2}),(\d{3})$")
+    TIME_PATTERN = re.compile(r"^(\d{2}):(\d{2}):(\d{2})[,.](\d{3})$")
     ACTIVE_STATUSES = {"ACCEPTED", "EDITED", "TRANSLATED"}
 
     @staticmethod
@@ -23,6 +23,7 @@ class SRTValidator:
         translated_count = 0
         untranslated_indices = []
         echo_warning_indices = []
+        out_of_order_indices = []
 
         for i, sub in enumerate(subtitles):
             # 1. KIỂM TRA CẤU TRÚC INDEX (Fatal Blockers)
@@ -44,8 +45,8 @@ class SRTValidator:
             if start_ms >= end_ms:
                 return False, f"Subtitle #{idx}: Start Time phải nhỏ hơn End Time."
             if start_ms < prev_start_ms:
-                return False, f"Subtitle #{idx}: Thứ tự thời gian bị ngược so với câu trước."
-            prev_start_ms = start_ms
+                out_of_order_indices.append(idx)
+            prev_start_ms = max(prev_start_ms, start_ms)
 
             # 3. KIỂM TRA TRẠNG THÁI & NỘI DUNG DỊCH (Business Rules Matrix)
             status = str(sub.get("status") or "PENDING").upper()
@@ -70,6 +71,8 @@ class SRTValidator:
             warnings.append(f"{len(untranslated_indices)} câu chưa dịch (sẽ giữ nguyên câu gốc)")
         if echo_warning_indices:
             warnings.append(f"{len(echo_warning_indices)} câu AI giữ nguyên câu gốc dài")
+        if out_of_order_indices:
+            warnings.append(f"{len(out_of_order_indices)} câu có thời gian bắt đầu trước câu trước (lồng tiếng/chèn lời)")
 
         if warnings:
             return True, f"Hợp lệ (Lưu ý: {'; '.join(warnings)})."

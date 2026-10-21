@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import re
 
 
 VALID_ENTITY_TYPES = {"CHARACTER", "LOCATION", "ORGANIZATION", "OTHER"}
@@ -150,7 +151,7 @@ class EntityDictionary:
             for name, entry in self._entries.items()
         }
 
-    def match(self, source_text):
+    def match(self, source_text, word_boundary: bool = False):
         if not isinstance(source_text, str):
             raise ValueError("source_text must be a string")
 
@@ -158,19 +159,35 @@ class EntityDictionary:
         for entry in self._entries.values():
             matchable_forms = [entry.name] + list(entry.aliases)
             for form in matchable_forms:
-                start = source_text.find(form)
-                while start >= 0:
-                    candidates.append(
-                        EntityHit(
-                            entity_name=entry.name,
-                            matched_form=form,
-                            canonical_translation=entry.canonical_translation,
-                            entity_type=entry.entity_type,
-                            start=start,
-                            end=start + len(form),
+                is_cjk = bool(re.search(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]", form))
+                if word_boundary and not is_cjk and re.match(r"^[\w\s-]+$", form):
+                    pattern = rf"\b{re.escape(form)}\b"
+                    for m in re.finditer(pattern, source_text, flags=re.IGNORECASE):
+                        s, e = m.span()
+                        candidates.append(
+                            EntityHit(
+                                entity_name=entry.name,
+                                matched_form=m.group(0),
+                                canonical_translation=entry.canonical_translation,
+                                entity_type=entry.entity_type,
+                                start=s,
+                                end=e,
+                            )
                         )
-                    )
-                    start = source_text.find(form, start + 1)
+                else:
+                    start = source_text.find(form)
+                    while start >= 0:
+                        candidates.append(
+                            EntityHit(
+                                entity_name=entry.name,
+                                matched_form=form,
+                                canonical_translation=entry.canonical_translation,
+                                entity_type=entry.entity_type,
+                                start=start,
+                                end=start + len(form),
+                            )
+                        )
+                        start = source_text.find(form, start + 1)
 
         candidates.sort(key=lambda hit: (-len(hit.matched_form), hit.start))
         selected = []

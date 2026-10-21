@@ -97,3 +97,22 @@ def test_tc04_validator_blocks_100_percent_untranslated_or_bad_timestamps():
     is_valid_time, msg_time = SRTValidator.validate_for_export(bad_time_subs)
     assert is_valid_time is False
     assert "Start Time phải nhỏ hơn End Time" in msg_time
+
+
+def test_logic_07_validator_supports_dot_and_overlapping_subtitles():
+    """Kiểm tra LOGIC-07: SRTValidator hỗ trợ timestamp dấu chấm . và không chặn cứng câu lồng nhau."""
+    # 1. Hỗ trợ dấu chấm trong ms (VD: 00:00:01.500)
+    dot_subs = [
+        _make_sub(1, "00:00:01.000", "00:00:02.500", "Hello", "Xin chào", "ACCEPTED"),
+    ]
+    is_valid, msg = SRTValidator.validate_for_export(dot_subs)
+    assert is_valid is True
+
+    # 2. Câu lồng nhau (overlapping / out of order timestamps)
+    overlapping_subs = [
+        _make_sub(1, "00:00:01,000", "00:00:05,000", "Speaker 1", "Người 1", "ACCEPTED"),
+        _make_sub(2, "00:00:02,000", "00:00:04,000", "Sign text", "Biển báo", "ACCEPTED"),
+    ]
+    is_valid_overlap, msg_overlap = SRTValidator.validate_for_export(overlapping_subs)
+    assert is_valid_overlap is True
+

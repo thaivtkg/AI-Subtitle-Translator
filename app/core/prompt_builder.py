@@ -81,12 +81,19 @@ def build_translation_prompt(
         )
         # Định hướng xưng hô linh hoạt, cho phép 'tôi' tự nhiên
         if active_pronoun_pair and active_pronoun_pair.strip() and "tự do" not in active_pronoun_pair.lower():
-            rules.append(
-                f"2. PRONOUN RELATIONSHIP: Main character relationship is '{active_pronoun_pair.strip()}'. "
-                "However, dialogue has ALTERNATING SPEAKERS: When the junior speaks, they address the other as 'tiền bối' and refer to themselves as 'em'. "
-                "When the senior replies (e.g. 'I will not give up'), they refer to themselves naturally as 'tôi' or 'chị/anh' (e.g. 'Tôi sẽ không đầu hàng'). "
-                "NEVER refer to oneself as 'Tiền bối không đầu hàng'!"
-            )
+            pair_str = active_pronoun_pair.strip()
+            if "tiền bối" in pair_str.lower():
+                rules.append(
+                    f"2. PRONOUN RELATIONSHIP: Main character relationship is '{pair_str}'. "
+                    "However, dialogue has ALTERNATING SPEAKERS: When the junior speaks, they address the other as 'tiền bối' and refer to themselves as 'em'. "
+                    "When the senior replies (e.g. 'I will not give up'), they refer to themselves naturally as 'tôi' or 'chị/anh' (e.g. 'Tôi sẽ không đầu hàng'). "
+                    "NEVER refer to oneself as 'Tiền bối không đầu hàng'!"
+                )
+            else:
+                rules.append(
+                    f"2. PRONOUN RELATIONSHIP: Main character relationship is strictly '{pair_str}'. "
+                    "Maintain natural spoken pronouns adhering to this relationship consistently."
+                )
         else:
             rules.append(
                 "2. NATURAL PRONOUNS: Use natural pronouns suitable for the context. 'Tôi' is completely valid and natural for self-affirmation (e.g., 'Tôi sẽ không đầu hàng')."

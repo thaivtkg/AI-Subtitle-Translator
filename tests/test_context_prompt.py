@@ -53,5 +53,54 @@ class TestPromptBuilder(unittest.TestCase):
         self.assertIn("<|start_header_id|>assistant<|end_header_id|>", llama_prompt)
         self.assertNotIn("<|im_start|>", llama_prompt)
 
+    def test_pronoun_pair_logic_01(self):
+        """Kiểm tra LOGIC-01: 'Ta - Ngươi' không bị ép luật 'tiền bối / em'."""
+        prompt_ancient = PromptBuilder.build(
+            story_summary="Phim kiếm hiệp cổ trang",
+            current_sub="Ngươi đứng lại!",
+            active_pronoun_pair="Ta - Ngươi",
+            is_ja_origin=False,
+        )
+        self.assertIn("strictly 'Ta - Ngươi'", prompt_ancient)
+        self.assertNotIn("tiền bối", prompt_ancient)
+        self.assertNotIn("'em'", prompt_ancient)
+
+        prompt_anime = PromptBuilder.build(
+            story_summary="Anime học đường",
+            current_sub="Chào anh!",
+            active_pronoun_pair="Em - Tiền bối",
+            is_ja_origin=True,
+        )
+        self.assertIn("tiền bối", prompt_anime)
+
+    def test_cot_and_translation_prefix_logic_05_and_09(self):
+        """Kiểm tra LOGIC-05 và LOGIC-09: Giữ nguyên bản dịch khi có 'Translation:' và lọc suy luận CoT."""
+        from unittest.mock import MagicMock
+        from app.controllers.translation_controller import TranslationController
+        from app.llm.worker import TranslationWorker
+
+        # LOGIC-05: Translation: không làm mất bản dịch
+        mock_model = MagicMock()
+        mock_model.get_all_data.return_value = [{"original": "Hello", "translation": "", "status": "PENDING"}]
+        tc = TranslationController(mock_model)
+        mock_worker = MagicMock()
+        tc.worker = mock_worker
+        tc._active_translation_index = 0
+        tc._current_index = 0
+        tc.on_finished(0, "Translation: Xin chào các bạn")
+        self.assertEqual(tc.currentTranslation, "Xin chào các bạn")
+
+        tc._active_translation_index = 0
+        tc._current_index = 0
+        tc.on_finished(0, "**Translation:** Xin chào bạn hiền")
+        self.assertEqual(tc.currentTranslation, "Xin chào bạn hiền")
+
+        # LOGIC-09: TranslationWorker._visible_translation lọc </think> khi không có <think>
+        res = TranslationWorker._visible_translation("Thought process here...\n</think>Xin chào thế giới")
+        self.assertEqual(res, "Xin chào thế giới")
+
+        res_in_progress = TranslationWorker._visible_translation("<think>Thinking...")
+        self.assertEqual(res_in_progress, "")
+
 if __name__ == "__main__":
     unittest.main()

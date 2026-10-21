@@ -241,8 +241,8 @@ class ProjectController(QObject):
             self.glossary._entries.clear()
         if hasattr(self.entity_dictionary, "_entities"):
             self.entity_dictionary._entities.clear()
-        if hasattr(self.translation_memory, "_cache"):
-            self.translation_memory._cache.clear()
+        if hasattr(self.translation_memory, "_entries"):
+            self.translation_memory._entries.clear()
         self._set_project_state(False, False)
         self.projectLoaded.emit("")
         self.languageLoaded.emit("English")

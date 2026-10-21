@@ -81,3 +81,24 @@ def test_filtered_subtitle_model_reactivity():
     assert proxy.data(idx, SubtitleModel.StatusRole) == "TRANSLATED"
     assert proxy.data(idx, FilteredSubtitleModel.RawIndexRole) == 1
 
+
+def test_logic_08_empty_filter_and_reset_workspace():
+    """Kiểm tra LOGIC-08: Khi bộ lọc trả về 0 kết quả, gọi loadSubtitle(-1) dọn sạch workspace."""
+    from app.controllers.translation_controller import TranslationController
+    source = SubtitleModel()
+    source.load_data([
+        {"index": 1, "start_time": "00:01:00,000", "end_time": "00:01:02,000", "original": "First", "translation": "Câu 1", "status": "TRANSLATED"},
+    ])
+    tc = TranslationController(source)
+    tc.loadSubtitle(0)
+    assert tc.currentSubtitleIndex == 0
+    assert tc.currentOriginal == "First"
+    assert tc.currentTranslation == "Câu 1"
+
+    # Giả lập khi lọc rỗng -> gọi loadSubtitle(-1)
+    tc.loadSubtitle(-1)
+    assert tc.currentSubtitleIndex == -1
+    assert tc.currentOriginal == ""
+    assert tc.currentTranslation == ""
+
+

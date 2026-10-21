@@ -242,12 +242,12 @@ class TranslationController(QObject):
         # Thu thập các matches từ Glossary và Entity Dictionary
         enriched_glossary_hits = []
         if self.glossary:
-            for hit in self.glossary.match(current):
+            for hit in self.glossary.match(current, word_boundary=True):
                 entry = self.glossary.get(hit.source_term)
                 forbidden = entry.forbidden_alternatives if entry else ()
                 enriched_glossary_hits.append((hit, forbidden))
 
-        entity_hits = self.entities.match(current) if self.entities else ()
+        entity_hits = self.entities.match(current, word_boundary=True) if self.entities else ()
         active_pronoun = (
             getattr(self._project_controller, "activePronounPair", "")
             if self._project_controller
@@ -310,9 +310,12 @@ class TranslationController(QObject):
         clean_text = (text or "").strip()
         clean_text = re.sub(r'^\[Line \d+\]:\s*', '', clean_text, flags=re.IGNORECASE).strip()
         
-        # Cắt bỏ phần rò rỉ reasoning tiếng Anh nếu LLM vô tình sinh ra
+        # 1. Gỡ tiền tố Translation: / Bản dịch: ở ĐẦU chuỗi nếu LLM sinh ra (kể cả định dạng markdown)
+        clean_text = re.sub(r'(?i)^\s*[*_]*(?:Translation|Bản dịch|Direct translation)[:*_]*\s*', '', clean_text).strip()
+
+        # 2. Cắt bỏ phần rò rỉ reasoning tiếng Anh ở ĐUÔI chuỗi nếu LLM vô tình sinh ra
         clean_text = re.split(
-            r'(?i)(?:(?:Either\s+(?:this|switch)|Given\s+the|Switch\s+to)\b|Note:|Explanation:|Translation:)', 
+            r'(?i)(?:(?:Either\s+(?:this|switch)|Given\s+the|Switch\s+to)\b|Note:|Explanation:)', 
             clean_text
         )[0].strip()
         # Loại bỏ ngoặc kép bao quanh nếu có
@@ -387,18 +390,22 @@ class TranslationController(QObject):
     @Slot(int, str, result=bool)
     def acceptTranslation(self, index, final_text):
         subtitles = self._subtitle_model.get_all_data()
-        if 0 <= index < len(subtitles):
-            original = subtitles[index].get("original", "").strip()
-            clean_text = final_text.strip()
-            
-            if not clean_text:
-                self.notify.emit("ERROR", "Lỗi: Không thể duyệt bản dịch trống!")
-                return False
-            if clean_text == original:
-                self.notify.emit("ERROR", "Lỗi: Bản dịch không được trùng khớp y hệt văn bản gốc!")
-                return False
+        if not (0 <= index < len(subtitles)):
+            return False
+
+        original = subtitles[index].get("original", "").strip()
+        clean_text = final_text.strip()
+        
+        if not clean_text:
+            self.notify.emit("ERROR", "Lỗi: Không thể duyệt bản dịch trống!")
+            return False
+        if clean_text == original:
+            self.notify.emit("ERROR", "Lỗi: Bản dịch không được trùng khớp y hệt văn bản gốc!")
+            return False
 
         self._subtitle_model.update_translation(index, final_text, "ACCEPTED")
+        if self.translation_memory is not None and original:
+            self.translation_memory.add(original, clean_text)
         self._status = "ACCEPTED"
         self.statusChanged.emit(self._status)
         self.notify.emit("SUCCESS", f"Đã lưu thành công câu #{index + 1}")

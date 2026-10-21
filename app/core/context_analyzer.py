@@ -117,7 +117,7 @@ JA_SOURCE_INDICATORS = {
         "onii-san", "onii-chan", "onee-san", "onee-chan", "shishou"
     ],
     "anime_keywords": [
-        "anime", "manga", "otaku", "kaijin", "witch", "magic girl", "isekai"
+        "anime", "manga", "otaku", "kaijin", "magical girl", "mahoushoujo", "isekai"
     ]
 }
 # 1. Bắt kính ngữ tiếng Nhật có gạch nối trong tiếng Anh (VD: Tanaka-senpai, Sakura-chan)
@@ -183,11 +183,13 @@ def extract_entities(text: str, source_lang: str = "") -> list[dict[str, Any]]:
 
     def _is_valid_term(term: str) -> bool:
         t = term.strip()
-        if len(t) < 2:
+        if len(t) < 2 or len(t.split()) > 4:
             return False
         if t.isdigit():
             return False
         if t.lower() in STOPWORDS:
+            return False
+        if any(t.lower().startswith(sw) for sw in ("tóm tắt", "nội dung", "thể loại", "diễn viên", "đạo diễn")):
             return False
         return True
 

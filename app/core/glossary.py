@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import re
 
 
 @dataclass(frozen=True)
@@ -133,23 +134,38 @@ class Glossary:
             payload[source_term] = item
         return payload
 
-    def match(self, source_text):
+    def match(self, source_text, word_boundary: bool = False):
         if not isinstance(source_text, str):
             raise ValueError("source_text must be a string")
 
         candidates = []
         for entry in self._entries.values():
-            start = source_text.find(entry.source_term)
-            while start >= 0:
-                candidates.append(
-                    GlossaryHit(
-                        entry.source_term,
-                        entry.preferred_translation,
-                        start,
-                        start + len(entry.source_term),
+            term = entry.source_term
+            is_cjk = bool(re.search(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]", term))
+            if word_boundary and not is_cjk and re.match(r"^[\w\s-]+$", term):
+                pattern = rf"\b{re.escape(term)}\b"
+                for m in re.finditer(pattern, source_text, flags=re.IGNORECASE):
+                    s, e = m.span()
+                    candidates.append(
+                        GlossaryHit(
+                            term,
+                            entry.preferred_translation,
+                            s,
+                            e,
+                        )
                     )
-                )
-                start = source_text.find(entry.source_term, start + 1)
+            else:
+                start = source_text.find(term)
+                while start >= 0:
+                    candidates.append(
+                        GlossaryHit(
+                            term,
+                            entry.preferred_translation,
+                            start,
+                            start + len(term),
+                        )
+                    )
+                    start = source_text.find(term, start + 1)
 
         candidates.sort(key=lambda hit: (-len(hit.source_term), hit.start))
         selected = []

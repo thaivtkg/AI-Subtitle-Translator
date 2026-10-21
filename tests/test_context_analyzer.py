@@ -132,3 +132,36 @@ def test_analyze_context_wrapper():
     assert result["archetype"] == ARCHETYPE_ANCIENT_FANTASY
     assert result["pronouns"] == "Ta - Ngươi"
     assert any(e["source_term"] == "Xiao Yan" for e in result["entities"])
+
+
+def test_logic_03_metadata_heading_not_extracted_as_glossary():
+    """Kiểm tra LOGIC-03: Không trích xuất tiêu đề tóm tắt thành glossary."""
+    from app.core.context_analyzer import extract_entities
+    text = "Tóm tắt phim: Nhân vật A là bạn thân của B\nThể loại: Kiếm hiệp"
+    entities = extract_entities(text)
+    # Không được chứa 'Tóm tắt phim' hay 'Thể loại'
+    assert not any(e["source_term"].lower().startswith("tóm tắt") for e in entities)
+    assert not any(e["source_term"].lower().startswith("thể loại") for e in entities)
+
+
+def test_logic_04_witch_does_not_trigger_japanese_origin():
+    """Kiểm tra LOGIC-04: Từ tiếng Anh 'witch' không kích hoạt is_ja_origin."""
+    from app.core.context_analyzer import detect_ja_translated_en
+    result = detect_ja_translated_en("The witch of Salem flew across the dark sky.")
+    assert result["is_ja_origin"] is False
+    assert "witch" not in result["matched_clues"]
+
+
+def test_logic_06_word_boundary_glossary_and_entity():
+    """Kiểm tra LOGIC-06: Ranh giới từ \b ngăn chặn khớp nhầm chuỗi con."""
+    from app.core.glossary import Glossary
+    from app.core.entity_dictionary import EntityDictionary
+
+    g = Glossary.from_entries([("cat", "mèo", [])])
+    assert len(g.match("communicated with them", word_boundary=True)) == 0
+    assert len(g.match("A lovely cat arrived", word_boundary=True)) == 1
+
+    ed = EntityDictionary.from_entries([("Dan", "CHARACTER", "Dan", [])])
+    assert len(ed.match("Danger ahead", word_boundary=True)) == 0
+    assert len(ed.match("Dan is here", word_boundary=True)) == 1
+

@@ -153,3 +153,47 @@ def test_tc_p3b3_10_lookup_immutability():
     # Frozen dataclass mutation attempt must fail
     with pytest.raises(FrozenInstanceError):
         result.target_text = "Hacked"
+
+
+def test_logic_02_accept_translation_saves_to_tm_and_close_clears():
+    """Kiểm tra LOGIC-02: Duyệt câu tự động lưu vào TM và đóng dự án dọn sạch _entries."""
+    from unittest.mock import MagicMock
+    from app.controllers.translation_controller import TranslationController
+    from app.controllers.project_controller import ProjectController
+    from app.models.subtitle import SubtitleModel
+
+    model = SubtitleModel()
+    model.load_data([
+        {"id": 1, "start_time": "00:00:01,000", "end_time": "00:00:02,000", "original": "How are you?", "translation": "", "status": "PENDING"}
+    ])
+    pc = ProjectController(subtitle_model=model)
+    tc = TranslationController(subtitle_model=model)
+    tc.bind_intelligence(
+        glossary=pc.glossary,
+        entities=pc.entity_dictionary,
+        translation_memory=pc.translation_memory,
+        project_controller=pc,
+    )
+    pc.bind_translation_controller(tc)
+
+    # Ban đầu TM chưa có câu này
+    assert pc.translation_memory.lookup("How are you?") is None
+
+    # Kiểm tra index ngoài biên không gây crash hay UnboundLocalError
+    assert tc.acceptTranslation(-1, "Lỗi index âm") is False
+    assert tc.acceptTranslation(999, "Lỗi index quá lớn") is False
+
+    # Người dùng duyệt bản dịch câu #0
+    success = tc.acceptTranslation(0, "Bạn khỏe không?")
+    assert success is True
+
+    # Khẳng định câu đã được lưu vào Translation Memory!
+    match = pc.translation_memory.lookup("How are you?")
+    assert match is not None
+    assert match.target_text == "Bạn khỏe không?"
+
+    # Đóng dự án -> _entries trong TM phải được dọn sạch hoàn toàn
+    pc.closeProject()
+    assert len(pc.translation_memory._entries) == 0
+    assert pc.translation_memory.lookup("How are you?") is None
+
