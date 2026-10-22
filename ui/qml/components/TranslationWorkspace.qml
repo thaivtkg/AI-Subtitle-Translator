@@ -996,7 +996,7 @@ Item {
     }
 
     Shortcut {
-        sequences: ["Ctrl+Shift+Return", "Ctrl+Shift+Enter"]
+        sequences: ["Ctrl+Shift+Return", "Ctrl+Shift+Enter", "Ctrl+T"]
         enabled: workspace.hasSelection && !workspace.executionLocked
         onActivated: {
             translateRequested(langSelector.sourceLang)
