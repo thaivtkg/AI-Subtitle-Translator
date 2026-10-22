@@ -61,6 +61,28 @@ ColumnLayout {
         }
     }
 
+    function selectNextRowAndFocus() {
+        if (subListView.count <= 0) return false;
+        var nextIdx = subListView.currentIndex + 1;
+        if (nextIdx < subListView.count) {
+            subListView.currentIndex = nextIdx;
+            subListView.positionViewAtIndex(nextIdx, ListView.Contain);
+            return true;
+        }
+        return false;
+    }
+
+    function selectPrevRowAndFocus() {
+        if (subListView.count <= 0) return false;
+        var prevIdx = subListView.currentIndex - 1;
+        if (prevIdx >= 0) {
+            subListView.currentIndex = prevIdx;
+            subListView.positionViewAtIndex(prevIdx, ListView.Contain);
+            return true;
+        }
+        return false;
+    }
+
     property int currentChunkSize: 0 // 0 = Tất cả câu
     property int currentPage: 1
     property int selectedChunkStart: -1

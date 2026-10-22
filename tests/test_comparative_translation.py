@@ -143,3 +143,40 @@ def test_custom_archetype_omits_mandatory_pronoun_rule():
     assert "VIETNAMESE LOCALIZATION RULES" in prompt
     assert "PRONOUN RELATIONSHIP" not in prompt
     assert "NATURAL PRONOUNS" in prompt
+
+
+def test_request_and_apply_alternative_translation():
+    from app.controllers.translation_controller import TranslationController
+    from app.models.subtitle import SubtitleModel
+    from PySide6.QtCore import QObject, Signal
+
+    class MockWorker(QObject):
+        finished = Signal(int, str)
+        error = Signal(int, str)
+        progress = Signal(int, str)
+
+        def __init__(self, index, prompt, profile):
+            super().__init__()
+            self.index = index
+            self.prompt = prompt
+            self.profile = profile
+
+        def start(self):
+            assert self.profile.get("temperature") == 0.7
+            assert "phóng khoáng" in self.prompt
+            self.finished.emit(self.index, "Tôi rất khỏe, cảm ơn bạn nhiều nhé!")
+
+    model = SubtitleModel()
+    model.load_data([{"index": 1, "original": "How are you?", "translation": "Bạn khỏe không?", "status": "TRANSLATED"}])
+    controller = TranslationController(model, worker_factory=MockWorker)
+
+    received_alt = []
+    controller.alternativeTranslationReady.connect(lambda idx, text, mode: received_alt.append((idx, text, mode)))
+
+    controller.requestAlternativeTranslation(0, "English", "CREATIVE")
+    assert len(received_alt) == 1
+    assert received_alt[0] == (0, "Tôi rất khỏe, cảm ơn bạn nhiều nhé!", "CREATIVE")
+
+    controller.applyAlternativeTranslation(0, received_alt[0][1])
+    assert model.get_all_data()[0]["translation"] == "Tôi rất khỏe, cảm ơn bạn nhiều nhé!"
+    assert model.get_all_data()[0]["status"] == "EDITED"

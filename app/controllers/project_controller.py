@@ -1,3 +1,4 @@
+import re
 import os
 import json
 import time
@@ -105,6 +106,7 @@ class ProjectController(QObject):
             {
                 "source_term": e.source_term,
                 "preferred_translation": e.preferred_translation,
+                "forbidden_alternatives": list(e.forbidden_alternatives),
                 "is_auto": getattr(e, "is_auto", False),
             }
             for e in self.glossary._entries.values()
@@ -216,6 +218,142 @@ class ProjectController(QObject):
             self.glossary.remove(source_term)
             self.glossaryChanged.emit()
             self.markDirty()
+
+    @Slot(str, str, str, result=bool)
+    @Slot(str, str, result=bool)
+    def addManualGlossaryTerm(self, source_term: str, preferred_translation: str, forbidden_str: str = "") -> bool:
+        src = (source_term or "").strip()
+        target = (preferred_translation or "").strip()
+        if not src or not target:
+            self.notify.emit("ERROR", "Thuật ngữ gốc và bản dịch không được để trống!")
+            return False
+
+        forbidden = tuple(f.strip() for f in (forbidden_str or "").split(",") if f.strip())
+        self.dismissed_auto_terms.discard(src)
+        if self.glossary.get(src) is not None:
+            self.glossary.update(src, target, forbidden, is_auto=False)
+        else:
+            self.glossary.add(src, target, forbidden, is_auto=False)
+        self.glossaryChanged.emit()
+        self.markDirty()
+        self.notify.emit("SUCCESS", f"Đã ghim thuật ngữ: '{src}' ➔ '{target}'")
+        return True
+
+    @Slot(str, str, bool, bool, bool, result="QVariantMap")
+    @Slot(str, str, bool, bool, result="QVariantMap")
+    @Slot(str, str, bool, result="QVariantMap")
+    @Slot(str, str, result="QVariantMap")
+    @Slot(str, result="QVariantMap")
+    def previewFindReplace(
+        self,
+        find_text: str,
+        scope: str = "ALL",
+        match_case: bool = False,
+        whole_word: bool = False,
+        is_regex: bool = False,
+    ) -> dict:
+        if not find_text or not self._subtitle_model:
+            return {"total_matches": 0, "affected_rows": []}
+
+        try:
+            pattern = find_text if is_regex else re.escape(find_text)
+            if whole_word:
+                pattern = rf"\b{pattern}\b"
+            flags = 0 if match_case else re.IGNORECASE
+            regex = re.compile(pattern, flags)
+        except Exception:
+            return {"total_matches": 0, "affected_rows": [], "error": "Invalid regex pattern"}
+
+        total_matches = 0
+        affected_rows = []
+        subtitles = self._subtitle_model.get_all_data()
+
+        for idx, sub in enumerate(subtitles):
+            row_matches = 0
+            if scope in ("ORIGINAL", "ALL"):
+                orig = sub.get("original", "")
+                row_matches += len(regex.findall(orig))
+            if scope in ("TRANSLATION", "ALL"):
+                trans = sub.get("translation", "")
+                row_matches += len(regex.findall(trans))
+
+            if row_matches > 0:
+                total_matches += row_matches
+                affected_rows.append(idx)
+
+        return {"total_matches": total_matches, "affected_rows": affected_rows}
+
+    @Slot(str, str, str, bool, bool, bool, bool, result=int)
+    @Slot(str, str, str, bool, bool, bool, result=int)
+    @Slot(str, str, str, bool, bool, result=int)
+    @Slot(str, str, str, bool, result=int)
+    @Slot(str, str, str, result=int)
+    @Slot(str, str, result=int)
+    def executeFindReplace(
+        self,
+        find_text: str,
+        replace_text: str,
+        scope: str = "ALL",
+        match_case: bool = False,
+        whole_word: bool = False,
+        is_regex: bool = False,
+        add_to_glossary: bool = False,
+    ) -> int:
+        if not find_text or not self._subtitle_model:
+            return 0
+
+        try:
+            pattern = find_text if is_regex else re.escape(find_text)
+            if whole_word:
+                pattern = rf"\b{pattern}\b"
+            flags = 0 if match_case else re.IGNORECASE
+            regex = re.compile(pattern, flags)
+        except Exception as e:
+            self.notify.emit("ERROR", f"Lỗi biểu thức tìm kiếm: {e}")
+            return 0
+
+        subtitles = self._subtitle_model.get_all_data()
+        total_replacements = 0
+        affected_count = 0
+
+        for idx, sub in enumerate(subtitles):
+            updated = False
+            curr_orig = sub.get("original", "")
+            curr_trans = sub.get("translation", "")
+            orig_replaces = 0
+            trans_replaces = 0
+
+            if scope in ("ORIGINAL", "ALL") and curr_orig:
+                new_orig, orig_replaces = regex.subn(replace_text, curr_orig)
+                if orig_replaces > 0:
+                    sub["original"] = new_orig
+                    total_replacements += orig_replaces
+                    updated = True
+
+            if scope in ("TRANSLATION", "ALL") and curr_trans:
+                new_trans, trans_replaces = regex.subn(replace_text, curr_trans)
+                if trans_replaces > 0:
+                    sub["translation"] = new_trans
+                    total_replacements += trans_replaces
+                    updated = True
+
+            if updated:
+                affected_count += 1
+                curr_status = str(sub.get("status", "PENDING")).upper()
+                new_status = "EDITED" if curr_status not in ("ACCEPTED",) else curr_status
+                self._subtitle_model.update_translation(idx, sub.get("translation", ""), new_status)
+                if orig_replaces > 0:
+                    q_idx = self._subtitle_model.index(idx, 0)
+                    self._subtitle_model.dataChanged.emit(q_idx, q_idx, [self._subtitle_model.OriginalRole])
+
+        if add_to_glossary and find_text.strip() and replace_text.strip():
+            self.addManualGlossaryTerm(find_text.strip(), replace_text.strip())
+
+        if total_replacements > 0:
+            self.markDirty()
+            self.notify.emit("SUCCESS", f"Đã thay thế {total_replacements} vị trí trên {affected_count} câu.")
+
+        return total_replacements
 
     def bind_translation_controller(self, translation_controller):
         self._translation_controller = translation_controller

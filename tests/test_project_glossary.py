@@ -135,3 +135,33 @@ def test_tc_p3b1_18_checkpoint_has_no_glossary_data(tmp_path):
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert "intelligence" not in payload
     assert "glossary" not in json.dumps(payload, ensure_ascii=False)
+
+
+def test_add_manual_glossary_term():
+    controller, _ = make_controller()
+
+    # 1. Normal addition
+    assert controller.addManualGlossaryTerm('Senpai', 'Tiền bối', 'anh, sếp') is True
+    entry = controller.glossary.get('Senpai')
+    assert entry is not None
+    assert entry.preferred_translation == 'Tiền bối'
+    assert entry.forbidden_alternatives == ('anh', 'sếp')
+    assert entry.is_auto is False
+    assert controller._is_dirty is True
+
+    # 2. Update existing term
+    assert controller.addManualGlossaryTerm('Senpai', 'Đàn anh', '') is True
+    entry = controller.glossary.get('Senpai')
+    assert entry.preferred_translation == 'Đàn anh'
+    assert entry.forbidden_alternatives == ()
+    assert entry.is_auto is False
+
+    # 3. Empty inputs validation
+    assert controller.addManualGlossaryTerm('', 'Bản dịch') is False
+    assert controller.addManualGlossaryTerm('Từ gốc', '   ') is False
+
+    # 4. Term in dismissed_auto_terms is restored
+    controller.dismissed_auto_terms.add('Sensei')
+    assert controller.addManualGlossaryTerm('Sensei', 'Thầy') is True
+    assert 'Sensei' not in controller.dismissed_auto_terms
+    assert controller.glossary.get('Sensei') is not None

@@ -8,9 +8,27 @@ ColumnLayout {
     id: inspectorRoot
     spacing: 8
 
+    property bool showAddTermForm: false
+
     function switchToTab(idx) {
         if (contextTabs) {
             contextTabs.setCurrentIndex(idx)
+        }
+    }
+
+    function openAddTerm(sourceText, targetText) {
+        switchToTab(1)
+        showAddTermForm = true
+        if (typeof sourceText === "string" && sourceText.length > 0) {
+            addTermSourceInput.text = sourceText
+        }
+        if (typeof targetText === "string" && targetText.length > 0) {
+            addTermTargetInput.text = targetText
+        }
+        if (addTermSourceInput.text.length > 0) {
+            addTermTargetInput.forceActiveFocus()
+        } else {
+            addTermSourceInput.forceActiveFocus()
         }
     }
 
@@ -676,6 +694,160 @@ ColumnLayout {
                                 font.letterSpacing: 0.5
                             }
                             Item { Layout.fillWidth: true }
+
+                            Button {
+                                id: btnToggleAddTerm
+                                objectName: "btnToggleAddTerm"
+                                implicitHeight: 22
+                                implicitWidth: 56
+                                contentItem: Text {
+                                    text: inspectorRoot.showAddTermForm ? "✕ Đóng" : "+ Thêm"
+                                    color: Theme.accentSapphire
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle {
+                                    radius: 6
+                                    color: btnToggleAddTerm.hovered ? Qt.rgba(0.0, 0.45, 1.0, 0.18) : Qt.rgba(0.0, 0.45, 1.0, 0.08)
+                                    border.color: Theme.accentSapphire
+                                    border.width: 1
+                                }
+                                onClicked: {
+                                    inspectorRoot.showAddTermForm = !inspectorRoot.showAddTermForm
+                                    if (inspectorRoot.showAddTermForm) {
+                                        addTermSourceInput.forceActiveFocus()
+                                    }
+                                }
+                            }
+                        }
+
+                        // Form thêm thuật ngữ thủ công
+                        Rectangle {
+                            id: addTermBox
+                            visible: inspectorRoot.showAddTermForm
+                            Layout.fillWidth: true
+                            implicitHeight: addTermCol.implicitHeight + 16
+                            radius: 10
+                            color: Qt.rgba(0.0, 0.45, 1.0, 0.06)
+                            border.color: Qt.rgba(0.0, 0.45, 1.0, 0.3)
+                            border.width: 1
+
+                            ColumnLayout {
+                                id: addTermCol
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                spacing: 6
+
+                                TextField {
+                                    id: addTermSourceInput
+                                    objectName: "addTermSourceInput"
+                                    Layout.fillWidth: true
+                                    placeholderText: "Thuật ngữ gốc (ví dụ: Senpai)"
+                                    font.pixelSize: 11
+                                    color: Theme.textOnLightPod
+                                    background: Rectangle {
+                                        radius: 6
+                                        color: "#FFFFFF"
+                                        border.color: addTermSourceInput.activeFocus ? Theme.accentSapphire : "#CBD5E1"
+                                        border.width: 1
+                                    }
+                                }
+
+                                TextField {
+                                    id: addTermTargetInput
+                                    objectName: "addTermTargetInput"
+                                    Layout.fillWidth: true
+                                    placeholderText: "Bản dịch ưu tiên (ví dụ: Tiền bối)"
+                                    font.pixelSize: 11
+                                    color: Theme.textOnLightPod
+                                    background: Rectangle {
+                                        radius: 6
+                                        color: "#FFFFFF"
+                                        border.color: addTermTargetInput.activeFocus ? Theme.accentSapphire : "#CBD5E1"
+                                        border.width: 1
+                                    }
+                                }
+
+                                TextField {
+                                    id: addTermForbiddenInput
+                                    objectName: "addTermForbiddenInput"
+                                    Layout.fillWidth: true
+                                    placeholderText: "Từ cấm, tách bằng dấu phẩy (tùy chọn)"
+                                    font.pixelSize: 11
+                                    color: Theme.textOnLightPod
+                                    background: Rectangle {
+                                        radius: 6
+                                        color: "#FFFFFF"
+                                        border.color: addTermForbiddenInput.activeFocus ? Theme.accentSapphire : "#CBD5E1"
+                                        border.width: 1
+                                    }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+
+                                    Item { Layout.fillWidth: true }
+
+                                    Button {
+                                        text: "Hủy"
+                                        implicitHeight: 24
+                                        contentItem: Text {
+                                            text: "Hủy"
+                                            color: "#64748B"
+                                            font.pixelSize: 10
+                                            font.bold: true
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                        background: Rectangle {
+                                            radius: 6
+                                            color: "transparent"
+                                        }
+                                        onClicked: {
+                                            inspectorRoot.showAddTermForm = false
+                                            addTermSourceInput.text = ""
+                                            addTermTargetInput.text = ""
+                                            addTermForbiddenInput.text = ""
+                                        }
+                                    }
+
+                                    Button {
+                                        id: btnSaveTerm
+                                        objectName: "btnSaveTerm"
+                                        implicitHeight: 24
+                                        contentItem: Text {
+                                            text: "📌 Ghim Thuật Ngữ"
+                                            color: "#FFFFFF"
+                                            font.pixelSize: 10
+                                            font.bold: true
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                        background: Rectangle {
+                                            radius: 6
+                                            color: Theme.accentSapphire
+                                        }
+                                        onClicked: {
+                                            if (typeof projectController !== "undefined") {
+                                                var ok = projectController.addManualGlossaryTerm(
+                                                    addTermSourceInput.text,
+                                                    addTermTargetInput.text,
+                                                    addTermForbiddenInput.text
+                                                )
+                                                if (ok) {
+                                                    addTermSourceInput.text = ""
+                                                    addTermTargetInput.text = ""
+                                                    addTermForbiddenInput.text = ""
+                                                    inspectorRoot.showAddTermForm = false
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         // Empty state khi chưa có thuật ngữ

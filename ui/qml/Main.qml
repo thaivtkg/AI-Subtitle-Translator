@@ -160,14 +160,28 @@ ApplicationWindow {
                     border.width: 0
                     clip: true
 
-                    SubtitleListView {
-                        id: subListView
+                    ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 0
-                        model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : subtitleModel
-                        selectedIndices: mainWindow.selectedSubtitleIndices
-                        onSelectionChanged: function(indices) {
-                            mainWindow.selectedSubtitleIndices = indices
+                        spacing: 0
+
+                        FindReplaceBar {
+                            id: findReplaceBar
+                            objectName: "findReplaceBar"
+                            visible: false
+                            Layout.fillWidth: true
+                            Layout.margins: 6
+                            onCloseRequested: visible = false
+                        }
+
+                        SubtitleListView {
+                            id: subListView
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            model: typeof filteredSubtitleModel !== "undefined" && filteredSubtitleModel ? filteredSubtitleModel : subtitleModel
+                            selectedIndices: mainWindow.selectedSubtitleIndices
+                            onSelectionChanged: function(indices) {
+                                mainWindow.selectedSubtitleIndices = indices
+                            }
                         }
                     }
                 }
@@ -197,9 +211,12 @@ ApplicationWindow {
 
                         onAcceptRequested: (text) => {
                             let isSuccess = translationController.acceptTranslation(subListView.currentRawIndex, text)
-                            if (isSuccess && subListView.currentIndex < subListView.count - 1) {
-                                subListView.currentIndex += 1
+                            if (isSuccess) {
+                                subListView.selectNextRowAndFocus()
                             }
+                        }
+                        onAddGlossaryRequested: (src, tgt) => {
+                            contextInspector.openAddTerm(src, tgt)
                         }
                         onOpenSrtRequested: {
                             if (!batchController.executionLocked) importSrtDialog.open()
@@ -252,6 +269,16 @@ ApplicationWindow {
     // DIALOGS & CONNECTIONS
     // ==========================================
     // Đưa Toast vào lớp Overlay trên cùng để không bị che bởi các Dialog modal
+    Shortcut {
+        sequence: "Ctrl+H"
+        onActivated: {
+            findReplaceBar.visible = !findReplaceBar.visible
+            if (findReplaceBar.visible) {
+                findReplaceBar.focusFind()
+            }
+        }
+    }
+
     Toast {
         id: appToast
         parent: Overlay.overlay

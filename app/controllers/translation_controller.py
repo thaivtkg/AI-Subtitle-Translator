@@ -15,6 +15,8 @@ class TranslationController(QObject):
     translationCompleted = Signal(int)
     translationFailed = Signal(int, str)
     qaStatusChanged = Signal()
+    alternativeTranslationReady = Signal(int, str, str)
+    alternativeTranslationLoading = Signal(bool)
 
     def __init__(self, subtitle_model, worker_factory=None):
         super().__init__()
@@ -33,6 +35,7 @@ class TranslationController(QObject):
         self._subtitle_model = subtitle_model
         self._worker_factory = worker_factory or TranslationWorker
         self.worker = None
+        self.alt_worker = None
         self.hardware_profile = HardwareDetector.get_recommended_profile()
         self._glossary = None
         self._entities = None
@@ -51,6 +54,10 @@ class TranslationController(QObject):
             if hasattr(self.worker, "cancel"):
                 self.worker.cancel()
             self.worker.wait(2000)
+        if self.alt_worker and hasattr(self.alt_worker, "isRunning") and self.alt_worker.isRunning():
+            if hasattr(self.alt_worker, "cancel"):
+                self.alt_worker.cancel()
+            self.alt_worker.wait(2000)
 
     def _emit_qa_status(self, *args):
         self.qaStatusChanged.emit()
@@ -410,3 +417,99 @@ class TranslationController(QObject):
         self.statusChanged.emit(self._status)
         self.notify.emit("SUCCESS", f"Đã lưu thành công câu #{index + 1}")
         return True
+
+    @staticmethod
+    def _clean_translated_text(text: str) -> str:
+        clean_text = (text or "").strip()
+        clean_text = re.sub(r'^\[Line \d+\]:\s*', '', clean_text, flags=re.IGNORECASE).strip()
+        clean_text = re.sub(r'(?i)^\s*[*_]*(?:Translation|Bản dịch|Direct translation)[:*_]*\s*', '', clean_text).strip()
+        clean_text = re.split(
+            r'(?i)(?:(?:Either\s+(?:this|switch)|Given\s+the|Switch\s+to)\b|Note:|Explanation:)', 
+            clean_text
+        )[0].strip()
+        return clean_text.strip('"\'')
+
+    @Slot(int, str, str)
+    @Slot(int, str)
+    def requestAlternativeTranslation(self, index: int, source_lang: str, style_mode: str = "CREATIVE"):
+        if index < 0 or index >= len(self._subtitle_model.get_all_data()):
+            return
+        if self.alt_worker and hasattr(self.alt_worker, "isRunning") and self.alt_worker.isRunning():
+            return
+
+        subtitles = self._subtitle_model.get_all_data()
+        prev_ctx, current, next_ctx = ContextEngine.get_context(subtitles, index)
+
+        enriched_glossary_hits = []
+        if self.glossary:
+            for hit in self.glossary.match(current, word_boundary=True):
+                entry = self.glossary.get(hit.source_term)
+                forbidden = entry.forbidden_alternatives if entry else ()
+                enriched_glossary_hits.append((hit, forbidden))
+
+        entity_hits = self.entities.match(current, word_boundary=True) if self.entities else ()
+        active_pronoun = getattr(self._project_controller, "activePronounPair", "") if self._project_controller else ""
+        is_ja = getattr(self._project_controller, "isJaOrigin", False) if self._project_controller else False
+        story_summary = getattr(self._project_controller, "storySummary", "") if self._project_controller else ""
+        target_lang = "Vietnamese"
+
+        model_name = (self.hardware_profile.get("model_name") or "").lower()
+        if "gemma" in model_name:
+            model_family = "gemma"
+        elif "llama" in model_name:
+            model_family = "llama"
+        else:
+            model_family = "qwen"
+
+        prompt = PromptBuilder.build(
+            story_summary,
+            source_lang,
+            target_lang,
+            prev_ctx,
+            current,
+            next_ctx,
+            glossary_hits=tuple(enriched_glossary_hits),
+            entity_hits=tuple(entity_hits),
+            active_pronoun_pair=active_pronoun,
+            is_ja_origin=is_ja,
+            model_family=model_family,
+        )
+
+        profile = dict(self.hardware_profile)
+        if style_mode == "CREATIVE":
+            profile["temperature"] = 0.7
+            style_instruction = "\nLưu ý phong cách: Dịch thật phóng khoáng, giàu cảm xúc, tự nhiên theo khẩu ngữ tiếng Việt."
+        else:
+            profile["temperature"] = 0.2
+            style_instruction = "\nLưu ý phong cách: Dịch bám sát từng từ ngữ gốc (literal), cấu trúc nghiêm ngặt và chuẩn xác."
+
+        prompt_with_style = prompt + style_instruction
+        self.alternativeTranslationLoading.emit(True)
+
+        if hasattr(self._worker_factory, "create_worker"):
+            self.alt_worker = self._worker_factory.create_worker(index, prompt_with_style, profile)
+        else:
+            self.alt_worker = self._worker_factory(index, prompt_with_style, profile)
+
+        def _on_alt_finished(idx, text, sm=style_mode):
+            clean = self._clean_translated_text(text)
+            self.alternativeTranslationLoading.emit(False)
+            self.alternativeTranslationReady.emit(idx, clean, sm)
+
+        def _on_alt_error(idx, err):
+            self.alternativeTranslationLoading.emit(False)
+            self.alternativeTranslationReady.emit(idx, f"Lỗi: {err}", style_mode)
+
+        self.alt_worker.finished.connect(_on_alt_finished)
+        self.alt_worker.error.connect(_on_alt_error)
+        self.alt_worker.start()
+
+    @Slot(int, str)
+    def applyAlternativeTranslation(self, index: int, text: str):
+        if 0 <= index < len(self._subtitle_model.get_all_data()):
+            self._subtitle_model.update_translation(index, text, "EDITED")
+            if index == self._current_index:
+                self._current_translation = text
+                self._status = "EDITED"
+                self.translationUpdated.emit(text)
+                self.statusChanged.emit(self._status)

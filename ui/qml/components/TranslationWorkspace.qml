@@ -11,11 +11,15 @@ Item {
     property bool executionLocked: typeof batchController !== "undefined" && batchController.state !== "IDLE" && batchController.state !== "PAUSED" && batchController.state !== "COMPLETED"
     property int totalCount: 0
     property bool compactActions: width < 600
+    property string altTranslation: ""
+    property string altStyleMode: "CREATIVE"
+    property bool altLoading: false
     
     signal translateRequested(string sourceLang)
     signal acceptRequested(string text)
     signal openSrtRequested()
     signal openProjectRequested()
+    signal addGlossaryRequested(string sourceText, string targetText)
     
     function setSourceLanguage(lang) { langSelector.setLanguage(lang) }
     function getSourceLanguage() { return langSelector.sourceLang }
@@ -100,6 +104,16 @@ Item {
                 target: typeof translationController !== "undefined" ? translationController : null
                 function onCurrentOriginalChanged() {
                     glideAnim.restart()
+                    workspace.altTranslation = ""
+                    workspace.altLoading = false
+                }
+                function onAlternativeTranslationReady(idx, altText, mode) {
+                    workspace.altLoading = false
+                    workspace.altTranslation = altText
+                    workspace.altStyleMode = mode
+                }
+                function onAlternativeTranslationLoading(loading) {
+                    workspace.altLoading = loading
                 }
             }
 
@@ -212,6 +226,8 @@ Item {
                                 Layout.fillHeight: true
                                 clip: true
                                 TextArea {
+                                    id: origTextArea
+                                    objectName: "origTextArea"
                                     width: origScroll.availableWidth
                                     text: translationController.currentOriginal
                                     color: Theme.textOnLightPod
@@ -283,6 +299,30 @@ Item {
                                 }
 
                                 Item { Layout.fillWidth: true }
+
+                                Button {
+                                    id: btnAltStyle
+                                    objectName: "btnAltStyle"
+                                    implicitHeight: 22
+                                    implicitWidth: 140
+                                    contentItem: Text {
+                                        text: "🎲 Đổi văn phong ▼"
+                                        color: Theme.accentPurple
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+                                    background: Rectangle {
+                                        radius: 6
+                                        color: btnAltStyle.hovered ? Qt.rgba(0.5, 0.2, 0.9, 0.15) : Qt.rgba(0.5, 0.2, 0.9, 0.08)
+                                        border.color: Theme.accentPurple
+                                        border.width: 1
+                                    }
+                                    visible: ["TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
+                                    enabled: !workspace.executionLocked && !workspace.altLoading && translationController.currentOriginal.length > 0
+                                    onClicked: altStyleMenu.open()
+                                }
 
                                 Rectangle {
                                     visible: translationController.status !== "TRANSLATING" && translationInput.text.trim().length > 0
@@ -528,6 +568,111 @@ Item {
                                     text: "AI Neural Engine đang giải mã token đầu tiên..."
                                     color: Theme.textMuted
                                     font.pixelSize: 11
+                                }
+                            }
+                        }
+                    }
+
+                    // A/B Alternative Translation Pod (Feature 6)
+                    Rectangle {
+                        id: altTranslationBox
+                        visible: workspace.altLoading || workspace.altTranslation.length > 0
+                        Layout.fillWidth: true
+                        implicitHeight: altCol.implicitHeight + 20
+                        color: Qt.rgba(0.96, 0.95, 1.0, 0.94)
+                        radius: 14
+                        border.color: Theme.accentPurple
+                        border.width: 1.5
+
+                        ColumnLayout {
+                            id: altCol
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 8
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Rectangle {
+                                    implicitWidth: altBadgeText.implicitWidth + 14
+                                    implicitHeight: 20
+                                    radius: 10
+                                    color: Theme.accentPurple
+
+                                    Text {
+                                        id: altBadgeText
+                                        anchors.centerIn: parent
+                                        text: "🎲 " + (workspace.altStyleMode === "CREATIVE" ? "PHONG CÁCH PHÓNG KHOÁNG" : "PHONG CÁCH SÁT NGHĨA")
+                                        color: "#FFFFFF"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                    }
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                Button {
+                                    implicitWidth: 22
+                                    implicitHeight: 22
+                                    contentItem: Text {
+                                        text: "✕"
+                                        color: "#64748B"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+                                    background: Rectangle {
+                                        radius: 11
+                                        color: "transparent"
+                                    }
+                                    onClicked: {
+                                        workspace.altTranslation = ""
+                                        workspace.altLoading = false
+                                    }
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: workspace.altLoading ? "◌ Đang suy luận bản dịch thay thế..." : workspace.altTranslation
+                                color: workspace.altLoading ? Theme.textMuted : Theme.textOnLightPod
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                wrapMode: Text.WordWrap
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                visible: !workspace.altLoading && workspace.altTranslation.length > 0
+                                spacing: 8
+
+                                Item { Layout.fillWidth: true }
+
+                                Button {
+                                    id: btnApplyAlt
+                                    objectName: "btnApplyAltTranslation"
+                                    implicitHeight: 26
+                                    contentItem: Text {
+                                        text: "➔ Áp dụng bản dịch này"
+                                        color: "#FFFFFF"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+                                    background: Rectangle {
+                                        radius: 6
+                                        color: Theme.accentPurple
+                                    }
+                                    onClicked: {
+                                        if (typeof translationController !== "undefined") {
+                                            var rowIdx = (typeof subListView !== "undefined" && subListView.currentRawIndex >= 0) ? subListView.currentRawIndex : 0
+                                            translationController.applyAlternativeTranslation(rowIdx, workspace.altTranslation)
+                                            workspace.altTranslation = ""
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -832,6 +977,78 @@ Item {
                     enabled: !workspace.executionLocked && (translationController.status === "TRANSLATED" || translationController.status === "EDITED" || translationController.status === "ACCEPTED")
                     onClicked: acceptRequested(translationInput.text)
                 }
+            }
+        }
+    }
+
+    // PRO KEY-FLOW SHORTCUTS
+    Shortcut {
+        sequences: ["Ctrl+Return", "Ctrl+Enter"]
+        enabled: workspace.hasSelection && !workspace.executionLocked
+        onActivated: {
+            if (translationController.status === "TRANSLATED" || translationController.status === "EDITED" || translationController.status === "ACCEPTED" || translationInput.text.trim().length > 0) {
+                acceptRequested(translationInput.text)
+                translationInput.forceActiveFocus()
+            } else {
+                translateRequested(langSelector.sourceLang)
+            }
+        }
+    }
+
+    Shortcut {
+        sequences: ["Ctrl+Shift+Return", "Ctrl+Shift+Enter"]
+        enabled: workspace.hasSelection && !workspace.executionLocked
+        onActivated: {
+            translateRequested(langSelector.sourceLang)
+        }
+    }
+
+    Shortcut {
+        sequence: "Alt+Up"
+        enabled: workspace.hasSelection
+        onActivated: {
+            if (typeof subListView !== "undefined" && typeof subListView.selectPrevRowAndFocus === "function") {
+                subListView.selectPrevRowAndFocus()
+                translationInput.forceActiveFocus()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "Alt+Down"
+        enabled: workspace.hasSelection
+        onActivated: {
+            if (typeof subListView !== "undefined" && typeof subListView.selectNextRowAndFocus === "function") {
+                subListView.selectNextRowAndFocus()
+                translationInput.forceActiveFocus()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+G"
+        enabled: workspace.hasSelection && !workspace.executionLocked
+        onActivated: {
+            var src = (typeof origTextArea !== "undefined" && origTextArea.selectedText) ? origTextArea.selectedText.trim() : ""
+            var tgt = (typeof translationInput !== "undefined" && translationInput.selectedText) ? translationInput.selectedText.trim() : ""
+            workspace.addGlossaryRequested(src, tgt)
+        }
+    }
+
+    Menu {
+        id: altStyleMenu
+        MenuItem {
+            text: "✨ Phóng khoáng (Tự nhiên, biểu cảm)"
+            onTriggered: {
+                var rowIdx = (typeof subListView !== "undefined" && subListView.currentRawIndex >= 0) ? subListView.currentRawIndex : 0
+                translationController.requestAlternativeTranslation(rowIdx, langSelector.sourceLang, "CREATIVE")
+            }
+        }
+        MenuItem {
+            text: "📐 Sát nghĩa (Literal, chuẩn xác)"
+            onTriggered: {
+                var rowIdx = (typeof subListView !== "undefined" && subListView.currentRawIndex >= 0) ? subListView.currentRawIndex : 0
+                translationController.requestAlternativeTranslation(rowIdx, langSelector.sourceLang, "LITERAL")
             }
         }
     }

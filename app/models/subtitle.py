@@ -12,6 +12,7 @@ class SubtitleStatus:
 
 
 class SubtitleModel(QAbstractListModel):
+    progressStatsChanged = Signal()
     IndexRole = Qt.UserRole + 1
     StartTimeRole = Qt.UserRole + 2
     EndTimeRole = Qt.UserRole + 3
@@ -71,6 +72,7 @@ class SubtitleModel(QAbstractListModel):
         self.beginResetModel()
         self._subtitles = data_list
         self.endResetModel()
+        self.progressStatsChanged.emit()
 
     @Slot(result="QVariantList")
     def get_all_data(self):
@@ -84,6 +86,56 @@ class SubtitleModel(QAbstractListModel):
         total_errors = sum(1 for sub in self._subtitles if sub.get("_qa_severity") == "ERROR")
         total_warnings = sum(1 for sub in self._subtitles if sub.get("_qa_severity") == "WARNING")
         return {"total_errors": total_errors, "total_warnings": total_warnings}
+
+    @Property("QVariantMap", notify=progressStatsChanged)
+    def progressStats(self) -> dict:
+        total = len(self._subtitles)
+        if total == 0:
+            return {
+                "total": 0,
+                "accepted": 0,
+                "translated": 0,
+                "pending": 0,
+                "error": 0,
+                "qa_issues": 0,
+                "accepted_pct": 0.0,
+                "translated_pct": 0.0,
+                "pending_pct": 0.0,
+                "error_pct": 0.0,
+            }
+
+        accepted = 0
+        translated = 0
+        pending = 0
+        error = 0
+        qa_issues = 0
+
+        for sub in self._subtitles:
+            st = str(sub.get("status", "PENDING")).upper()
+            qa = sub.get("_qa_severity", "")
+            if qa == "ERROR":
+                qa_issues += 1
+            if st == "ACCEPTED":
+                accepted += 1
+            elif st in ("TRANSLATED", "EDITED"):
+                translated += 1
+            elif st == "ERROR":
+                error += 1
+            else:
+                pending += 1
+
+        return {
+            "total": total,
+            "accepted": accepted,
+            "translated": translated,
+            "pending": pending,
+            "error": error,
+            "qa_issues": qa_issues,
+            "accepted_pct": round(accepted / total * 100, 1),
+            "translated_pct": round(translated / total * 100, 1),
+            "pending_pct": round(pending / total * 100, 1),
+            "error_pct": round((error + qa_issues) / total * 100, 1),
+        }
 
     @staticmethod
     def _update_item_qa(sub):
@@ -149,6 +201,7 @@ class SubtitleModel(QAbstractListModel):
                     self.QaTooltipRole,
                 ],
             )
+            self.progressStatsChanged.emit()
 
 
 class FilteredSubtitleModel(QAbstractListModel):
@@ -159,6 +212,7 @@ class FilteredSubtitleModel(QAbstractListModel):
     currentPageChanged = Signal()
     totalPagesChanged = Signal()
     pageSizeChanged = Signal()
+    qaOnlyChanged = Signal()
 
     def __init__(self, source_model: SubtitleModel, parent=None):
         super().__init__(parent)
@@ -173,6 +227,7 @@ class FilteredSubtitleModel(QAbstractListModel):
         self._page_size = 0  # 0 = Tất cả câu
         self._current_page = 1
         self._total_pages = 1
+        self._qa_only = False
 
         self._source.modelReset.connect(self._recompute_and_reset)
         self._source.dataChanged.connect(self._on_source_data_changed)
@@ -202,6 +257,13 @@ class FilteredSubtitleModel(QAbstractListModel):
                 if cf == "PENDING" and st not in ("PENDING", ""):
                     continue
                 elif cf != "PENDING" and st != cf:
+                    continue
+
+            # QA filter
+            if self._qa_only:
+                qa = sub.get("_qa_severity", "")
+                st = str(sub.get("status", "PENDING")).upper()
+                if qa != "ERROR" and st != "ERROR":
                     continue
 
             # 3. Time filter (parse HH:MM from start_time)
@@ -292,6 +354,18 @@ class FilteredSubtitleModel(QAbstractListModel):
     @Property(int, notify=pageSizeChanged)
     def pageSize(self):
         return self._page_size
+
+    @Property(bool, notify=qaOnlyChanged)
+    def qaOnly(self) -> bool:
+        return self._qa_only
+
+    @Slot(bool)
+    def setQaOnlyFilter(self, enabled: bool):
+        if self._qa_only != enabled:
+            self._qa_only = enabled
+            self._current_page = 1
+            self.qaOnlyChanged.emit()
+            self._recompute_and_reset()
 
     @Property(bool, notify=currentPageChanged)
     def hasPrevPage(self):
