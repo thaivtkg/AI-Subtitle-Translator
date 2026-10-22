@@ -6,7 +6,7 @@ import "../theme"
 
 Rectangle {
     id: root
-    implicitHeight: mainCol.implicitHeight + 16
+    implicitHeight: mainCol.implicitHeight + 12
     radius: 12
     color: Qt.rgba(0.97, 0.98, 1.0, 0.95)
     border.color: Theme.accentSapphire
@@ -24,12 +24,13 @@ Rectangle {
 
     property string findText: findInput.text
     property string replaceText: replaceInput.text
-    property string scope: scopeCombo.currentIndex === 1 ? "TRANSLATION" : (scopeCombo.currentIndex === 2 ? "ORIGINAL" : "ALL")
+    property string scope: scopeCombo.currentIndex === 0 ? "TRANSLATION" : (scopeCombo.currentIndex === 2 ? "ORIGINAL" : "ALL")
     property bool matchCase: chkMatchCase.checked
     property bool wholeWord: chkWholeWord.checked
     property bool isRegex: chkRegex.checked
     property bool addToGlossary: chkGlossary.checked
     property string statusMessage: ""
+    property int previewCount: -1
 
     function focusFind() {
         findInput.forceActiveFocus()
@@ -39,6 +40,7 @@ Rectangle {
     function doPreview() {
         if (!findInput.text.trim()) {
             statusMessage = "Vui lòng nhập từ khóa tìm kiếm"
+            previewCount = -1
             return
         }
         if (typeof projectController !== "undefined") {
@@ -51,7 +53,9 @@ Rectangle {
             )
             if (res.error) {
                 statusMessage = "⚠️ " + res.error
+                previewCount = -1
             } else {
+                previewCount = res.total_matches
                 statusMessage = "Tìm thấy " + res.total_matches + " kết quả (" + res.affected_rows.length + " câu)"
             }
         }
@@ -72,6 +76,7 @@ Rectangle {
                 root.isRegex,
                 root.addToGlossary
             )
+            previewCount = -1
             statusMessage = "Đã thay thế " + count + " vị trí"
         }
     }
@@ -79,50 +84,57 @@ Rectangle {
     ColumnLayout {
         id: mainCol
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 8
+        anchors.margins: 6
+        spacing: 5
 
-        // Row 1: Inputs & Action buttons
+        // Row 1: Search input ➔ Replace input + Close button
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 5
 
             Text {
                 text: "🔍"
-                font.pixelSize: 13
+                font.pixelSize: 11
             }
 
             TextField {
                 id: findInput
                 objectName: "findReplaceFindInput"
                 Layout.fillWidth: true
-                Layout.minimumWidth: 110
-                placeholderText: "Tìm kiếm..."
+                Layout.minimumWidth: 60
+                implicitHeight: 24
+                placeholderText: "Tìm..."
                 font.pixelSize: 11
                 color: Theme.textOnLightPod
+                leftPadding: 6
+                rightPadding: 6
                 background: Rectangle {
                     radius: 6
                     color: "#FFFFFF"
                     border.color: findInput.activeFocus ? Theme.accentSapphire : "#CBD5E1"
                     border.width: 1
                 }
+                onTextChanged: root.previewCount = -1
                 onAccepted: root.doPreview()
             }
 
             Text {
                 text: "➔"
                 color: Theme.textSecondary
-                font.pixelSize: 12
+                font.pixelSize: 11
             }
 
             TextField {
                 id: replaceInput
                 objectName: "findReplaceReplaceInput"
                 Layout.fillWidth: true
-                Layout.minimumWidth: 110
-                placeholderText: "Thay thế bằng..."
+                Layout.minimumWidth: 60
+                implicitHeight: 24
+                placeholderText: "Thay..."
                 font.pixelSize: 11
                 color: Theme.textOnLightPod
+                leftPadding: 6
+                rightPadding: 6
                 background: Rectangle {
                     radius: 6
                     color: "#FFFFFF"
@@ -132,36 +144,211 @@ Rectangle {
                 onAccepted: root.doReplaceAll()
             }
 
-            ComboBox {
-                id: scopeCombo
-                implicitWidth: 105
-                implicitHeight: 28
-                model: ["Tất cả", "Bản dịch", "Câu gốc"]
-                font.pixelSize: 11
-                background: Rectangle {
-                    radius: 6
-                    color: "#FFFFFF"
-                    border.color: "#CBD5E1"
-                    border.width: 1
-                }
-            }
-
             Button {
-                id: btnPreview
-                objectName: "btnFindPreview"
-                text: "Tìm"
-                implicitHeight: 28
-                implicitWidth: 50
+                id: btnClose
+                implicitWidth: 20
+                implicitHeight: 20
                 contentItem: Text {
-                    text: "Tìm"
-                    color: Theme.accentSapphire
+                    text: "✕"
+                    color: "#64748B"
                     font.pixelSize: 11
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
                 background: Rectangle {
-                    radius: 6
+                    radius: 10
+                    color: btnClose.hovered ? "#F1F5F9" : "transparent"
+                }
+                onClicked: root.closeRequested()
+            }
+        }
+
+        // Row 2: Scope ComboBox, Filter Toggles, and Action Buttons
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 3
+
+            ComboBox {
+                id: scopeCombo
+                implicitWidth: 70
+                implicitHeight: 23
+                model: ["Bản dịch", "Tất cả", "Câu gốc"]
+                font.pixelSize: 10
+                leftPadding: 4
+                rightPadding: 14
+                background: Rectangle {
+                    radius: 5
+                    color: "#FFFFFF"
+                    border.color: "#CBD5E1"
+                    border.width: 1
+                }
+            }
+
+            CheckBox {
+                id: chkMatchCase
+                text: "Aa"
+                font.pixelSize: 10
+                implicitHeight: 22
+                implicitWidth: 24
+                padding: 0
+                spacing: 2
+                indicator: Rectangle {
+                    implicitWidth: 10
+                    implicitHeight: 10
+                    x: 0
+                    y: parent.height / 2 - height / 2
+                    radius: 2
+                    border.color: chkMatchCase.checked ? Theme.accentSapphire : "#94A3B8"
+                    color: chkMatchCase.checked ? Theme.accentSapphire : "transparent"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✓"
+                        font.pixelSize: 8
+                        color: "#FFFFFF"
+                        visible: chkMatchCase.checked
+                    }
+                }
+                contentItem: Text {
+                    text: chkMatchCase.text
+                    font.pixelSize: 9
+                    color: chkMatchCase.checked ? Theme.accentSapphire : Theme.textSecondary
+                    leftPadding: 12
+                    verticalAlignment: Text.AlignVCenter
+                }
+                ToolTip.visible: hovered
+                ToolTip.text: "Phân biệt hoa/thường"
+                ToolTip.delay: 400
+            }
+
+            CheckBox {
+                id: chkWholeWord
+                text: "Từ"
+                font.pixelSize: 10
+                implicitHeight: 22
+                implicitWidth: 24
+                padding: 0
+                spacing: 2
+                indicator: Rectangle {
+                    implicitWidth: 10
+                    implicitHeight: 10
+                    x: 0
+                    y: parent.height / 2 - height / 2
+                    radius: 2
+                    border.color: chkWholeWord.checked ? Theme.accentSapphire : "#94A3B8"
+                    color: chkWholeWord.checked ? Theme.accentSapphire : "transparent"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✓"
+                        font.pixelSize: 8
+                        color: "#FFFFFF"
+                        visible: chkWholeWord.checked
+                    }
+                }
+                contentItem: Text {
+                    text: chkWholeWord.text
+                    font.pixelSize: 9
+                    color: chkWholeWord.checked ? Theme.accentSapphire : Theme.textSecondary
+                    leftPadding: 12
+                    verticalAlignment: Text.AlignVCenter
+                }
+                ToolTip.visible: hovered
+                ToolTip.text: "Khớp trọn vẹn từ"
+                ToolTip.delay: 400
+            }
+
+            CheckBox {
+                id: chkRegex
+                text: ".*"
+                font.pixelSize: 10
+                implicitHeight: 22
+                implicitWidth: 22
+                padding: 0
+                spacing: 2
+                indicator: Rectangle {
+                    implicitWidth: 10
+                    implicitHeight: 10
+                    x: 0
+                    y: parent.height / 2 - height / 2
+                    radius: 2
+                    border.color: chkRegex.checked ? Theme.accentSapphire : "#94A3B8"
+                    color: chkRegex.checked ? Theme.accentSapphire : "transparent"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✓"
+                        font.pixelSize: 8
+                        color: "#FFFFFF"
+                        visible: chkRegex.checked
+                    }
+                }
+                contentItem: Text {
+                    text: chkRegex.text
+                    font.pixelSize: 9
+                    color: chkRegex.checked ? Theme.accentSapphire : Theme.textSecondary
+                    leftPadding: 12
+                    verticalAlignment: Text.AlignVCenter
+                }
+                ToolTip.visible: hovered
+                ToolTip.text: "Biểu thức chính quy (Regex)"
+                ToolTip.delay: 400
+            }
+
+            CheckBox {
+                id: chkGlossary
+                text: "📌"
+                checked: true
+                font.pixelSize: 10
+                implicitHeight: 22
+                implicitWidth: 20
+                padding: 0
+                spacing: 2
+                indicator: Rectangle {
+                    implicitWidth: 10
+                    implicitHeight: 10
+                    x: 0
+                    y: parent.height / 2 - height / 2
+                    radius: 2
+                    border.color: chkGlossary.checked ? Theme.accentSapphire : "#94A3B8"
+                    color: chkGlossary.checked ? Theme.accentSapphire : "transparent"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✓"
+                        font.pixelSize: 8
+                        color: "#FFFFFF"
+                        visible: chkGlossary.checked
+                    }
+                }
+                contentItem: Text {
+                    text: chkGlossary.text
+                    font.pixelSize: 9
+                    leftPadding: 12
+                    verticalAlignment: Text.AlignVCenter
+                }
+                ToolTip.visible: hovered
+                ToolTip.text: "Tự ghim vào Glossary"
+                ToolTip.delay: 400
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            Button {
+                id: btnPreview
+                objectName: "btnFindPreview"
+                text: root.previewCount >= 0 ? "Tìm (" + root.previewCount + ")" : "Tìm"
+                implicitHeight: 23
+                implicitWidth: root.previewCount >= 0 ? 48 : 34
+                contentItem: Text {
+                    text: btnPreview.text
+                    color: Theme.accentSapphire
+                    font.pixelSize: 10
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                background: Rectangle {
+                    radius: 5
                     color: btnPreview.hovered ? Qt.rgba(0.0, 0.45, 1.0, 0.15) : Qt.rgba(0.0, 0.45, 1.0, 0.08)
                     border.color: Theme.accentSapphire
                     border.width: 1
@@ -173,82 +360,34 @@ Rectangle {
                 id: btnReplace
                 objectName: "btnFindReplaceAll"
                 text: "Thay thế"
-                implicitHeight: 28
-                implicitWidth: 76
+                implicitHeight: 23
+                implicitWidth: 50
                 contentItem: Text {
-                    text: "Thay thế"
+                    text: btnReplace.text
                     color: "#FFFFFF"
-                    font.pixelSize: 11
+                    font.pixelSize: 10
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
                 background: Rectangle {
-                    radius: 6
+                    radius: 5
                     color: Theme.accentSapphire
                 }
                 onClicked: root.doReplaceAll()
             }
-
-            Button {
-                id: btnClose
-                implicitWidth: 26
-                implicitHeight: 26
-                contentItem: Text {
-                    text: "✕"
-                    color: "#64748B"
-                    font.pixelSize: 12
-                    font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    radius: 13
-                    color: btnClose.hovered ? "#F1F5F9" : "transparent"
-                }
-                onClicked: root.closeRequested()
-            }
         }
 
-        // Row 2: Checkbox options & Feedback status
-        RowLayout {
+        // Row 3: Status feedback (auto-collapses when empty)
+        Text {
+            id: statusLbl
+            visible: text.length > 0
+            text: root.statusMessage
+            color: root.statusMessage.indexOf("⚠️") !== -1 ? Theme.danger : Theme.accentSapphire
+            font.pixelSize: 10
+            font.bold: true
             Layout.fillWidth: true
-            spacing: 12
-
-            CheckBox {
-                id: chkMatchCase
-                text: "Hoa/thường"
-                font.pixelSize: 10
-            }
-
-            CheckBox {
-                id: chkWholeWord
-                text: "Toàn bộ từ"
-                font.pixelSize: 10
-            }
-
-            CheckBox {
-                id: chkRegex
-                text: "Regex"
-                font.pixelSize: 10
-            }
-
-            CheckBox {
-                id: chkGlossary
-                text: "📌 Ghim vào Glossary"
-                font.pixelSize: 10
-                checked: true
-            }
-
-            Item { Layout.fillWidth: true }
-
-            Text {
-                id: statusLbl
-                text: root.statusMessage
-                color: root.statusMessage.indexOf("⚠️") !== -1 ? Theme.danger : Theme.accentSapphire
-                font.pixelSize: 11
-                font.bold: true
-            }
+            wrapMode: Text.Wrap
         }
     }
 }

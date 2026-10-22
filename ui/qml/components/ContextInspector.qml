@@ -890,7 +890,7 @@ ColumnLayout {
                                 Rectangle {
                                     id: termChip
                                     objectName: "termChip_" + modelData.source_term
-                                    implicitWidth: chipRow.implicitWidth + 16
+                                    implicitWidth: Math.min(chipRow.implicitWidth + 16, termsFlow.width > 0 ? termsFlow.width : 260)
                                     implicitHeight: 26
                                     radius: 13
                                     color: Theme.glassPodRaised
@@ -899,7 +899,9 @@ ColumnLayout {
 
                                     RowLayout {
                                         id: chipRow
-                                        anchors.centerIn: parent
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 8
+                                        anchors.rightMargin: 8
                                         spacing: 6
 
                                         Rectangle {
@@ -919,10 +921,12 @@ ColumnLayout {
                                         }
 
                                         Text {
+                                            Layout.fillWidth: true
                                             text: modelData.source_term + " ➔ " + modelData.preferred_translation
                                             color: Theme.textOnLightPod
                                             font.pixelSize: 11
                                             font.bold: true
+                                            elide: Text.ElideRight
                                         }
 
                                         Rectangle {
@@ -954,6 +958,20 @@ ColumnLayout {
                                                 }
                                             }
                                         }
+                                    }
+
+                                    ToolTip.visible: chipMouse.containsMouse
+                                    ToolTip.text: modelData.source_term + " ➔ " + modelData.preferred_translation +
+                                                  (modelData.forbidden_alternatives && modelData.forbidden_alternatives.length > 0
+                                                   ? "\n(Cấm: " + modelData.forbidden_alternatives.join(", ") + ")" : "")
+                                    ToolTip.delay: 400
+
+                                    MouseArea {
+                                        id: chipMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        acceptedButtons: Qt.NoButton
+                                        z: -1
                                     }
                                 }
                             }

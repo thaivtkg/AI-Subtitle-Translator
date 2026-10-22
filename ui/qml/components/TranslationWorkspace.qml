@@ -321,7 +321,7 @@ Item {
                                     }
                                     visible: ["TRANSLATED", "EDITED", "ACCEPTED"].indexOf(translationController.status) >= 0
                                     enabled: !workspace.executionLocked && !workspace.altLoading && translationController.currentOriginal.length > 0
-                                    onClicked: altStyleMenu.open()
+                                    onClicked: altStyleMenu.popup(btnAltStyle, 0, btnAltStyle.height + 4)
                                 }
 
                                 Rectangle {
@@ -1037,8 +1037,10 @@ Item {
 
     Menu {
         id: altStyleMenu
+        width: 260
         MenuItem {
             text: "✨ Phóng khoáng (Tự nhiên, biểu cảm)"
+            font.pixelSize: 11
             onTriggered: {
                 var rowIdx = (typeof subListView !== "undefined" && subListView.currentRawIndex >= 0) ? subListView.currentRawIndex : 0
                 translationController.requestAlternativeTranslation(rowIdx, langSelector.sourceLang, "CREATIVE")
@@ -1046,6 +1048,7 @@ Item {
         }
         MenuItem {
             text: "📐 Sát nghĩa (Literal, chuẩn xác)"
+            font.pixelSize: 11
             onTriggered: {
                 var rowIdx = (typeof subListView !== "undefined" && subListView.currentRawIndex >= 0) ? subListView.currentRawIndex : 0
                 translationController.requestAlternativeTranslation(rowIdx, langSelector.sourceLang, "LITERAL")
