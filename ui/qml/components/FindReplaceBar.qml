@@ -171,12 +171,30 @@ Rectangle {
 
             ComboBox {
                 id: scopeCombo
-                implicitWidth: 70
+                implicitWidth: 78
                 implicitHeight: 23
                 model: ["Bản dịch", "Tất cả", "Câu gốc"]
                 font.pixelSize: 10
-                leftPadding: 4
-                rightPadding: 14
+
+                indicator: Text {
+                    x: scopeCombo.width - width - 5
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "▾"
+                    font.pixelSize: 9
+                    color: "#64748B"
+                }
+
+                contentItem: Text {
+                    leftPadding: 6
+                    rightPadding: scopeCombo.indicator ? scopeCombo.indicator.width + 4 : 14
+                    text: scopeCombo.currentText
+                    font.pixelSize: 10
+                    font.bold: true
+                    color: Theme.textOnLightPod
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+
                 background: Rectangle {
                     radius: 5
                     color: "#FFFFFF"
