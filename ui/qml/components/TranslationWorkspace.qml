@@ -20,6 +20,7 @@ Item {
     signal openSrtRequested()
     signal openProjectRequested()
     signal addGlossaryRequested(string sourceText, string targetText)
+    signal hotkeysRequested()
     
     function setSourceLanguage(lang) { langSelector.setLanguage(lang) }
     function getSourceLanguage() { return langSelector.sourceLang }
@@ -899,39 +900,57 @@ Item {
                 spacing: 12
 
                 // Gợi ý phím tắt bên trái (Matching Design Mockup)
-                RowLayout {
-                    id: shortcutHintRow
+                Item {
+                    id: shortcutHintContainer
+                    objectName: "shortcutHintContainer"
                     Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: shortcutHintRow.implicitWidth
+                    implicitHeight: shortcutHintRow.implicitHeight
                     visible: workspace.width >= 580
-                    spacing: 6
-                    Text {
-                        text: "Nhấn"
-                        color: Qt.rgba(1, 1, 1, 0.85)
-                        font.pixelSize: 12
-                        font.bold: true
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-                    Rectangle {
-                        implicitWidth: keyHintText.implicitWidth + 12
-                        implicitHeight: 22
-                        radius: 6
-                        color: Qt.rgba(1, 1, 1, 0.9)
-                        Layout.alignment: Qt.AlignVCenter
+
+                    RowLayout {
+                        id: shortcutHintRow
+                        anchors.fill: parent
+                        spacing: 6
                         Text {
-                            id: keyHintText
-                            anchors.centerIn: parent
-                            text: "Ctrl + Enter"
-                            font.pixelSize: 11
+                            text: "Nhấn"
+                            color: Qt.rgba(1, 1, 1, 0.85)
+                            font.pixelSize: 12
                             font.bold: true
-                            color: Theme.accentSapphire
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+                        Rectangle {
+                            implicitWidth: keyHintText.implicitWidth + 12
+                            implicitHeight: 22
+                            radius: 6
+                            color: Qt.rgba(1, 1, 1, 0.9)
+                            Layout.alignment: Qt.AlignVCenter
+                            Text {
+                                id: keyHintText
+                                anchors.centerIn: parent
+                                text: "Ctrl + Enter"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: Theme.accentSapphire
+                            }
+                        }
+                        Text {
+                            text: "để duyệt nhanh câu kế"
+                            color: Qt.rgba(1, 1, 1, 0.85)
+                            font.pixelSize: 12
+                            font.bold: true
+                            Layout.alignment: Qt.AlignVCenter
                         }
                     }
-                    Text {
-                        text: "để duyệt nhanh câu kế"
-                        color: Qt.rgba(1, 1, 1, 0.85)
-                        font.pixelSize: 12
-                        font.bold: true
-                        Layout.alignment: Qt.AlignVCenter
+
+                    MouseArea {
+                        id: hintMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.text: "Click đúp để xem toàn bộ phím tắt — F1"
+                        onDoubleClicked: workspace.hotkeysRequested()
                     }
                 }
 

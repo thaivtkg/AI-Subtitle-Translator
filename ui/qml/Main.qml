@@ -6,6 +6,7 @@ import QtQuick.Dialogs
 import QtQuick.Effects
 import "theme"
 import "components"
+import "dialogs"
 
 ApplicationWindow {
     id: mainWindow
@@ -134,6 +135,7 @@ ApplicationWindow {
                         appendBatchDialog.open()
                     }
                 }
+                onHotkeysClicked: hotkeysDialog.open()
             }
 
             StudioLaunchpad {
@@ -238,6 +240,7 @@ ApplicationWindow {
                         onOpenProjectRequested: {
                             if (!batchController.executionLocked) loadProjectDialog.open()
                         }
+                        onHotkeysRequested: hotkeysDialog.open()
                     }
                 }
 
@@ -670,6 +673,10 @@ ApplicationWindow {
         id: modelManagerDialog
     }
 
+    HotkeysCheatsheetDialog {
+        id: hotkeysDialog
+    }
+
     Connections {
         target: typeof modelController !== "undefined" ? modelController : null
         function onNotify(title, msg) { appToast.show(title, msg) }
@@ -719,6 +726,15 @@ ApplicationWindow {
             if (projectController.validateBeforeExport()) {
                 exportSrtDialog.open()
             }
+        }
+    }
+
+    Shortcut {
+        objectName: "shortcutHotkeys"
+        sequence: "F1"
+        onActivated: {
+            if (hotkeysDialog.visible) hotkeysDialog.close()
+            else hotkeysDialog.open()
         }
     }
 

@@ -43,6 +43,7 @@ ToolBar {
     signal closeProjectClicked()
     signal syncStudioClicked()
     signal appendBatchClicked()
+    signal hotkeysClicked()
 
     property bool isBatchMode: false
     property string batchLabel: ""
@@ -211,6 +212,29 @@ ToolBar {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 4
                 z: 5
+
+                Button {
+                    id: btnHotkeys
+                    objectName: "btnHotkeys"
+                    implicitWidth: 32
+                    implicitHeight: 28
+                    padding: 0
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Bảng phím tắt — F1"
+                    contentItem: Text {
+                        text: "⌨"
+                        color: Theme.textPrimaryGlass
+                        font.pixelSize: 13
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        radius: 8
+                        color: btnHotkeys.pressed ? Qt.rgba(1, 1, 1, 0.25) : (btnHotkeys.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent")
+                        Behavior on color { ColorAnimation { duration: 100 } }
+                    }
+                    onClicked: root.hotkeysClicked()
+                }
 
                 Button {
                     id: btnMinimize
