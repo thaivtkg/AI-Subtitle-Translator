@@ -180,3 +180,65 @@ def test_request_and_apply_alternative_translation():
     controller.applyAlternativeTranslation(0, received_alt[0][1])
     assert model.get_all_data()[0]["translation"] == "Tôi rất khỏe, cảm ơn bạn nhiều nhé!"
     assert model.get_all_data()[0]["status"] == "EDITED"
+
+
+def test_detect_native_language():
+    assert ContextAnalyzer.detect_native_language("邪魔王やっと見つけたわ") == "Japanese"
+    assert ContextAnalyzer.detect_native_language("こんにちは世界") == "Japanese"
+    assert ContextAnalyzer.detect_native_language("안녕하세요") == "Korean"
+    assert ContextAnalyzer.detect_native_language("你好世界") == "Chinese (Simplified)"
+    assert ContextAnalyzer.detect_native_language("Hello, how are you today?") == "English"
+    assert ContextAnalyzer.detect_native_language("") == "English"
+
+
+def test_alternative_prompt_placement_in_gemma():
+    style = "Dịch bám sát từng từ ngữ gốc (literal)."
+    prompt = PromptBuilder.build(
+        current_sub="What is that?",
+        model_family="gemma",
+        style_instruction=style,
+    )
+    # style must be in user prompt before model turn
+    assert f"STYLE INSTRUCTION:\n{style}" in prompt
+    assert prompt.endswith("<start_of_turn>model\n")
+    # Verify model turn has no appended text
+    after_model = prompt.split("<start_of_turn>model\n")[-1]
+    assert after_model == ""
+
+
+def test_clean_translated_text_chatter_removal():
+    from app.controllers.translation_controller import TranslationController
+
+    raw1 = "Nữ chiến binh phép thuật.\nCuối cùng, nếu bạn có thể cho tôi biết thêm về ngữ cảnh, tôi có thể dịch chuẩn xác hơn."
+    assert TranslationController._clean_translated_text(raw1) == "Nữ chiến binh phép thuật."
+
+    raw2 = "Cuối cùng, nếu bạn có thể cho tôi biết thêm về ngữ cảnh của bộ phim."
+    assert TranslationController._clean_translated_text(raw2) == ""
+
+    raw3 = "Thanh gươm diệt quỷ Nếu bạn có thể cho tôi biết nhân vật là ai"
+    assert TranslationController._clean_translated_text(raw3) == "Thanh gươm diệt quỷ"
+
+
+def test_project_controller_auto_detect_japanese_on_import(tmp_path):
+    from app.controllers.project_controller import ProjectController
+    from app.models.subtitle import SubtitleModel
+
+    srt_content = """1
+00:00:01,000 --> 00:00:03,000
+邪魔王やっと見つけたわ
+"""
+    srt_file = tmp_path / "japanese_sub.srt"
+    srt_file.write_text(srt_content, encoding="utf-8")
+
+    model = SubtitleModel()
+    controller = ProjectController(model)
+
+    emitted_langs = []
+    controller.languageLoaded.connect(lambda l: emitted_langs.append(l))
+
+    controller.importSrt(str(srt_file))
+
+    assert "Japanese" in emitted_langs
+    assert controller.isJaOrigin is True
+    assert controller.activeArchetype == "anime_school"
+    assert controller.activePronounPair == "Em - Tiền bối"

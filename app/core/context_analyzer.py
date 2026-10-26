@@ -137,6 +137,25 @@ JA_ANIME_SENIOR_ADDRESS_REGEX = re.compile(
 )
 
 
+def detect_native_language(text: str) -> str:
+    """
+    Tự động nhận diện ngôn ngữ gốc dựa trên dải mã Unicode chuẩn:
+    - Chứa Hiragana [\u3040-\u309F] hoặc Katakana [\u30A0-\u30FF] -> 100% Japanese
+    - Chứa Hangul [\uAC00-\uD7AF] -> Korean
+    - Chứa chữ Hán [\u4E00-\u9FFF] (không có Kana) -> Chinese (Simplified)
+    - Mặc định -> English
+    """
+    if not text:
+        return "English"
+    if re.search(r'[\u3040-\u309f\u30a0-\u30ff]', text):
+        return "Japanese"
+    if re.search(r'[\uac00-\ud7af]', text):
+        return "Korean"
+    if re.search(r'[\u4e00-\u9fff]', text):
+        return "Chinese (Simplified)"
+    return "English"
+
+
 def detect_ja_translated_en(subtitles_text_sample: str, summary: str = "") -> dict[str, Any]:
     """
     Phát hiện phụ đề tiếng Anh có phải được dịch từ tiếng Nhật hay không
@@ -145,6 +164,9 @@ def detect_ja_translated_en(subtitles_text_sample: str, summary: str = "") -> di
     sample = f"{subtitles_text_sample}\n{summary}"
     sample_lower = sample.lower()
     clues: list[str] = []
+    # 0. Quét ký tự Hiragana / Katakana trực tiếp
+    if re.search(r'[\u3040-\u309f\u30a0-\u30ff]', sample):
+        clues.append("native_japanese_script")
     # 1. Quét kính ngữ Romaji độc lập
     for term in JA_SOURCE_INDICATORS["romaji_honorifics"]:
         if re.search(rf"\b{re.escape(term)}\b", sample_lower):
@@ -162,7 +184,10 @@ def detect_ja_translated_en(subtitles_text_sample: str, summary: str = "") -> di
         if re.search(rf"\b{re.escape(kw)}\b", sample_lower):
             clues.append(f"anime_kw:{kw}")
     is_ja = len(clues) > 0
-    confidence = min(1.0, len(clues) * 0.3) if is_ja else 0.0
+    if "native_japanese_script" in clues:
+        confidence = 1.0
+    else:
+        confidence = min(1.0, len(clues) * 0.3) if is_ja else 0.0
     return {
         "is_ja_origin": is_ja,
         "confidence": confidence,
@@ -303,6 +328,10 @@ class ContextAnalyzer:
     @staticmethod
     def analyze_context(text: str, source_lang: str = "") -> dict[str, Any]:
         return analyze_context(text, source_lang)
+
+    @staticmethod
+    def detect_native_language(text: str) -> str:
+        return detect_native_language(text)
 
     @staticmethod
     def detect_ja_translated_en(subtitles_text_sample: str, summary: str = "") -> dict[str, Any]:

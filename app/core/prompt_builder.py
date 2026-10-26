@@ -16,6 +16,7 @@ def build_translation_prompt(
     canonical_names: tuple[str, ...] = (),
     is_ja_origin: bool = False,
     model_family: str = "qwen",
+    style_instruction: str = "",
 ) -> str:
     # 1. Nâng cấp vai trò thành Chuyên gia Bản địa hóa
     system_prompt = (
@@ -130,6 +131,9 @@ def build_translation_prompt(
     if next_context:
         user_prompt += "--- NEXT SUBTITLES ---\n" + "\n".join(next_context) + "\n\n"
         
+    if style_instruction and style_instruction.strip():
+        user_prompt += f"STYLE INSTRUCTION:\n{style_instruction.strip()}\n\n"
+
     user_prompt += f"Output ONLY the final {target_lang} translation for the current subtitle directly. No extra words."
 
     # 6. MODEL-SPECIFIC CHAT TEMPLATE WRAPPER

@@ -35,7 +35,7 @@ class DeterministicTranslationWorker(QThread):
             "Nữ chiến binh phép thuật",
             final_text,
         ] if self.target_index == 0 else [final_text]
-        delay = 0.15 if self.mode == "slow" else 0.04
+        delay = 0.35 if self.mode == "slow" else 0.04
 
         for chunk in chunks:
             if self.isInterruptionRequested():

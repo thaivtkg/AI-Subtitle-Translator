@@ -314,19 +314,7 @@ class TranslationController(QObject):
         sender = self.sender()
         if sender is not None and sender is not self.worker:
             return
-        clean_text = (text or "").strip()
-        clean_text = re.sub(r'^\[Line \d+\]:\s*', '', clean_text, flags=re.IGNORECASE).strip()
-        
-        # 1. Gỡ tiền tố Translation: / Bản dịch: ở ĐẦU chuỗi nếu LLM sinh ra (kể cả định dạng markdown)
-        clean_text = re.sub(r'(?i)^\s*[*_]*(?:Translation|Bản dịch|Direct translation)[:*_]*\s*', '', clean_text).strip()
-
-        # 2. Cắt bỏ phần rò rỉ reasoning tiếng Anh ở ĐUÔI chuỗi nếu LLM vô tình sinh ra
-        clean_text = re.split(
-            r'(?i)(?:(?:Either\s+(?:this|switch)|Given\s+the|Switch\s+to)\b|Note:|Explanation:)', 
-            clean_text
-        )[0].strip()
-        # Loại bỏ ngoặc kép bao quanh nếu có
-        clean_text = clean_text.strip('"\'')
+        clean_text = self._clean_translated_text(text)
         print(
             f"[TRANSLATION_CALLBACK] target={index} "
             f"clean_len={len(clean_text)} clean_text={clean_text!a} "
@@ -424,9 +412,11 @@ class TranslationController(QObject):
         clean_text = re.sub(r'^\[Line \d+\]:\s*', '', clean_text, flags=re.IGNORECASE).strip()
         clean_text = re.sub(r'(?i)^\s*[*_]*(?:Translation|Bản dịch|Direct translation)[:*_]*\s*', '', clean_text).strip()
         clean_text = re.split(
-            r'(?i)(?:(?:Either\s+(?:this|switch)|Given\s+the|Switch\s+to)\b|Note:|Explanation:)', 
+            r'(?i)(?:(?:Either\s+(?:this|switch)|Given\s+the|Switch\s+to)\b|Note:|Explanation:|(?:cuối cùng,?\s*)?(?:nếu bạn có thể cho tôi biết|cho tôi biết thêm về ngữ cảnh))', 
             clean_text
         )[0].strip()
+        clean_text = re.sub(r'(?im)^(?:cuối cùng,?\s*)?nếu bạn có thể cho tôi biết thêm.*$', '', clean_text).strip()
+        clean_text = re.sub(r'(?i)\n*cuối cùng,?\s*$', '', clean_text).strip()
         return clean_text.strip('"\'')
 
     @Slot(int, str, str)
@@ -461,6 +451,14 @@ class TranslationController(QObject):
         else:
             model_family = "qwen"
 
+        profile = dict(self.hardware_profile)
+        if style_mode == "CREATIVE":
+            profile["temperature"] = 0.7
+            style_instruction = "Lưu ý phong cách: Dịch thật phóng khoáng, giàu cảm xúc, tự nhiên theo khẩu ngữ tiếng Việt."
+        else:
+            profile["temperature"] = 0.2
+            style_instruction = "Lưu ý phong cách: Dịch bám sát từng từ ngữ gốc (literal), cấu trúc nghiêm ngặt và chuẩn xác."
+
         prompt = PromptBuilder.build(
             story_summary,
             source_lang,
@@ -473,23 +471,14 @@ class TranslationController(QObject):
             active_pronoun_pair=active_pronoun,
             is_ja_origin=is_ja,
             model_family=model_family,
+            style_instruction=style_instruction,
         )
-
-        profile = dict(self.hardware_profile)
-        if style_mode == "CREATIVE":
-            profile["temperature"] = 0.7
-            style_instruction = "\nLưu ý phong cách: Dịch thật phóng khoáng, giàu cảm xúc, tự nhiên theo khẩu ngữ tiếng Việt."
-        else:
-            profile["temperature"] = 0.2
-            style_instruction = "\nLưu ý phong cách: Dịch bám sát từng từ ngữ gốc (literal), cấu trúc nghiêm ngặt và chuẩn xác."
-
-        prompt_with_style = prompt + style_instruction
         self.alternativeTranslationLoading.emit(True)
 
         if hasattr(self._worker_factory, "create_worker"):
-            self.alt_worker = self._worker_factory.create_worker(index, prompt_with_style, profile)
+            self.alt_worker = self._worker_factory.create_worker(index, prompt, profile)
         else:
-            self.alt_worker = self._worker_factory(index, prompt_with_style, profile)
+            self.alt_worker = self._worker_factory(index, prompt, profile)
 
         def _on_alt_finished(idx, text, sm=style_mode):
             clean = self._clean_translated_text(text)

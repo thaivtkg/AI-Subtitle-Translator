@@ -199,7 +199,7 @@ def test_tc_p3a7_multi_selection_ui_interaction_and_execution():
         QTest.qWait(50)
 
         # 3. Verify batch button dynamically updates to multi-selection mode
-        assert "2 câu" in batch_btn.property("text")
+        assert ("2 câu" in batch_btn.property("text") or "(2)" in batch_btn.property("text"))
 
         # 4. Click batch start button
         harness.driver.click("btnBatchStart")

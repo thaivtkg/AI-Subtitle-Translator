@@ -182,9 +182,10 @@ class ProjectController(QObject):
                 for sub in all_subs
             ])
 
+        detected_lang = ContextAnalyzer.detect_native_language(sample_subs)
         ja_detection = ContextAnalyzer.detect_ja_translated_en(sample_subs, summary_clean)
         old_is_ja = self._is_ja_origin
-        self._is_ja_origin = ja_detection.get("is_ja_origin", False)
+        self._is_ja_origin = (detected_lang == "Japanese") or ja_detection.get("is_ja_origin", False)
 
         archetype_changed = old_summary != summary_clean
         if not self._is_archetype_locked:
@@ -487,15 +488,17 @@ class ProjectController(QObject):
         # 2. Reset trạng thái giao diện để tránh kẹt dữ liệu cũ
         self._story_summary = ""
         self.projectLoaded.emit("")          # Xóa Story Summary cũ
-        self.languageLoaded.emit("English") # Đưa dropdown về mặc định
 
-        # 3. Quét 30 câu phụ đề đầu tiên nhận diện dấu vết tiếng Nhật & gợi ý thể loại nếu chưa khóa
+        # 3. Quét 30 câu phụ đề đầu tiên tự động nhận diện ngôn ngữ & dấu vết tiếng Nhật
         sample_subs = " ".join([
             str(sub.get("original", "")) for sub in parsed_data[:30] if isinstance(sub, dict)
         ])
+        detected_lang = ContextAnalyzer.detect_native_language(sample_subs)
+        self.languageLoaded.emit(detected_lang)
+
         ja_detection = ContextAnalyzer.detect_ja_translated_en(sample_subs, "")
         old_is_ja = self._is_ja_origin
-        self._is_ja_origin = ja_detection.get("is_ja_origin", False)
+        self._is_ja_origin = (detected_lang == "Japanese") or ja_detection.get("is_ja_origin", False)
         archetype_changed = False
         if not self._is_archetype_locked:
             if self._is_ja_origin:
@@ -563,6 +566,15 @@ class ProjectController(QObject):
         self._original_source_path = file_path
         self._original_source_file = file_name
         self._subtitle_model.append_data(parsed_data)
+
+        sample_batch = " ".join([
+            str(sub.get("original", "")) for sub in parsed_data[:30] if isinstance(sub, dict)
+        ])
+        batch_lang = ContextAnalyzer.detect_native_language(sample_batch)
+        if batch_lang == "Japanese" and not self._is_ja_origin:
+            self._is_ja_origin = True
+            self.archetypeChanged.emit()
+            self.languageLoaded.emit("Japanese")
         self._is_dirty = True
         self.projectStateChanged.emit()
         self.notify.emit("SUCCESS", f"Đã nối tiếp {len(parsed_data)} câu từ đợt mới: {self._original_source_file}")
