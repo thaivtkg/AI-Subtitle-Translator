@@ -37,11 +37,16 @@ class ProjectController(QObject):
     qaExportWarningRequired = Signal(str, int)
     archetypeChanged = Signal()
     glossaryChanged = Signal()
+    batchDetected = Signal(int, int)
 
     def __init__(self, subtitle_model=None):
         super().__init__()
         self._subtitle_model = subtitle_model
         self._original_source_file = "unknown.srt"
+        self._original_source_path = ""
+        self._is_batch_mode = False
+        self._batch_start_num = 0
+        self._batch_end_num = 0
         self._has_project = False
         self._is_dirty = False
         self._loading_project = False
@@ -58,8 +63,8 @@ class ProjectController(QObject):
         if self._subtitle_model is not None:
             self._subtitle_model.dataChanged.connect(self._on_model_changed)
             self._subtitle_model.modelReset.connect(self.projectStateChanged.emit)
-            self._subtitle_model.rowsInserted.connect(self.projectStateChanged.emit)
-            self._subtitle_model.rowsRemoved.connect(self.projectStateChanged.emit)
+            self._subtitle_model.rowsInserted.connect(lambda *args: self.projectStateChanged.emit())
+            self._subtitle_model.rowsRemoved.connect(lambda *args: self.projectStateChanged.emit())
 
     @Property(bool, notify=projectStateChanged)
     def hasProject(self):
@@ -88,6 +93,28 @@ class ProjectController(QObject):
     @Property(str, notify=archetypeChanged)
     def storySummary(self) -> str:
         return getattr(self, "_story_summary", "")
+
+    @Property(str, notify=projectStateChanged)
+    def originalSourcePath(self) -> str:
+        return self._original_source_path
+
+    @Property(bool, notify=batchDetected)
+    def isBatchMode(self) -> bool:
+        return self._is_batch_mode
+
+    @Property(int, notify=batchDetected)
+    def batchStartNum(self) -> int:
+        return self._batch_start_num
+
+    @Property(int, notify=batchDetected)
+    def batchEndNum(self) -> int:
+        return self._batch_end_num
+
+    @Property(str, notify=batchDetected)
+    def batchLabel(self) -> str:
+        if self._is_batch_mode:
+            return f"Đợt #{self._batch_start_num} ➔ #{self._batch_end_num}"
+        return ""
 
     @Property(str, notify=archetypeChanged)
     def archetypeDisplayLabel(self):
@@ -432,8 +459,21 @@ class ProjectController(QObject):
             self.notify.emit("ERROR", "Không tìm thấy file SRT!")
             return
             
-        # FIX: Ghi nhận chính xác tên file gốc lúc import
+        # FIX: Ghi nhận chính xác đường dẫn & tên file gốc lúc import
+        self._original_source_path = file_path
         self._original_source_file = os.path.basename(file_path)
+
+        m = re.search(r'(?:^|_)batch_(\d+)_to_(\d+)', self._original_source_file, re.IGNORECASE)
+        if m:
+            self._is_batch_mode = True
+            self._batch_start_num = int(m.group(1))
+            self._batch_end_num = int(m.group(2))
+            self.batchDetected.emit(self._batch_start_num, self._batch_end_num)
+        else:
+            self._is_batch_mode = False
+            self._batch_start_num = 0
+            self._batch_end_num = 0
+            self.batchDetected.emit(0, 0)
         
         parsed_data = SRTParser.parse(file_path)
         if not parsed_data:
@@ -469,6 +509,64 @@ class ProjectController(QObject):
             self.archetypeChanged.emit()
 
         self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT: {self._original_source_file}")
+
+    @Slot(result=bool)
+    def quickSyncToOriginal(self):
+        """Ghi đè trực tiếp dữ liệu dịch vào self._original_source_path bằng SRTExporter.export()"""
+        if not self._original_source_path:
+            self.notify.emit("ERROR", "Không tìm thấy file nguồn gốc để đồng bộ!")
+            return False
+        dir_name = os.path.dirname(os.path.abspath(self._original_source_path))
+        if not os.path.exists(dir_name):
+            self.notify.emit("ERROR", "Thư mục chứa file gốc không tồn tại!")
+            return False
+        subtitles = self._subtitle_model.get_all_data() if self._subtitle_model else []
+        if not subtitles:
+            self.notify.emit("ERROR", "Không có dữ liệu phụ đề để đồng bộ!")
+            return False
+
+        success, msg = SRTExporter.export(subtitles, self._original_source_path)
+        if success:
+            self._is_dirty = False
+            self.projectStateChanged.emit()
+            self.notify.emit("SUCCESS", f"Đã đồng bộ trực tiếp về Studio: {os.path.basename(self._original_source_path)}")
+            return True
+        else:
+            self.notify.emit("ERROR", f"Lỗi đồng bộ về Studio: {msg}")
+            return False
+
+    @Slot(str, result=bool)
+    def appendNextBatch(self, file_url):
+        """Đọc file đợt mới, nối tiếp vào subtitle model bằng append_data() và bảo toàn ngữ cảnh."""
+        file_path = _normalize_file_path(file_url)
+        if not os.path.exists(file_path):
+            self.notify.emit("ERROR", "Không tìm thấy file đợt dịch tiếp theo!")
+            return False
+
+        parsed_data = SRTParser.parse(file_path)
+        if not parsed_data:
+            self.notify.emit("ERROR", "Không thể đọc nội dung file đợt dịch hoặc file rỗng!")
+            return False
+
+        file_name = os.path.basename(file_path)
+        m = re.search(r'(?:^|_)batch_(\d+)_to_(\d+)', file_name, re.IGNORECASE)
+        if m:
+            new_end = int(m.group(2))
+            if self._is_batch_mode:
+                self._batch_end_num = new_end
+            else:
+                self._is_batch_mode = True
+                self._batch_start_num = int(m.group(1))
+                self._batch_end_num = new_end
+            self.batchDetected.emit(self._batch_start_num, self._batch_end_num)
+
+        self._original_source_path = file_path
+        self._original_source_file = file_name
+        self._subtitle_model.append_data(parsed_data)
+        self._is_dirty = True
+        self.projectStateChanged.emit()
+        self.notify.emit("SUCCESS", f"Đã nối tiếp {len(parsed_data)} câu từ đợt mới: {self._original_source_file}")
+        return True
 
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
     @Slot(str, str, str, str)
@@ -603,6 +701,11 @@ class ProjectController(QObject):
             # --- ĐOẠN ĐÃ SỬA: DỌN DẸP DUPLICATE EMIT ---
             metadata = data.get("metadata", {})
             self._original_source_file = metadata.get("source_file", "unknown.srt")
+            self._original_source_path = file_path
+            self._is_batch_mode = False
+            self._batch_start_num = 0
+            self._batch_end_num = 0
+            self.batchDetected.emit(0, 0)
             source_lang = metadata.get("source_language", "English")
             
             self.languageLoaded.emit(source_lang) # Chỉ emit 1 lần duy nhất

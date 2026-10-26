@@ -74,6 +74,23 @@ class SubtitleModel(QAbstractListModel):
         self.endResetModel()
         self.progressStatsChanged.emit()
 
+    def append_data(self, new_data_list):
+        if not new_data_list:
+            return
+        start_row = len(self._subtitles)
+        end_row = start_row + len(new_data_list) - 1
+
+        last_index = self._subtitles[-1]["index"] if self._subtitles else 0
+        for i, sub in enumerate(new_data_list):
+            sub["index"] = last_index + i + 1
+            self._normalize_translation_state(sub)
+            self._update_item_qa(sub)
+
+        self.beginInsertRows(QModelIndex(), start_row, end_row)
+        self._subtitles.extend(new_data_list)
+        self.endInsertRows()
+        self.progressStatsChanged.emit()
+
     @Slot(result="QVariantList")
     def get_all_data(self):
         """Trả về toàn bộ danh sách subtitle để Context Engine và QML xử lý"""
@@ -230,6 +247,8 @@ class FilteredSubtitleModel(QAbstractListModel):
         self._qa_only = False
 
         self._source.modelReset.connect(self._recompute_and_reset)
+        self._source.rowsInserted.connect(self._recompute_and_reset)
+        self._source.rowsRemoved.connect(self._recompute_and_reset)
         self._source.dataChanged.connect(self._on_source_data_changed)
         self._recompute_and_reset()
 

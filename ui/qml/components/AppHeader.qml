@@ -26,6 +26,12 @@ ToolBar {
     signal modelManagerClicked()
     signal archetypeClicked()
     signal closeProjectClicked()
+    signal syncStudioClicked()
+    signal appendBatchClicked()
+
+    property bool isBatchMode: false
+    property string batchLabel: ""
+    property string originalSourcePath: ""
 
     implicitHeight: 48
     padding: 0
@@ -142,6 +148,37 @@ ToolBar {
                     ToolTip.text: root.isSaved ? "Dự án đã được lưu" : "Có thay đổi chưa lưu"
                     MouseArea {
                         id: chipMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        acceptedButtons: Qt.NoButton
+                    }
+                }
+
+                Rectangle {
+                    id: batchCapsule
+                    objectName: "batchCapsule"
+                    visible: root.hasProject && root.isBatchMode && root.batchLabel !== ""
+                    implicitWidth: batchText.implicitWidth + 16
+                    implicitHeight: 20
+                    radius: 10
+                    color: Qt.rgba(0.0, 0.45, 1.0, 0.15)
+                    border.color: Theme.accentSapphire
+                    border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Text {
+                        id: batchText
+                        anchors.centerIn: parent
+                        text: "🌐 " + root.batchLabel
+                        color: Theme.accentSapphire
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+
+                    ToolTip.visible: batchMouse.containsMouse
+                    ToolTip.text: "Đợt dịch từ ai-subtitle-studio: " + root.batchLabel + "\nNguồn: " + root.originalSourcePath
+                    MouseArea {
+                        id: batchMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         acceptedButtons: Qt.NoButton
@@ -295,10 +332,34 @@ ToolBar {
                     onClicked: root.saveClicked()
                 }
                 AppButton {
+                    id: btnSyncStudio
+                    objectName: "btnSyncStudio"
+                    visible: root.hasProject && root.hasProjectData && root.isBatchMode
+                    text: root.isCompact ? "⟳ Studio" : "⟳ Cập nhật Studio"
+                    tooltip: "Ghi đè trực tiếp về Studio: " + root.originalSourcePath + " — Ctrl + S"
+                    isPrimary: true
+                    enabled: !root.projectMutationLocked
+                    onClicked: root.syncStudioClicked()
+                }
+
+                AppButton {
+                    id: btnAppendBatch
+                    objectName: "btnAppendBatch"
+                    visible: root.hasProject && root.hasProjectData && root.isBatchMode
+                    text: "+ Nối đợt"
+                    tooltip: "Nối file đợt tiếp theo từ Studio (kế thừa toàn bộ TM & Glossary)"
+                    isDarkGlass: true
+                    enabled: !root.projectMutationLocked
+                    onClicked: root.appendBatchClicked()
+                }
+
+                AppButton {
                     objectName: "btnExport"
                     visible: true
                     text: root.isCompact ? "Xuất" : "💾 Xuất SRT"
-                    tooltip: "Xuất file phụ đề SRT — Ctrl + Shift + S"
+                    tooltip: root.isBatchMode && root.originalSourcePath !== ""
+                             ? ("Xuất file phụ đề SRT (Lưu trực tiếp vào: " + root.originalSourcePath + ") — Ctrl + Shift + S")
+                             : "Xuất file phụ đề SRT — Ctrl + Shift + S"
                     isPrimary: false
                     isDarkGlass: true
                     enabled: root.hasProject && root.hasProjectData

@@ -116,11 +116,24 @@ ApplicationWindow {
                         exportSrtDialog.open()
                     }
                 }
+                isBatchMode: typeof projectController !== "undefined" && projectController.isBatchMode
+                batchLabel: typeof projectController !== "undefined" ? projectController.batchLabel : ""
+                originalSourcePath: typeof projectController !== "undefined" ? projectController.originalSourcePath : ""
                 onModelManagerClicked: modelManagerDialog.open()
                 onArchetypeClicked: {
                     contextInspector.switchToTab(1)
                 }
                 onCloseProjectClicked: handleCloseProject()
+                onSyncStudioClicked: {
+                    if (typeof projectController !== "undefined") {
+                        projectController.quickSyncToOriginal()
+                    }
+                }
+                onAppendBatchClicked: {
+                    if (!batchController.executionLocked) {
+                        appendBatchDialog.open()
+                    }
+                }
             }
 
             StudioLaunchpad {
@@ -143,6 +156,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 visible: subListView.count > 0
                 orientation: Qt.Horizontal
+
                 handle: Rectangle {
                     implicitWidth: 1
                     color: Qt.rgba(1, 1, 1, 0.32) // Tăng từ 0.24 lên 0.32 cho sắc nét như bản mẫu
@@ -314,6 +328,7 @@ ApplicationWindow {
     }
 
     FileDialog { id: exportSrtDialog; title: "Xuất file SRT đã dịch"; fileMode: FileDialog.SaveFile; nameFilters: ["Subtitle files (*.srt)"]; defaultSuffix: "srt"; onAccepted: projectController.exportSrt(selectedFile) }
+    FileDialog { id: appendBatchDialog; title: "Chọn file đợt dịch tiếp theo (.srt)"; fileMode: FileDialog.OpenFile; nameFilters: ["File phụ đề SRT (*.srt)"]; defaultSuffix: "srt"; onAccepted: projectController.appendNextBatch(selectedFile) }
 
     Connections {
         target: translationController
@@ -689,7 +704,13 @@ ApplicationWindow {
 
     Shortcut {
         sequence: "Ctrl+S"
-        onActivated: saveProjectDialog.open()
+        onActivated: {
+            if (typeof projectController !== "undefined" && projectController.isBatchMode && projectController.originalSourcePath !== "") {
+                projectController.quickSyncToOriginal()
+            } else {
+                saveProjectDialog.open()
+            }
+        }
     }
 
     Shortcut {
@@ -697,6 +718,42 @@ ApplicationWindow {
         onActivated: {
             if (projectController.validateBeforeExport()) {
                 exportSrtDialog.open()
+            }
+        }
+    }
+
+    DropArea {
+        id: workspaceDropArea
+        anchors.fill: parent
+        enabled: subListView.count > 0 && !batchController.executionLocked
+
+        onEntered: (drag) => {
+            if (!drag.hasUrls) {
+                drag.accepted = false
+                return
+            }
+            var hasValid = false
+            for (var i = 0; i < drag.urls.length; i++) {
+                var url = drag.urls[i].toString().toLowerCase()
+                if (url.endsWith(".srt")) {
+                    hasValid = true
+                    break
+                }
+            }
+            drag.accepted = hasValid
+        }
+
+        onDropped: (drop) => {
+            if (drop.hasUrls && drop.urls.length > 0) {
+                for (var i = 0; i < drop.urls.length; i++) {
+                    var urlStr = drop.urls[i].toString()
+                    if (urlStr.toLowerCase().endsWith(".srt")) {
+                        if (typeof projectController !== "undefined") {
+                            projectController.appendNextBatch(urlStr)
+                        }
+                        break
+                    }
+                }
             }
         }
     }
