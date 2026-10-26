@@ -138,3 +138,37 @@ def test_app_header_archetype_capsule_navigation(harness):
     driver.click("archetypeHeaderCapsule")
     driver.wait_until(lambda: tabs.property("currentIndex") == 1)
     assert tabs.property("currentIndex") == 1
+
+def test_context_inspector_geometry_and_padding(harness):
+    """Kiểm tra khoảng thở an toàn của Nút Thêm, Khung Empty State và Capsule nguồn gốc."""
+    driver = harness.driver
+    tabs = driver.find("contextTabs")
+    assert tabs is not None
+
+    # 1. Đo đạc Tab 1: GLOSSARY
+    tabs.setCurrentIndex(1)
+    QTest.qWait(50)
+    card = driver.find("glossaryCard")
+    empty = driver.find("glossaryEmptyState")
+    btn = driver.find("btnToggleAddTerm")
+    card_w = card.property("width")
+    empty_w = empty.property("width")
+    btn_x = btn.property("x")
+    btn_w = btn.property("width")
+
+    assert (card_w - (btn_x + btn_w)) >= 18.0, f"Nút Thêm quá sát mép phải: {card_w - (btn_x + btn_w)}"
+    assert (card_w - empty_w) >= 32.0, f"Khung trắng quá sát viền card: {card_w - empty_w}"
+
+    # 2. Đo đạc Tab 2: SUMMARY (Origin Capsule)
+    tabs.setCurrentIndex(2)
+    QTest.qWait(50)
+    capsule = driver.find("btnOriginCapsule")
+    assert capsule is not None
+    assert capsule.property("width") > 0
+    init_is_ja = harness.project_controller.isJaOrigin
+    driver.click("btnOriginCapsule")
+    QTest.qWait(50)
+    assert harness.project_controller.isJaOrigin != init_is_ja
+    driver.click("btnOriginCapsule")
+    QTest.qWait(50)
+    assert harness.project_controller.isJaOrigin == init_is_ja

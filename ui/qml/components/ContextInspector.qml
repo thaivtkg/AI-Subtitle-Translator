@@ -676,12 +676,18 @@ ColumnLayout {
                     ColumnLayout {
                         id: glossaryCardCol
                         anchors.fill: parent
-                        anchors.margins: 14
+                        anchors.topMargin: 14
+                        anchors.bottomMargin: 14
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
                         spacing: 10
 
                         // Title: 📚 THUẬT NGỮ & THỰC THỂ (count)
                         RowLayout {
                             Layout.fillWidth: true
+                            Layout.rightMargin: 4
+                            Layout.minimumWidth: 0
+                            Layout.preferredWidth: 0
                             spacing: 6
 
                             Text {
@@ -692,6 +698,9 @@ ColumnLayout {
                                 font.pixelSize: 11
                                 font.bold: true
                                 font.letterSpacing: 0.5
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 60
+                                elide: Text.ElideRight
                             }
                             Item { Layout.fillWidth: true }
 
@@ -855,12 +864,12 @@ ColumnLayout {
                             id: glossaryEmptyState
                             objectName: "glossaryEmptyState"
                             Layout.fillWidth: true
+                            Layout.leftMargin: 4
+                            Layout.rightMargin: 4
                             Layout.topMargin: 4
                             Layout.bottomMargin: 6
-                            Layout.leftMargin: 2
-                            Layout.rightMargin: 2
                             implicitHeight: emptyText.implicitHeight + 20
-                            radius: 12
+                            radius: 10
                             color: Theme.glassPodRaised
                             border.color: Theme.glassBorderSpecularLower
                             border.width: 1
@@ -1154,6 +1163,7 @@ ColumnLayout {
 
             // Nút bấm tương tác: Đánh dấu phụ đề dịch từ tiếng Nhật (BẬT / TẮT)
             Rectangle {
+                objectName: "btnOriginCapsule"
                 Layout.fillWidth: true
                 implicitHeight: 28
                 radius: 14
@@ -1166,26 +1176,39 @@ ColumnLayout {
                 border.width: 1
 
                 RowLayout {
-                    anchors.centerIn: parent
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
                     spacing: 6
 
                     Text {
                         text: (typeof projectController !== "undefined" && projectController.isJaOrigin) ? "🌸" : "🌐"
                         font.pixelSize: 11
+                        Layout.alignment: Qt.AlignVCenter
                     }
 
                     Text {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        elide: Text.ElideRight
                         text: (typeof projectController !== "undefined" && projectController.isJaOrigin)
-                              ? "Nguồn gốc: Dịch từ tiếng Nhật ('senior' ➔ 'tiền bối')"
-                              : "Nguồn gốc: Tiếng Anh bản ngữ ('senior' dịch tự nhiên)"
+                              ? "Gốc tiếng Nhật ('senior' ➔ 'tiền bối')"
+                              : "Nguồn: Tiếng Anh bản ngữ"
                         color: (typeof projectController !== "undefined" && projectController.isJaOrigin) ? "#BE185D" : "#475569"
                         font.pixelSize: 10
                         font.bold: true
                     }
                 }
 
+                ToolTip.visible: originMouse.containsMouse
+                ToolTip.text: (typeof projectController !== "undefined" && projectController.isJaOrigin)
+                              ? "Nguồn gốc: Dịch từ tiếng Nhật ('senior' / 'senpai' ➔ 'tiền bối', 'junior' ➔ 'hậu bối/em') — Bấm để chuyển"
+                              : "Nguồn gốc: Tiếng Anh bản ngữ ('senior' dịch tự nhiên) — Bấm để chuyển sang gốc Nhật"
+
                 MouseArea {
+                    id: originMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         if (typeof projectController !== "undefined") {
