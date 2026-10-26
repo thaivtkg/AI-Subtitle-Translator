@@ -16,8 +16,23 @@ ToolBar {
     property string storySummary: ""
     property int currentSubtitleIndex: 0
     property var selectedIndices: []
-    readonly property bool isCompact: width < 1180
-    readonly property bool isMinimum: width < 1050
+    readonly property bool isCompact: width < 1320
+    readonly property bool isMinimum: width < 1100
+
+    function getLangCode(lang) {
+        if (!lang) return ""
+        var l = lang.toLowerCase()
+        if (l.indexOf("eng") !== -1 || l.indexOf("anh") !== -1) return "EN"
+        if (l.indexOf("viet") !== -1) return "VI"
+        if (l.indexOf("japan") !== -1 || l.indexOf("nhật") !== -1) return "JA"
+        if (l.indexOf("korea") !== -1 || l.indexOf("hàn") !== -1) return "KO"
+        if (l.indexOf("chin") !== -1 || l.indexOf("trung") !== -1) return "ZH"
+        if (l.indexOf("french") !== -1 || l.indexOf("pháp") !== -1) return "FR"
+        if (l.indexOf("german") !== -1 || l.indexOf("đức") !== -1) return "DE"
+        if (l.indexOf("span") !== -1 || l.indexOf("tây") !== -1) return "ES"
+        if (l.indexOf("russ") !== -1 || l.indexOf("nga") !== -1) return "RU"
+        return lang.substring(0, 2).toUpperCase()
+    }
 
     signal openSrtClicked()
     signal openProjectClicked()
@@ -88,6 +103,7 @@ ToolBar {
                 }
 
                 Rectangle {
+                    visible: !root.hasProject
                     implicitWidth: verText.implicitWidth + 12
                     implicitHeight: 18
                     radius: 9
@@ -335,7 +351,7 @@ ToolBar {
                     id: btnSyncStudio
                     objectName: "btnSyncStudio"
                     visible: root.hasProject && root.hasProjectData && root.isBatchMode
-                    text: root.isCompact ? "⟳ Studio" : "⟳ Cập nhật Studio"
+                    text: "⟳ Studio"
                     tooltip: "Ghi đè trực tiếp về Studio: " + root.originalSourcePath + " — Ctrl + S"
                     isPrimary: true
                     enabled: !root.projectMutationLocked
@@ -346,7 +362,7 @@ ToolBar {
                     id: btnAppendBatch
                     objectName: "btnAppendBatch"
                     visible: root.hasProject && root.hasProjectData && root.isBatchMode
-                    text: "+ Nối đợt"
+                    text: "+ Đợt mới"
                     tooltip: "Nối file đợt tiếp theo từ Studio (kế thừa toàn bộ TM & Glossary)"
                     isDarkGlass: true
                     enabled: !root.projectMutationLocked
@@ -356,7 +372,7 @@ ToolBar {
                 AppButton {
                     objectName: "btnExport"
                     visible: true
-                    text: root.isCompact ? "Xuất" : "💾 Xuất SRT"
+                    text: (root.isCompact || root.isBatchMode) ? "💾 Xuất" : "💾 Xuất SRT"
                     tooltip: root.isBatchMode && root.originalSourcePath !== ""
                              ? ("Xuất file phụ đề SRT (Lưu trực tiếp vào: " + root.originalSourcePath + ") — Ctrl + Shift + S")
                              : "Xuất file phụ đề SRT — Ctrl + Shift + S"
@@ -371,22 +387,24 @@ ToolBar {
             Item {
                 id: centerCluster
                 anchors.left: leftBrandingRow.right
-                anchors.leftMargin: 4
+                anchors.leftMargin: 8
                 anchors.right: rightActionsRow.left
-                anchors.rightMargin: 4
+                anchors.rightMargin: 8
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 clip: true
 
                 RowLayout {
-                    anchors.centerIn: parent
-                    spacing: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 6
 
                     Rectangle {
                         id: langCapsule
-                        visible: root.hasProject && centerCluster.width >= 120
+                        objectName: "langCapsule"
+                        visible: root.hasProject && centerCluster.width >= 70
                         implicitHeight: 26
-                        implicitWidth: langContent.implicitWidth + 20
+                        implicitWidth: langContent.implicitWidth + 16
                         radius: 13
                         color: Qt.rgba(1, 1, 1, 0.45)
                         border.color: Theme.glassBorderSpecularUpper
@@ -395,32 +413,41 @@ ToolBar {
                         RowLayout {
                             id: langContent
                             anchors.centerIn: parent
-                            spacing: 6
+                            spacing: 4
                             Text {
-                                text: root.sourceLanguage === "English" ? "🇬🇧 English" : root.sourceLanguage
+                                text: root.getLangCode(root.sourceLanguage)
                                 font.pixelSize: 11
                                 font.bold: true
                                 color: Theme.textOnLightPod
                             }
                             Text {
                                 text: "➔"
-                                font.pixelSize: 12
-                                font.bold: true
-                                color: Theme.accentSapphire
-                            }
-                            Text {
-                                text: root.targetLanguage === "Vietnamese" ? "🇻🇳 Tiếng Việt" : root.targetLanguage
                                 font.pixelSize: 11
                                 font.bold: true
                                 color: Theme.accentSapphire
                             }
+                            Text {
+                                text: root.getLangCode(root.targetLanguage)
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: Theme.accentSapphire
+                            }
+                        }
+
+                        ToolTip.visible: langMouse.containsMouse
+                        ToolTip.text: "Cặp ngôn ngữ dịch: " + root.sourceLanguage + " ➔ " + root.targetLanguage
+                        MouseArea {
+                            id: langMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            acceptedButtons: Qt.NoButton
                         }
                     }
 
                     Rectangle {
                         id: archetypeHeaderCapsule
                         objectName: "archetypeHeaderCapsule"
-                        visible: root.hasProject && typeof projectController !== "undefined" && centerCluster.width >= 280
+                        visible: root.hasProject && typeof projectController !== "undefined" && centerCluster.width >= 340
                         implicitHeight: 26
                         implicitWidth: archetypeHeaderRow.implicitWidth + 20
                         radius: 13
