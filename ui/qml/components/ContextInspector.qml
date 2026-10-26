@@ -659,7 +659,7 @@ ColumnLayout {
                     id: glossaryCard
                     objectName: "glossaryCard"
                     Layout.fillWidth: true
-                    implicitHeight: glossaryCardCol.implicitHeight + 24
+                    implicitHeight: glossaryCardCol.implicitHeight + 32
                     radius: 16
                     color: Theme.glassPodLuminous
                     border.color: Theme.glassBorderSpecularUpper
@@ -855,8 +855,12 @@ ColumnLayout {
                             id: glossaryEmptyState
                             objectName: "glossaryEmptyState"
                             Layout.fillWidth: true
+                            Layout.topMargin: 4
+                            Layout.bottomMargin: 6
+                            Layout.leftMargin: 2
+                            Layout.rightMargin: 2
                             implicitHeight: emptyText.implicitHeight + 20
-                            radius: 8
+                            radius: 12
                             color: Theme.glassPodRaised
                             border.color: Theme.glassBorderSpecularLower
                             border.width: 1

@@ -719,6 +719,19 @@ class ProjectController(QObject):
             self._batch_end_num = 0
             self.batchDetected.emit(0, 0)
             source_lang = metadata.get("source_language", "English")
+            sample_subs = " ".join([
+                str(sub.get("original", "")) for sub in subtitles[:30] if isinstance(sub, dict)
+            ])
+            detected_lang = ContextAnalyzer.detect_native_language(sample_subs)
+            # Nếu dự án cũ bị lưu nhầm là English nhưng phụ đề thực tế là tiếng Nhật/Hàn/Trung:
+            if detected_lang != "English" and (not source_lang or source_lang == "English"):
+                source_lang = detected_lang
+            if detected_lang == "Japanese" and not self._is_ja_origin:
+                self._is_ja_origin = True
+                if not self._is_archetype_locked and (self._active_archetype == ARCHETYPE_CUSTOM or not self._active_archetype):
+                    self._active_archetype = ARCHETYPE_ANIME_SCHOOL
+                    self._active_pronoun_pair = "Em - Tiền bối"
+                self.archetypeChanged.emit()
             
             self.languageLoaded.emit(source_lang) # Chỉ emit 1 lần duy nhất
             # -------------------------------------------

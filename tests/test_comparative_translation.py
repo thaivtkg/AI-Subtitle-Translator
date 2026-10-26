@@ -242,3 +242,42 @@ def test_project_controller_auto_detect_japanese_on_import(tmp_path):
     assert controller.isJaOrigin is True
     assert controller.activeArchetype == "anime_school"
     assert controller.activePronounPair == "Em - Tiền bối"
+
+
+def test_project_controller_auto_detect_japanese_on_load_project(tmp_path):
+    import json
+    from app.controllers.project_controller import ProjectController
+    from app.models.subtitle import SubtitleModel
+
+    aisrt_data = {
+        "version": "1.0",
+        "metadata": {
+            "source_file": "sample.srt",
+            "source_language": "English",
+            "target_language": "Vietnamese"
+        },
+        "subtitles": [
+            {
+                "index": 1,
+                "start_time": "00:00:15,350",
+                "end_time": "00:00:17,540",
+                "original": "妖魔王やっと見つけたわ",
+                "translation": "",
+                "status": "PENDING"
+            }
+        ]
+    }
+    aisrt_file = tmp_path / "legacy_project.aisrt"
+    aisrt_file.write_text(json.dumps(aisrt_data), encoding="utf-8")
+
+    model = SubtitleModel()
+    controller = ProjectController(model)
+
+    emitted_langs = []
+    controller.languageLoaded.connect(lambda l: emitted_langs.append(l))
+
+    controller.loadProject(str(aisrt_file))
+
+    assert "Japanese" in emitted_langs
+    assert controller.isJaOrigin is True
+    assert controller.activeArchetype == "anime_school"
