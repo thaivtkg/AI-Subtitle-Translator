@@ -38,12 +38,15 @@ class ProjectController(QObject):
     archetypeChanged = Signal()
     glossaryChanged = Signal()
     batchDetected = Signal(int, int)
+    batchAppended = Signal(int)
 
     def __init__(self, subtitle_model=None):
         super().__init__()
         self._subtitle_model = subtitle_model
         self._original_source_file = "unknown.srt"
         self._original_source_path = ""
+        self._source_language = "English"
+        self._target_language = "Vietnamese"
         self._is_batch_mode = False
         self._batch_start_num = 0
         self._batch_end_num = 0
@@ -453,6 +456,34 @@ class ProjectController(QObject):
         else:
             self.notify.emit("ERROR", msg)
 
+    @staticmethod
+    def _restore_subtitles_from_sidecar(parsed_data, sidecar_subs):
+        if not sidecar_subs:
+            return
+        sub_by_time = {
+            (s.get("start_time"), s.get("end_time")): s
+            for s in sidecar_subs if isinstance(s, dict)
+        }
+        sub_by_idx = {
+            s.get("index"): s
+            for s in sidecar_subs if isinstance(s, dict) and "index" in s
+        }
+        for i, p_sub in enumerate(parsed_data):
+            matched = sub_by_time.get((p_sub.get("start_time"), p_sub.get("end_time")))
+            if not matched:
+                matched = sub_by_idx.get(p_sub.get("index"))
+            if not matched and i < len(sidecar_subs):
+                matched = sidecar_subs[i]
+            if matched:
+                if matched.get("status"):
+                    p_sub["status"] = matched["status"]
+                if matched.get("translation"):
+                    p_sub["translation"] = matched["translation"]
+                if matched.get("original") and matched.get("translation") and p_sub.get("original") == matched.get("translation"):
+                    p_sub["original"] = matched["original"]
+                if "_qa_severity" in matched:
+                    p_sub["_qa_severity"] = matched["_qa_severity"]
+
     @Slot(str)
     def importSrt(self, file_url):
         file_path = _normalize_file_path(file_url)
@@ -480,25 +511,69 @@ class ProjectController(QObject):
         if not parsed_data:
             self.notify.emit("ERROR", "Không thể đọc nội dung file SRT hoặc file rỗng!")
             return
+
+        sidecar_path = os.path.splitext(file_path)[0] + ".aisrt"
+        has_sidecar = False
+        sidecar_source_lang = None
+        if os.path.exists(sidecar_path):
+            try:
+                with open(sidecar_path, 'r', encoding='utf-8') as f:
+                    sidecar_data = json.load(f)
+
+                self.glossary = self._load_glossary(sidecar_data)
+                self.entity_dictionary = self._load_entities(sidecar_data)
+                self.translation_memory = self._load_translation_memory(sidecar_data)
+
+                intelligence = sidecar_data.get("intelligence", {})
+                if isinstance(intelligence, dict):
+                    self._active_archetype = intelligence.get("archetype", ARCHETYPE_CUSTOM)
+                    self._active_pronoun_pair = intelligence.get(
+                        "pronoun_pair",
+                        DEFAULT_PRONOUNS.get(self._active_archetype, DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]),
+                    )
+                    self._is_archetype_locked = bool(intelligence.get("is_archetype_locked", False))
+                    self.dismissed_auto_terms = set(intelligence.get("dismissed_auto_terms", []))
+                    self._is_ja_origin = bool(intelligence.get("is_ja_origin", False))
+
+                self.archetypeChanged.emit()
+                self.glossaryChanged.emit()
+
+                story_summary = sidecar_data.get("story_summary", "")
+                self._story_summary = (story_summary or "").strip()
+
+                self._restore_subtitles_from_sidecar(parsed_data, sidecar_data.get("subtitles", []))
+
+                metadata = sidecar_data.get("metadata", {})
+                sidecar_source_lang = metadata.get("source_language")
+                has_sidecar = True
+            except Exception as e:
+                print(f"[IMPORT_SRT] Failed to restore sidecar {sidecar_path}: {e}")
             
         # 1. Nạp dữ liệu mới vào Model
         self._subtitle_model.load_data(parsed_data)
-        self._set_project_state(True, True)
+        self._set_project_state(True, False if has_sidecar else True)
         
-        # 2. Reset trạng thái giao diện để tránh kẹt dữ liệu cũ
-        self._story_summary = ""
-        self.projectLoaded.emit("")          # Xóa Story Summary cũ
+        # 2. Reset trạng thái giao diện hoặc khôi phục Story Summary
+        if not has_sidecar:
+            self._story_summary = ""
+        self.projectLoaded.emit(self._story_summary)
 
         # 3. Quét 30 câu phụ đề đầu tiên tự động nhận diện ngôn ngữ & dấu vết tiếng Nhật
         sample_subs = " ".join([
             str(sub.get("original", "")) for sub in parsed_data[:30] if isinstance(sub, dict)
         ])
         detected_lang = ContextAnalyzer.detect_native_language(sample_subs)
-        self.languageLoaded.emit(detected_lang)
+        if not has_sidecar or not sidecar_source_lang or (sidecar_source_lang == "English" and detected_lang != "English"):
+            source_lang = detected_lang
+        else:
+            source_lang = sidecar_source_lang
+
+        self._source_language = source_lang
+        self.languageLoaded.emit(source_lang)
 
         ja_detection = ContextAnalyzer.detect_ja_translated_en(sample_subs, "")
         old_is_ja = self._is_ja_origin
-        self._is_ja_origin = (detected_lang == "Japanese") or ja_detection.get("is_ja_origin", False)
+        self._is_ja_origin = (source_lang == "Japanese") or ja_detection.get("is_ja_origin", False)
         archetype_changed = False
         if not self._is_archetype_locked:
             if self._is_ja_origin:
@@ -511,7 +586,10 @@ class ProjectController(QObject):
         if archetype_changed:
             self.archetypeChanged.emit()
 
-        self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT: {self._original_source_file}")
+        if has_sidecar:
+            self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT & khôi phục trạng thái từ dự án: {os.path.basename(sidecar_path)}")
+        else:
+            self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT: {self._original_source_file}")
 
     @Slot(result=bool)
     def quickSyncToOriginal(self):
@@ -530,6 +608,14 @@ class ProjectController(QObject):
 
         success, msg = SRTExporter.export(subtitles, self._original_source_path)
         if success:
+            sidecar_path = os.path.splitext(self._original_source_path)[0] + ".aisrt"
+            self.saveProject(
+                sidecar_path,
+                getattr(self, "_story_summary", ""),
+                getattr(self, "_source_language", "English"),
+                getattr(self, "_target_language", "Vietnamese"),
+                notify=False,
+            )
             self._is_dirty = False
             self.projectStateChanged.emit()
             self.notify.emit("SUCCESS", f"Đã đồng bộ trực tiếp về Studio: {os.path.basename(self._original_source_path)}")
@@ -551,6 +637,15 @@ class ProjectController(QObject):
             self.notify.emit("ERROR", "Không thể đọc nội dung file đợt dịch hoặc file rỗng!")
             return False
 
+        sidecar_path = os.path.splitext(file_path)[0] + ".aisrt"
+        if os.path.exists(sidecar_path):
+            try:
+                with open(sidecar_path, 'r', encoding='utf-8') as f:
+                    sidecar_data = json.load(f)
+                self._restore_subtitles_from_sidecar(parsed_data, sidecar_data.get("subtitles", []))
+            except Exception as e:
+                print(f"[APPEND_BATCH] Failed to restore sidecar {sidecar_path}: {e}")
+
         file_name = os.path.basename(file_path)
         m = re.search(r'(?:^|_)batch_(\d+)_to_(\d+)', file_name, re.IGNORECASE)
         if m:
@@ -565,6 +660,7 @@ class ProjectController(QObject):
 
         self._original_source_path = file_path
         self._original_source_file = file_name
+        first_new_index = len(self._subtitle_model.get_all_data()) if self._subtitle_model else 0
         self._subtitle_model.append_data(parsed_data)
 
         sample_batch = " ".join([
@@ -577,13 +673,16 @@ class ProjectController(QObject):
             self.languageLoaded.emit("Japanese")
         self._is_dirty = True
         self.projectStateChanged.emit()
+        self.batchAppended.emit(first_new_index)
         self.notify.emit("SUCCESS", f"Đã nối tiếp {len(parsed_data)} câu từ đợt mới: {self._original_source_file}")
         return True
 
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
     @Slot(str, str, str, str)
-    def saveProject(self, file_url, story_summary, source_lang="English", target_lang="Vietnamese"):
+    def saveProject(self, file_url, story_summary, source_lang="English", target_lang="Vietnamese", notify=True):
         self._story_summary = (story_summary or "").strip()
+        self._source_language = source_lang or getattr(self, "_source_language", "English")
+        self._target_language = target_lang or getattr(self, "_target_language", "Vietnamese")
         file_path = _normalize_file_path(file_url)
 
         if not file_path.endswith('.aisrt'):
@@ -649,7 +748,8 @@ class ProjectController(QObject):
                 raise last_err
 
             self._set_project_state(True, False)
-            self.notify.emit("SUCCESS", f"Đã lưu dự án: {os.path.basename(file_path)}")
+            if notify:
+                self.notify.emit("SUCCESS", f"Đã lưu dự án: {os.path.basename(file_path)}")
         except Exception as e:
             self.notify.emit("ERROR", f"Lỗi lưu dự án: {str(e)}")
         finally:
@@ -733,6 +833,8 @@ class ProjectController(QObject):
                     self._active_pronoun_pair = "Em - Tiền bối"
                 self.archetypeChanged.emit()
             
+            self._source_language = source_lang
+            self._target_language = metadata.get("target_language", "Vietnamese")
             self.languageLoaded.emit(source_lang) # Chỉ emit 1 lần duy nhất
             # -------------------------------------------
 

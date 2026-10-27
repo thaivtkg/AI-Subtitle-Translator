@@ -343,6 +343,9 @@ ApplicationWindow {
         function onNotify(title, msg) { appToast.show(title, msg) }
         function onLanguageLoaded(lang) { transWorkspace.setSourceLanguage(lang) }
         function onProjectLoaded(summary) { globalStorySummary = summary }
+        function onBatchAppended(firstNewIndex) {
+            subListView.selectRowAndScroll(firstNewIndex)
+        }
         function onQaExportWarningRequired(filePath, errorCount) {
             qaConfirmDialog.targetFilePath = filePath
             qaConfirmDialog.errorCount = errorCount

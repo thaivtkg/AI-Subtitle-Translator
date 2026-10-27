@@ -130,3 +130,99 @@ def test_srt_exporter_millisecond_preservation(tmp_path):
     content = out_file.read_text(encoding="utf-8")
     assert "00:01:23,456 --> 00:01:25,789" in content
     assert "00:01:30,000 --> 00:01:32,500" in content
+
+
+def test_quick_sync_creates_sidecar_aisrt(tmp_path):
+    import json
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    batch_file = tmp_path / "scene_batch_1_to_2.srt"
+    batch_file.write_text(
+        "1\n00:00:01,100 --> 00:00:03,200\nMagic circle\n\n"
+        "2\n00:00:04,500 --> 00:00:07,800\nShadow monarch\n\n",
+        encoding="utf-8"
+    )
+    ctrl.importSrt(str(batch_file))
+    ctrl.addManualGlossaryTerm("Magic circle", "Vòng ma pháp")
+    model.update_translation(0, "Vòng ma pháp", "ACCEPTED")
+
+    ok = ctrl.quickSyncToOriginal()
+    assert ok is True
+
+    # Sidecar .aisrt must exist alongside the .srt
+    sidecar_path = tmp_path / "scene_batch_1_to_2.aisrt"
+    assert sidecar_path.exists()
+
+    with open(sidecar_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    assert len(data["subtitles"]) == 2
+    assert data["subtitles"][0]["status"] == "ACCEPTED"
+    assert data["subtitles"][0]["translation"] == "Vòng ma pháp"
+    assert len(data["intelligence"]["glossary"]) == 1
+
+
+def test_import_srt_restores_from_sidecar_aisrt(tmp_path):
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    # 1. First session: import, edit, sync (creates sidecar)
+    batch_file = tmp_path / "dialogue_batch_1_to_2.srt"
+    batch_file.write_text(
+        "1\n00:00:01,000 --> 00:00:02,000\n妖魔王やっと見つけたわ\n\n"
+        "2\n00:00:03,000 --> 00:00:04,000\n誰だお前は\n\n",
+        encoding="utf-8"
+    )
+    ctrl.importSrt(str(batch_file))
+    ctrl.addManualGlossaryTerm("妖魔王", "Yêu Ma Vương")
+    model.update_translation(0, "Cuối cùng ta cũng tìm thấy ngươi, Yêu Ma Vương", "ACCEPTED")
+    assert ctrl.quickSyncToOriginal() is True
+
+    # 2. Second session: fresh controller imports the same SRT file
+    # After sync, the SRT file's line 1 has Vietnamese text
+    model2 = SubtitleModel()
+    ctrl2 = ProjectController(model2)
+    ctrl2.importSrt(str(batch_file))
+
+    # Verification: sentence 1 is ACCEPTED, not PENDING!
+    subs = model2.get_all_data()
+    assert len(subs) == 2
+    assert subs[0]["status"] == "ACCEPTED"
+    assert subs[0]["translation"] == "Cuối cùng ta cũng tìm thấy ngươi, Yêu Ma Vương"
+    # True original Japanese is restored despite SRT being overwritten with Vietnamese
+    assert subs[0]["original"] == "妖魔王やっと見つけたわ"
+
+    # Sentence 2 was never translated, status is pending
+    assert str(subs[1]["status"]).upper() == "PENDING"
+    assert subs[1]["original"] == "誰だお前は"
+
+    # Intelligence restored
+    assert len(ctrl2.glossaryTerms) == 1
+    assert ctrl2.glossaryTerms[0]["source_term"] == "妖魔王"
+
+
+def test_append_batch_emits_batch_appended(tmp_path):
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    batch1_file = tmp_path / "ep1_batch_1_to_2.srt"
+    batch1_file.write_text(
+        "1\n00:00:01,000 --> 00:00:03,000\nLine 1\n\n"
+        "2\n00:00:04,000 --> 00:00:06,000\nLine 2\n\n",
+        encoding="utf-8"
+    )
+    ctrl.importSrt(str(batch1_file))
+
+    batch2_file = tmp_path / "ep1_batch_3_to_4.srt"
+    batch2_file.write_text(
+        "1\n00:00:07,000 --> 00:00:09,000\nLine 3\n\n"
+        "2\n00:00:10,000 --> 00:00:12,000\nLine 4\n\n",
+        encoding="utf-8"
+    )
+
+    emitted_indices = []
+    ctrl.batchAppended.connect(lambda idx: emitted_indices.append(idx))
+
+    ok = ctrl.appendNextBatch(str(batch2_file))
+    assert ok is True
+    assert emitted_indices == [2]

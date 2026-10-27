@@ -83,6 +83,29 @@ ColumnLayout {
         return false;
     }
 
+    function selectRowAndScroll(rawIdx) {
+        if (rawIdx < 0 || subListView.count <= 0) return;
+        var vIdx = -1;
+        if (root.isProxyModel && subListView.model) {
+            if (typeof subListView.model.ensureRawIndexVisible === "function") {
+                vIdx = subListView.model.ensureRawIndexVisible(rawIdx);
+            } else if (typeof subListView.model.getViewIndex === "function") {
+                vIdx = subListView.model.getViewIndex(rawIdx);
+            }
+        } else {
+            vIdx = rawIdx;
+        }
+        if (vIdx >= 0 && vIdx < subListView.count) {
+            subListView.currentIndex = vIdx;
+            subListView.positionViewAtIndex(vIdx, ListView.Center);
+            subListView.forceActiveFocus();
+            var rIdx = (root.isProxyModel && subListView.model && typeof subListView.model.getRawIndex === "function")
+                       ? subListView.model.getRawIndex(vIdx) : vIdx;
+            root.selectedIndices = [rIdx];
+            root.selectionChanged(root.selectedIndices);
+        }
+    }
+
     property int currentChunkSize: 0 // 0 = Tất cả câu
     property int currentPage: 1
     property int selectedChunkStart: -1
