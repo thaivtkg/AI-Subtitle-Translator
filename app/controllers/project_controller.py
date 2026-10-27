@@ -10,6 +10,7 @@ from app.core.srt_validator import SRTValidator
 from app.core.glossary import Glossary
 from app.core.entity_dictionary import EntityDictionary
 from app.core.translation_memory import TranslationMemory
+from app.core.app_settings import AppSettings
 from app.core.context_analyzer import (
     ARCHETYPE_CUSTOM,
     ARCHETYPE_ANIME_SCHOOL,
@@ -36,6 +37,7 @@ class ProjectController(QObject):
     languageLoaded = Signal(str)
     # Tín hiệu xác nhận xuất file khi tồn tại lỗi QA nghiêm trọng
     qaExportWarningRequired = Signal(str, int)
+    recentFilesChanged = Signal()
     archetypeChanged = Signal()
     glossaryChanged = Signal()
     batchDetected = Signal(int, int)
@@ -59,8 +61,9 @@ class ProjectController(QObject):
         self.glossary = Glossary()
         self.entity_dictionary = EntityDictionary()
         self.translation_memory = TranslationMemory()
-        self._active_archetype = ARCHETYPE_CUSTOM
-        self._active_pronoun_pair = DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
+        self._settings = AppSettings()
+        self._active_archetype = ARCHETYPE_PURE
+        self._active_pronoun_pair = ""
         self._is_archetype_locked = False
         self.dismissed_auto_terms = set()
         self._is_ja_origin = False
@@ -99,6 +102,37 @@ class ProjectController(QObject):
     @Property(str, notify=archetypeChanged)
     def storySummary(self) -> str:
         return getattr(self, "_story_summary", "")
+
+    @Property("QVariantList", notify=recentFilesChanged)
+    def recentFiles(self) -> list:
+        results = []
+        for p in self._settings.recent_files:
+            if os.path.exists(p):
+                ext = os.path.splitext(p)[1].lower()
+                is_proj = ext in (".aisrt", ".ai-subtitle")
+                results.append({
+                    "path": p,
+                    "name": os.path.basename(p),
+                    "is_project": is_proj,
+                })
+        return results
+
+    def _add_recent_file(self, file_path: str):
+        if file_path and os.path.exists(file_path):
+            self._settings.add_recent_file(file_path)
+            self.recentFilesChanged.emit()
+
+    @Slot(str)
+    def openRecentFile(self, file_path: str):
+        clean_path = _normalize_file_path(file_path)
+        if not clean_path or not os.path.exists(clean_path):
+            self.notify.emit("ERROR", f"Tệp không tồn tại: {file_path}")
+            return
+        ext = os.path.splitext(clean_path)[1].lower()
+        if ext in (".aisrt", ".ai-subtitle"):
+            self.loadProject(clean_path)
+        else:
+            self.importSrt(clean_path)
 
     @Property(str, notify=projectStateChanged)
     def originalSourcePath(self) -> str:
@@ -222,10 +256,8 @@ class ProjectController(QObject):
     @Slot(str)
     @Slot(str, bool)
     def selectArchetype(self, archetype_id: str, manual_lock: bool = True):
-        self._active_archetype = archetype_id
-        self._active_pronoun_pair = DEFAULT_PRONOUNS.get(
-            archetype_id, DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
-        )
+        self._active_archetype = ARCHETYPE_PURE
+        self._active_pronoun_pair = ""
         self._is_archetype_locked = manual_lock
         self.archetypeChanged.emit()
         self.markDirty()
@@ -599,6 +631,7 @@ class ProjectController(QObject):
         if old_is_ja != self._is_ja_origin:
             self.archetypeChanged.emit()
 
+        self._add_recent_file(self._original_source_path)
         if has_sidecar and has_any_translation:
             self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT & khôi phục trạng thái từ dự án: {os.path.basename(sidecar_path)}")
         elif detected_lang == "Vietnamese":
@@ -848,17 +881,14 @@ class ProjectController(QObject):
 
             intelligence = data.get("intelligence", {})
             if isinstance(intelligence, dict):
-                loaded_archetype = intelligence.get("archetype", ARCHETYPE_CUSTOM)
-                loaded_pronoun = intelligence.get(
-                    "pronoun_pair",
-                    DEFAULT_PRONOUNS.get(loaded_archetype, DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]),
-                )
+                loaded_archetype = ARCHETYPE_PURE
+                loaded_pronoun = ""
                 loaded_locked = bool(intelligence.get("is_archetype_locked", False))
                 loaded_dismissed = set(intelligence.get("dismissed_auto_terms", []))
                 loaded_is_ja = bool(intelligence.get("is_ja_origin", False))
             else:
-                loaded_archetype = ARCHETYPE_CUSTOM
-                loaded_pronoun = DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
+                loaded_archetype = ARCHETYPE_PURE
+                loaded_pronoun = ""
                 loaded_locked = False
                 loaded_dismissed = set()
                 loaded_is_ja = False
@@ -920,6 +950,7 @@ class ProjectController(QObject):
             self.languageLoaded.emit(source_lang) # Chỉ emit 1 lần duy nhất
             # -------------------------------------------
 
+            self._add_recent_file(file_path)
             self._set_project_state(True, is_healed_vi)
             self.notify.emit("SUCCESS", f"Đã mở dự án: {os.path.basename(file_path)}")
         except Exception as e:

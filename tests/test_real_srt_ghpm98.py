@@ -1,7 +1,7 @@
 """
 Real-world Verification on E:\\ghpm98ja.srt and E:\\ghpm98.srt (First 30 Subtitles).
-Compares Baseline vs Enriched Prompts to guarantee that Japanese origin biasing
-correctly transforms anime address terms into 'tiền bối'.
+Compares Baseline vs Enriched Prompts to guarantee that pure model mode
+correctly maintains story summary and clean prompt without forced artifacts.
 """
 import os
 import re
@@ -49,7 +49,7 @@ def test_real_srt_30_lines_comparative_prompt():
     target_indices = [2, 4, 16, 18, 25, 26, 29]
     target_subs = {idx: text for idx, time, text in en_subs if idx in target_indices}
     for idx, sub_text in target_subs.items():
-        # --- BASELINE PROMPT: Không có cờ JA, không có đại từ định hướng ---
+        # --- BASELINE PROMPT: Không có story summary ---
         baseline_prompt = PromptBuilder.build(
             story_summary="",
             source_lang="English",
@@ -58,7 +58,7 @@ def test_real_srt_30_lines_comparative_prompt():
             active_pronoun_pair="",
             is_ja_origin=False,
         )
-        # --- ENRICHED PROMPT: Có cờ JA origin, kích hoạt đại từ Em - Tiền bối ---
+        # --- ENRICHED PROMPT: Có story summary ---
         enriched_prompt = PromptBuilder.build(
             story_summary="Anime viễn tưởng phép thuật học đường",
             source_lang="English",
@@ -67,12 +67,13 @@ def test_real_srt_30_lines_comparative_prompt():
             active_pronoun_pair="Em - Tiền bối",
             is_ja_origin=True,
         )
-        # 1. Bắt buộc có sự khác biệt rõ rệt giữa 2 prompt
+        # 1. Bắt buộc có sự khác biệt rõ rệt giữa 2 prompt (Story summary injected)
         assert enriched_prompt != baseline_prompt, f"Dòng #{idx} prompt không thay đổi!"
-        # 2. Enriched prompt bắt buộc phải chứa chỉ thị cấm dịch 'người lớn tuổi', ép dịch 'tiền bối'
-        assert "JAPANESE TRANSLATION ARTIFACTS" in enriched_prompt
-        assert "tiền bối" in enriched_prompt
-        assert "NEVER translate as 'người lớn tuổi'" in enriched_prompt
+        assert "STORY SUMMARY" in enriched_prompt
+        assert "Anime viễn tưởng phép thuật học đường" in enriched_prompt
+        # 2. Pure mode: không chứa chỉ thị cấm đoán hay danh xưng ép buộc cũ
+        assert "JAPANESE TRANSLATION ARTIFACTS" not in enriched_prompt
+        assert "PRONOUN RELATIONSHIP" not in enriched_prompt
 
 
 def test_srt_parser_multi_encoding_fallback(tmp_path):
@@ -94,4 +95,3 @@ def test_srt_parser_multi_encoding_fallback(tmp_path):
     parsed_cp1252 = SRTParser.parse(str(p_cp1252))
     assert len(parsed_cp1252) == 1
     assert "Café" in parsed_cp1252[0]["original"]
-

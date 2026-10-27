@@ -225,5 +225,118 @@ Item {
                 onClicked: launchpadRoot.openSrtClicked()
             }
         }
+
+        // 4. RECENT FILES (TỆP GẦN ĐÂY 1-CLICK)
+        ColumnLayout {
+            id: recentFilesSection
+            objectName: "recentFilesSection"
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: Math.min(centerContent.width, 580)
+            spacing: 8
+            visible: typeof projectController !== "undefined" && projectController.recentFiles && projectController.recentFiles.length > 0
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
+
+                Text {
+                    text: "🕒 TỆP GẦN ĐÂY"
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.9)
+                    font.pixelSize: 11
+                    font.bold: true
+                    font.letterSpacing: 0.5
+                }
+
+                Item { Layout.fillWidth: true }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: recentFilesCol.implicitHeight + 16
+                radius: 14
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.45)
+                border.color: Theme.glassBorderSpecularUpper
+                border.width: 1
+
+                ColumnLayout {
+                    id: recentFilesCol
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 4
+
+                    Repeater {
+                        model: (typeof projectController !== "undefined" && projectController.recentFiles) ? projectController.recentFiles : []
+
+                        delegate: Rectangle {
+                            id: recentItem
+                            Layout.fillWidth: true
+                            implicitHeight: 34
+                            radius: 8
+                            color: recentItemMouse.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.65) : Qt.rgba(1.0, 1.0, 1.0, 0.25)
+                            border.color: recentItemMouse.containsMouse ? Qt.rgba(0.0, 0.45, 1.0, 0.3) : "transparent"
+                            border.width: 1
+
+                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 10
+                                spacing: 8
+
+                                Text {
+                                    text: modelData.is_project ? "📦" : "📄"
+                                    font.pixelSize: 13
+                                }
+
+                                Text {
+                                    text: modelData.name
+                                    color: Theme.textOnLightPod
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                    Layout.preferredWidth: Math.min(implicitWidth, 180)
+                                    elide: Text.ElideRight
+                                }
+
+                                Text {
+                                    text: modelData.path
+                                    color: Theme.textOnLightPodMuted
+                                    font.pixelSize: 11
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideMiddle
+                                }
+
+                                Rectangle {
+                                    implicitWidth: 46
+                                    implicitHeight: 22
+                                    radius: 6
+                                    color: recentItemMouse.containsMouse ? Theme.accentSapphire : Qt.rgba(0.0, 0.45, 1.0, 0.12)
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "Mở"
+                                        color: recentItemMouse.containsMouse ? "#FFFFFF" : Theme.accentSapphire
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                id: recentItemMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (typeof projectController !== "undefined") {
+                                        projectController.openRecentFile(modelData.path)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

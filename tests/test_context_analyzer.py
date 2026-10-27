@@ -14,12 +14,9 @@ from app.core.context_analyzer import (
 
 
 def test_archetype_constants_and_metadata():
-    assert len(ARCHETYPE_METADATA) == 6
-    assert DEFAULT_PRONOUNS[ARCHETYPE_ANCIENT_FANTASY] == "Ta - Ngươi"
-    assert DEFAULT_PRONOUNS[ARCHETYPE_ANIME_SCHOOL] == "Em - Tiền bối"
-    assert DEFAULT_PRONOUNS[ARCHETYPE_MODERN_ACTION] == "Tôi - Bạn"
-    assert DEFAULT_PRONOUNS[ARCHETYPE_ROMANCE_FAMILY] == "Anh - Em"
-    assert DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM] == "Tự do (Theo ngữ cảnh)"
+    assert len(ARCHETYPE_METADATA) == 1
+    assert ARCHETYPE_METADATA["pure_model"]["name"] == "Dịch Thuần (Pure Model)"
+    assert DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM] == ""
 
 
 def test_extract_pair_definitions():
@@ -83,45 +80,16 @@ def test_sanitize_and_stopwords_filtering():
     assert "a" not in terms_lower
 
 
-def test_classify_ancient_fantasy():
+def test_classify_pure_model_defaults():
     text = "Hành trình tu tiên của đệ tử tông môn, luyện phi kiếm cùng sư huynh sư muội trừ yêu ma."
     archetype, pronouns = classify_archetype(text)
-    assert archetype == ARCHETYPE_ANCIENT_FANTASY
-    assert pronouns == "Ta - Ngươi"
-
-
-def test_classify_anime_school():
-    text = "Câu chuyện học đường thanh xuân về nữ sinh tham gia clb anime cùng senpai."
-    archetype, pronouns = classify_archetype(text)
-    assert archetype == ARCHETYPE_ANIME_SCHOOL
-    assert pronouns == "Em - Tiền bối"
-
-
-def test_classify_modern_action():
-    text = "Đội đặc nhiệm cảnh sát và điệp viên truy kích tội phạm bắn tỉa trên trực thăng."
-    archetype, pronouns = classify_archetype(text)
-    assert archetype == ARCHETYPE_MODERN_ACTION
-    assert pronouns == "Tôi - Bạn"
-
-
-def test_classify_romance_family():
-    text = "Chuyện tình lãng mạn giữa tổng tài và cô nhân viên, vượt qua mâu thuẫn gia đình để kết hôn."
-    archetype, pronouns = classify_archetype(text)
-    assert archetype == ARCHETYPE_ROMANCE_FAMILY
-    assert pronouns == "Anh - Em"
-
-
-def test_anti_collision_tech_words():
-    # Câu có từ kiếm hiệp nhưng bối cảnh công nghệ / lập trình / bug
-    text = "Phim về lập trình viên chiến đấu với bug và hệ thống máy tính server như kiếm hiệp."
-    archetype, pronouns = classify_archetype(text)
-    assert archetype == ARCHETYPE_MODERN_ACTION
-    assert pronouns == "Tôi - Bạn"
+    assert archetype == "pure_model"
+    assert pronouns == ""
 
 
 def test_empty_and_whitespace_summary():
-    assert classify_archetype("") == (ARCHETYPE_CUSTOM, "Tự do (Theo ngữ cảnh)")
-    assert classify_archetype("   \n\t  ") == (ARCHETYPE_CUSTOM, "Tự do (Theo ngữ cảnh)")
+    assert classify_archetype("") == ("pure_model", "")
+    assert classify_archetype("   \n\t  ") == ("pure_model", "")
     assert extract_entities("") == []
     assert extract_entities("   ") == []
 
@@ -129,8 +97,8 @@ def test_empty_and_whitespace_summary():
 def test_analyze_context_wrapper():
     text = 'Tu tiên tông môn, nhân vật "Xiao Yan": Tiêu Viêm sử dụng phi kiếm.'
     result = analyze_context(text)
-    assert result["archetype"] == ARCHETYPE_ANCIENT_FANTASY
-    assert result["pronouns"] == "Ta - Ngươi"
+    assert result["archetype"] == "pure_model"
+    assert result["pronouns"] == ""
     assert any(e["source_term"] == "Xiao Yan" for e in result["entities"])
 
 

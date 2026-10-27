@@ -54,14 +54,14 @@ class TestPromptBuilder(unittest.TestCase):
         self.assertNotIn("<|im_start|>", llama_prompt)
 
     def test_pronoun_pair_logic_01(self):
-        """Kiểm tra LOGIC-01: 'Ta - Ngươi' không bị ép luật 'tiền bối / em'."""
+        """Kiểm tra Pure Model: Không còn bị ép đại từ xưng hô hay kính ngữ giả tạo."""
         prompt_ancient = PromptBuilder.build(
             story_summary="Phim kiếm hiệp cổ trang",
             current_sub="Ngươi đứng lại!",
             active_pronoun_pair="Ta - Ngươi",
             is_ja_origin=False,
         )
-        self.assertIn("strictly 'Ta - Ngươi'", prompt_ancient)
+        self.assertNotIn("PRONOUN RELATIONSHIP", prompt_ancient)
         self.assertNotIn("tiền bối", prompt_ancient)
         self.assertNotIn("'em'", prompt_ancient)
 
@@ -71,7 +71,8 @@ class TestPromptBuilder(unittest.TestCase):
             active_pronoun_pair="Em - Tiền bối",
             is_ja_origin=True,
         )
-        self.assertIn("tiền bối", prompt_anime)
+        self.assertNotIn("PRONOUN RELATIONSHIP", prompt_anime)
+        self.assertNotIn("JAPANESE TRANSLATION ARTIFACTS", prompt_anime)
 
     def test_cot_and_translation_prefix_logic_05_and_09(self):
         """Kiểm tra LOGIC-05 và LOGIC-09: Giữ nguyên bản dịch khi có 'Translation:' và lọc suy luận CoT."""

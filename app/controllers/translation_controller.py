@@ -17,6 +17,7 @@ class TranslationController(QObject):
     qaStatusChanged = Signal()
     alternativeTranslationReady = Signal(int, str, str)
     alternativeTranslationLoading = Signal(bool)
+    appliedTermsChanged = Signal()
 
     def __init__(self, subtitle_model, worker_factory=None):
         super().__init__()
@@ -68,6 +69,11 @@ class TranslationController(QObject):
         self._entities = entities
         self._translation_memory = translation_memory
         self._project_controller = project_controller
+        if project_controller and hasattr(project_controller, "glossaryChanged"):
+            try:
+                project_controller.glossaryChanged.connect(self.appliedTermsChanged.emit)
+            except Exception:
+                pass
 
     @property
     def glossary(self):
@@ -155,6 +161,28 @@ class TranslationController(QObject):
             return subtitles[self._current_index].get("_qa_tooltip", "")
         return ""
 
+    @Property("QVariantList", notify=appliedTermsChanged)
+    def currentAppliedTerms(self):
+        if not self._current_original:
+            return []
+        terms = []
+        seen = set()
+        if self.glossary:
+            for hit in self.glossary.match(self._current_original, word_boundary=True):
+                src = hit.source_term
+                tgt = hit.preferred_translation
+                if src.lower() not in seen:
+                    seen.add(src.lower())
+                    terms.append({"source": src, "target": tgt})
+        if self.entities:
+            for hit in self.entities.match(self._current_original, word_boundary=True):
+                src = getattr(hit, "matched_form", "") or getattr(hit, "entity_name", "")
+                tgt = getattr(hit, "canonical_translation", "")
+                if src and src.lower() not in seen:
+                    seen.add(src.lower())
+                    terms.append({"source": src, "target": tgt})
+        return terms
+
     @Slot(int)
     def loadSubtitle(self, index):
         if index < 0: 
@@ -203,6 +231,7 @@ class TranslationController(QObject):
         self.translationUpdated.emit(self._current_translation)
         self.contextUpdated.emit()
         self.qaStatusChanged.emit()
+        self.appliedTermsChanged.emit()
 
     @Slot()
     def markAsEdited(self):
@@ -347,6 +376,7 @@ class TranslationController(QObject):
             return
 
         self._subtitle_model.update_translation(index, clean_text, "TRANSLATED")
+        self.appliedTermsChanged.emit()
         if index == self._active_translation_index:
             self._active_translation_index = -1
             if (

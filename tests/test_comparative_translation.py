@@ -37,10 +37,10 @@ def test_mandatory_ab_comparative_prompt_difference():
     # --- 2. ENRICHED: Ancient Fantasy summary, Ta - Ngươi detected, translated dialogue ---
     summary = "Phim cổ trang tu tiên kiếm hiệp, hai cao thủ đối đầu sinh tử"
     archetype, pronoun_pair = classify_archetype(summary)
-    assert archetype == ARCHETYPE_ANCIENT_FANTASY
-    assert pronoun_pair == "Ta - Ngươi"
+    assert archetype == "pure_model"
+    assert pronoun_pair == ""
 
-    # Context continuity: Preceding translated line using Ta - Ngươi
+    # Context continuity
     enriched_prev = ["Ngươi muốn gì ở ta?"]
     enriched_prompt = PromptBuilder.build(
         story_summary=summary,
@@ -54,21 +54,12 @@ def test_mandatory_ab_comparative_prompt_difference():
     )
 
     # --- 3. MANDATORY COMPARATIVE ASSERTIONS ---
-    # Enriched prompt MUST strictly differ from baseline
+    # Enriched prompt MUST strictly differ from baseline due to Story Summary and Canonical Names
     assert enriched_prompt != baseline_prompt, (
         "CRITICAL FAILURE: Enriched prompt MUST be strictly different from baseline prompt!"
     )
-
-    # Enriched prompt MUST enforce Ta - Ngươi and canonical name
-    assert "Ta - Ngươi" in enriched_prompt, (
-        "CRITICAL FAILURE: Enriched prompt MUST contain active pronoun pair 'Ta - Ngươi'!"
-    )
-    assert "PRONOUN RELATIONSHIP" in enriched_prompt, (
-        "CRITICAL FAILURE: Enriched prompt MUST contain PRONOUN RELATIONSHIP rule!"
-    )
-    assert "Tiêu Viêm" in enriched_prompt, (
-        "CRITICAL FAILURE: Enriched prompt MUST contain canonical character name 'Tiêu Viêm'!"
-    )
+    assert "STORY SUMMARY" in enriched_prompt
+    assert "Tiêu Viêm" in enriched_prompt
     assert "Ngươi muốn gì ở ta?" in enriched_prompt, (
         "CRITICAL FAILURE: Enriched prompt MUST contain preceding translated dialogue for continuity!"
     )
@@ -142,7 +133,7 @@ def test_custom_archetype_omits_mandatory_pronoun_rule():
     )
     assert "VIETNAMESE LOCALIZATION RULES" in prompt
     assert "PRONOUN RELATIONSHIP" not in prompt
-    assert "NATURAL PRONOUNS" in prompt
+    assert "NATURAL DIALOGUE" in prompt
 
 
 def test_request_and_apply_alternative_translation():
@@ -243,7 +234,7 @@ def test_project_controller_auto_detect_japanese_on_import(tmp_path):
     assert "Japanese" in emitted_langs
     assert controller.isJaOrigin is True
     # Không tự động ép sang anime_school / Em - Tiền bối khi nhận diện tiếng Nhật
-    assert controller.activeArchetype == "custom"
+    assert controller.activeArchetype == "pure_model"
     assert "Tiền bối" not in controller.activePronounPair
 
 
@@ -284,4 +275,4 @@ def test_project_controller_auto_detect_japanese_on_load_project(tmp_path):
     assert "Japanese" in emitted_langs
     assert controller.isJaOrigin is True
     # Không tự động ép sang anime_school khi nhận diện tiếng Nhật
-    assert controller.activeArchetype == "custom"
+    assert controller.activeArchetype == "pure_model"

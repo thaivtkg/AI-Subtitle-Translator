@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 class AppSettings:
@@ -8,6 +8,7 @@ class AppSettings:
         "active_model_id": "qwen2.5-7b-instruct-q4_k_m",
         "custom_n_ctx": 4096,
         "custom_n_gpu_layers": -1,
+        "recent_files": [],
     }
 
     def __init__(self, file_path: Optional[str] = None):
@@ -55,3 +56,16 @@ class AppSettings:
     @active_model_id.setter
     def active_model_id(self, value: str) -> None:
         self.set("active_model_id", value)
+
+    @property
+    def recent_files(self) -> List[str]:
+        val = self.get("recent_files", [])
+        return val if isinstance(val, list) else []
+
+    def add_recent_file(self, file_path: str, max_items: int = 5) -> None:
+        if not file_path:
+            return
+        norm_path = os.path.normpath(file_path)
+        current = [f for f in self.recent_files if os.path.normpath(f) != norm_path]
+        current.insert(0, norm_path)
+        self.set("recent_files", current[:max_items])

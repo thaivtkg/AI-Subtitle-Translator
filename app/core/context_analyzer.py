@@ -9,61 +9,28 @@ from __future__ import annotations
 import re
 from typing import Any
 
-# --- Archetype Identifiers ---
+# --- Archetype Identifiers (Single Pure Model) ---
 ARCHETYPE_PURE = "pure_model"
-ARCHETYPE_ANCIENT_FANTASY = "ancient_fantasy"
-ARCHETYPE_ANIME_SCHOOL = "anime_school"
-ARCHETYPE_MODERN_ACTION = "modern_action"
-ARCHETYPE_ROMANCE_FAMILY = "romance_family"
-ARCHETYPE_CUSTOM = "custom"
+# Backward-compatibility aliases
+ARCHETYPE_ANCIENT_FANTASY = "pure_model"
+ARCHETYPE_ANIME_SCHOOL = "pure_model"
+ARCHETYPE_MODERN_ACTION = "pure_model"
+ARCHETYPE_ROMANCE_FAMILY = "pure_model"
+ARCHETYPE_CUSTOM = "pure_model"
 
 # --- Default Pronoun Pair Mappings ---
 DEFAULT_PRONOUNS: dict[str, str] = {
     ARCHETYPE_PURE: "",
-    ARCHETYPE_ANCIENT_FANTASY: "Ta - Ngươi",
-    ARCHETYPE_ANIME_SCHOOL: "Em - Tiền bối",
-    ARCHETYPE_MODERN_ACTION: "Tôi - Bạn",
-    ARCHETYPE_ROMANCE_FAMILY: "Anh - Em",
-    ARCHETYPE_CUSTOM: "Tự do (Theo ngữ cảnh)",
+    "custom": "",
 }
 
-# --- Archetype Metadata (Used by UI Header Capsule & Dropdowns) ---
+# --- Archetype Metadata (Used by UI Dropdowns & Inspector) ---
 ARCHETYPE_METADATA: dict[str, dict[str, Any]] = {
     ARCHETYPE_PURE: {
         "id": ARCHETYPE_PURE,
         "name": "Dịch Thuần (Pure Model)",
-        "pronouns": "Tự do / Không ép",
+        "pronouns": "Tự do",
         "icon": "🔮",
-    },
-    ARCHETYPE_ANCIENT_FANTASY: {
-        "id": ARCHETYPE_ANCIENT_FANTASY,
-        "name": "Cổ Trang / Kiếm Hiệp",
-        "pronouns": "Ta - Ngươi",
-        "icon": "⚔️",
-    },
-    ARCHETYPE_ANIME_SCHOOL: {
-        "id": ARCHETYPE_ANIME_SCHOOL,
-        "name": "Anime / Học Đường",
-        "pronouns": "Em - Tiền bối",
-        "icon": "🌸",
-    },
-    ARCHETYPE_MODERN_ACTION: {
-        "id": ARCHETYPE_MODERN_ACTION,
-        "name": "Hiện Đại / Hành Động",
-        "pronouns": "Tôi - Bạn",
-        "icon": "🔫",
-    },
-    ARCHETYPE_ROMANCE_FAMILY: {
-        "id": ARCHETYPE_ROMANCE_FAMILY,
-        "name": "Tình Cảm / Gia Đình",
-        "pronouns": "Anh - Em",
-        "icon": "❤️",
-    },
-    ARCHETYPE_CUSTOM: {
-        "id": ARCHETYPE_CUSTOM,
-        "name": "Tự Do",
-        "pronouns": "Theo ngữ cảnh",
-        "icon": "🎭",
     },
 }
 
@@ -277,43 +244,20 @@ def extract_entities(text: str, source_lang: str = "") -> list[dict[str, Any]]:
 def classify_archetype(text: str) -> tuple[str, str]:
     """
     Classifies summary text into a character archetype and default pronoun pair.
-    Returns: (archetype_id, pronoun_pair)
+    Default and only supported mode is Pure Model (Dịch thuần).
+    Returns: (ARCHETYPE_PURE, "")
     """
-    if not text or not text.strip():
-        return ARCHETYPE_CUSTOM, DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
-
-    lower_text = text.lower()
-    has_tech = any(kw in lower_text for kw in TECH_KEYWORDS)
-
-    scores: dict[str, int] = {archetype: 0 for archetype in ARCHETYPE_KEYWORDS}
-
-    for archetype, keywords in ARCHETYPE_KEYWORDS.items():
-        for kw in keywords:
-            if kw in lower_text:
-                scores[archetype] += 1
-
-    # Anti-collision filter: tech words suppress ancient fantasy and boost modern action
-    if has_tech:
-        scores[ARCHETYPE_ANCIENT_FANTASY] = 0
-        scores[ARCHETYPE_MODERN_ACTION] += 5
-
-    best_archetype, best_score = max(scores.items(), key=lambda item: item[1])
-
-    if best_score == 0:
-        return ARCHETYPE_CUSTOM, DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM]
-
-    return best_archetype, DEFAULT_PRONOUNS.get(best_archetype, DEFAULT_PRONOUNS[ARCHETYPE_CUSTOM])
+    return ARCHETYPE_PURE, ""
 
 
 def analyze_context(text: str, source_lang: str = "") -> dict[str, Any]:
     """
     Convenience wrapper returning archetype, pronouns, and extracted entities.
     """
-    archetype, pronouns = classify_archetype(text)
     entities = extract_entities(text, source_lang)
     return {
-        "archetype": archetype,
-        "pronouns": pronouns,
+        "archetype": ARCHETYPE_PURE,
+        "pronouns": "",
         "entities": entities,
     }
 

@@ -52,47 +52,30 @@ def test_story_summary_debounce_timer_and_analysis(harness):
     # Đảm bảo timer đã khởi động
     assert debounce_timer.property("running") is True
 
-    # Kích hoạt timer hoàn tất (hoặc chờ trigger)
+    # Kích hoạt timer hoàn tất và trích xuất thuật ngữ tự động
     driver.wait_until(
-        lambda: harness.project_controller.activeArchetype == ARCHETYPE_ANCIENT_FANTASY,
+        lambda: any(t["source_term"] == "Lăng Ba" for t in harness.project_controller.glossaryTerms),
         timeout_ms=3000,
     )
-    assert harness.project_controller.activePronounPair == "Ta - Ngươi"
+    assert harness.project_controller.activeArchetype == "pure_model"
+    assert harness.project_controller.activePronounPair == ""
 
     # Kiểm tra capsule thông tin dưới thẻ summary
     capsule = driver.find("summaryArchetypeCapsule")
     assert capsule is not None
     assert capsule.property("visible") is True
-    assert driver.text("summaryCapsulePronouns") == "Ta - Ngươi"
 
 
-def test_project_controller_select_archetype_and_locking(harness):
-    """Kiểm tra gọi selectArchetype cập nhật activeArchetype, activePronounPair, isArchetypeLocked."""
+def test_intelligence_tab_focuses_on_glossary_only(harness):
+    """Kiểm tra Tab INTELLIGENCE đã loại bỏ hoàn toàn archetypeCard và tập trung vào glossaryCard."""
     driver = harness.driver
     tabs = driver.find("contextTabs")
     tabs.setCurrentIndex(1)  # Tab 2: INTELLIGENCE
     QTest.qWait(50)
 
-    # Khóa thủ công thể loại Anime
-    harness.project_controller.selectArchetype(ARCHETYPE_ANIME_SCHOOL, manual_lock=True)
-    driver.wait_until(
-        lambda: harness.project_controller.activeArchetype == ARCHETYPE_ANIME_SCHOOL
-    )
-    assert harness.project_controller.activePronounPair == "Em - Tiền bối"
-    assert harness.project_controller.isArchetypeLocked is True
-
-    # Kiểm tra UI Tab 2 phản ánh chính xác
-    assert driver.text("activePronounDisplay") == "Em - Tiền bối"
-    assert "Đã khóa" in driver.text("statusBadgeText")
-    btn_unlock = driver.find("btnUnlockArchetype")
-    assert btn_unlock.property("visible") is True
-
-    # Mở khóa thủ công qua nút bấm trên UI
-    driver.click("btnUnlockArchetype")
-    driver.wait_until(lambda: not harness.project_controller.isArchetypeLocked)
-    assert harness.project_controller.isArchetypeLocked is False
-    assert btn_unlock.property("visible") is False
-    assert "Tự động" in driver.text("statusBadgeText")
+    from PySide6.QtCore import QObject
+    assert harness.window.findChild(QObject, "archetypeCard") is None
+    assert driver.find("glossaryCard") is not None
 
 
 def test_project_controller_dismiss_auto_term(harness):
@@ -124,20 +107,11 @@ def test_project_controller_dismiss_auto_term(harness):
     assert driver.is_visible("glossaryEmptyState")
 
 
-def test_app_header_archetype_capsule_navigation(harness):
-    """Kiểm tra capsule thể loại trên AppHeader hiển thị và click chuyển sang Tab INTELLIGENCE."""
-    driver = harness.driver
-    tabs = driver.find("contextTabs")
-    tabs.setCurrentIndex(0)  # TIMELINE
-    assert tabs.property("currentIndex") == 0
-
-    header_capsule = driver.find("archetypeHeaderCapsule")
-    assert header_capsule is not None
-
-    # Giả lập click vào capsule thể loại trên header
-    driver.click("archetypeHeaderCapsule")
-    driver.wait_until(lambda: tabs.property("currentIndex") == 1)
-    assert tabs.property("currentIndex") == 1
+def test_app_header_archetype_capsule_purged_for_space(harness):
+    """Kiểm tra capsule thể loại đã được dọn sạch khỏi Header để giải phóng không gian mặt bằng."""
+    from PySide6.QtCore import QObject
+    header_capsule = harness.window.findChild(QObject, "archetypeHeaderCapsule")
+    assert header_capsule is None
 
 def test_context_inspector_geometry_and_padding(harness):
     """Kiểm tra khoảng thở an toàn của Nút Thêm, Khung Empty State và Capsule nguồn gốc."""

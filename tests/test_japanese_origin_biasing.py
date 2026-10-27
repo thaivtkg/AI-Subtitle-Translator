@@ -40,7 +40,7 @@ def test_native_english_not_detected_as_ja():
     assert res["confidence"] == 0.0
 
 
-def test_prompt_builder_injects_japanese_artifacts_rule():
+def test_prompt_builder_pure_model_omits_japanese_artifacts():
     prompt = PromptBuilder.build(
         story_summary="Anime romance school",
         source_lang="English",
@@ -49,13 +49,14 @@ def test_prompt_builder_injects_japanese_artifacts_rule():
         active_pronoun_pair="Em - Tiền bối",
         is_ja_origin=True,
     )
-    assert "JAPANESE TRANSLATION ARTIFACTS" in prompt
-    assert "Translate 'senior' / 'seniors' as 'tiền bối'" in prompt
-    assert "tiền bối" in prompt
-    assert "NEVER translate as 'người lớn tuổi'" in prompt
+    # The Ponytail Purge: Pure translation mode omits forced anime artifact and pronoun rules
+    assert "JAPANESE TRANSLATION ARTIFACTS" not in prompt
+    assert "PRONOUN RELATIONSHIP" not in prompt
+    assert "Anime romance school" in prompt
+    assert "STRICT OUTPUT FORMAT" in prompt
 
 
-def test_senior_only_translated_as_tien_boi_when_marked_ja_origin():
+def test_senior_pure_mode_no_forced_pronoun_artifacts():
     current_sub = "What's wrong, senior, are you giving up?"
     unmarked_prompt = PromptBuilder.build(
         current_sub=current_sub,
@@ -72,12 +73,12 @@ def test_senior_only_translated_as_tien_boi_when_marked_ja_origin():
         target_lang="Vietnamese",
         is_ja_origin=True,
     )
-    assert "JAPANESE TRANSLATION ARTIFACTS" in marked_prompt
-    assert "tiền bối" in marked_prompt
-    assert "NEVER translate as 'người lớn tuổi'" in marked_prompt
+    # Pure mode does not force 'tiền bối' or artifacts
+    assert "JAPANESE TRANSLATION ARTIFACTS" not in marked_prompt
+    assert "NEVER translate as 'người lớn tuổi'" not in marked_prompt
 
 
-def test_dialogue_alternation_allows_toi_for_senior():
+def test_pure_mode_prev_context_handling():
     prompt = PromptBuilder.build(
         story_summary="Anime học đường",
         source_lang="English",
@@ -87,9 +88,7 @@ def test_dialogue_alternation_allows_toi_for_senior():
         active_pronoun_pair="Em - Tiền bối",
         is_ja_origin=True,
     )
-    assert "ALTERNATING SPEAKERS" in prompt
-    assert "Tôi sẽ không đầu hàng" in prompt
+    # Pure mode includes context and strict output format, but no alternating speaker forced rules
+    assert "Chuyện gì vậy tiền bối" in prompt
     assert "STRICT OUTPUT FORMAT" in prompt
-    assert "Either this..." in prompt
-
-
+    assert "ALTERNATING SPEAKERS" not in prompt

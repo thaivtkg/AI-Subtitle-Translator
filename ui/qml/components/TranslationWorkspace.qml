@@ -442,6 +442,45 @@ Item {
                                 }
                             }
 
+                            // Term Alignment Chips (Ánh xạ Từ gốc ➔ Bản dịch)
+                            Flow {
+                                id: termAlignmentFlow
+                                objectName: "termAlignmentFlow"
+                                Layout.fillWidth: true
+                                spacing: 6
+                                visible: typeof translationController !== "undefined" && translationController.currentAppliedTerms && translationController.currentAppliedTerms.length > 0
+
+                                Repeater {
+                                    model: (typeof translationController !== "undefined" && translationController.currentAppliedTerms) ? translationController.currentAppliedTerms : []
+                                    delegate: Rectangle {
+                                        implicitHeight: 22
+                                        implicitWidth: termChipRow.implicitWidth + 14
+                                        radius: 11
+                                        color: Qt.rgba(0.0, 0.45, 1.0, 0.10)
+                                        border.color: Qt.rgba(0.0, 0.45, 1.0, 0.28)
+                                        border.width: 1
+
+                                        RowLayout {
+                                            id: termChipRow
+                                            anchors.centerIn: parent
+                                            spacing: 4
+
+                                            Text {
+                                                text: "🏷️"
+                                                font.pixelSize: 10
+                                            }
+
+                                            Text {
+                                                text: modelData.source + " ➔ " + modelData.target
+                                                color: Theme.accentSapphire
+                                                font.pixelSize: 10
+                                                font.bold: true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             ScrollView {
                                 id: transScroll
                                 Layout.fillWidth: true

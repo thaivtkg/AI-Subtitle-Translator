@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 from app.controllers.project_controller import ProjectController
 from app.controllers.translation_controller import TranslationController
 from app.core.context_analyzer import (
+    ARCHETYPE_PURE,
     ARCHETYPE_ANCIENT_FANTASY,
     ARCHETYPE_ANIME_SCHOOL,
     ARCHETYPE_MODERN_ACTION,
@@ -20,8 +21,8 @@ def test_project_controller_summary_analysis_and_dismissal():
     ctrl = ProjectController(subtitle_model=MagicMock())
     # 1. Phân tích tóm tắt tự động
     ctrl.analyzeSummary('Phim cổ trang kiếm hiệp, nhân vật "Lăng Ba": Khinh công')
-    assert ctrl.activeArchetype == ARCHETYPE_ANCIENT_FANTASY
-    assert ctrl.activePronounPair == "Ta - Ngươi"
+    assert ctrl.activeArchetype == ARCHETYPE_PURE
+    assert ctrl.activePronounPair == ""
 
     # 2. Kiểm tra thuật ngữ tự động được thêm vào glossary
     glossary = ctrl.glossary
@@ -39,16 +40,16 @@ def test_project_controller_summary_analysis_and_dismissal():
     ctrl.analyzeSummary('Phim cổ trang kiếm hiệp, nhân vật "Lăng Ba": Khinh công')
     assert glossary.get("Lăng Ba") is None
 
-    # 5. Khóa thủ công thể loại từ Header Capsule
+    # 5. Khóa thủ công thể loại
     ctrl.selectArchetype(ARCHETYPE_ANIME_SCHOOL, manual_lock=True)
     assert ctrl.isArchetypeLocked is True
-    assert ctrl.activeArchetype == ARCHETYPE_ANIME_SCHOOL
-    assert ctrl.activePronounPair == "Em - Tiền bối"
+    assert ctrl.activeArchetype == ARCHETYPE_PURE
+    assert ctrl.activePronounPair == ""
 
     # Tóm tắt mới không được ghi đè thể loại đã khóa
     ctrl.analyzeSummary("Phim cổ trang kiếm hiệp khác")
-    assert ctrl.activeArchetype == ARCHETYPE_ANIME_SCHOOL
-    assert ctrl.activePronounPair == "Em - Tiền bối"
+    assert ctrl.activeArchetype == ARCHETYPE_PURE
+    assert ctrl.activePronounPair == ""
 
 
 def test_project_controller_save_and_load_persistence():
@@ -71,8 +72,8 @@ def test_project_controller_save_and_load_persistence():
         load_ctrl = ProjectController(subtitle_model=new_mock_model)
         load_ctrl.loadProject(save_path)
 
-        assert load_ctrl.activeArchetype == ARCHETYPE_MODERN_ACTION
-        assert load_ctrl.activePronounPair == "Tôi - Bạn"
+        assert load_ctrl.activeArchetype == ARCHETYPE_PURE
+        assert load_ctrl.activePronounPair == ""
         assert load_ctrl.isArchetypeLocked is True
         assert "Bug Master" in load_ctrl.dismissed_auto_terms
 
