@@ -410,3 +410,59 @@ def test_append_pretranslated_vietnamese_batch_without_sidecar(tmp_path):
     assert data[3]['original'] == 'Hẹn gặp lại lần sau'
     assert data[3]['translation'] == 'Hẹn gặp lại lần sau'
     assert data[3]['status'] == 'ACCEPTED'
+
+
+def test_import_pretranslated_vietnamese_srt_with_empty_sidecar(tmp_path):
+    import json
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    srt_file = tmp_path / 'batch_6_to_10.srt'
+    srt_file.write_text(
+        '1\n00:00:15,350 --> 00:00:17,540\nCuối cùng đã tìm thấy ngươi rồi Ma Vương\n\n'
+        '2\n00:00:19,720 --> 00:00:20,660\nNgươi là ai vậy hả?\n\n',
+        encoding='utf-8'
+    )
+    aisrt_file = tmp_path / 'batch_6_to_10.aisrt'
+    aisrt_payload = {
+        'metadata': {'source_language': 'English', 'source_file': 'batch_6_to_10.srt'},
+        'story_summary': '',
+        'subtitles': [
+            {'index': 1, 'start_time': '00:00:15,350', 'end_time': '00:00:17,540', 'original': 'Cuối cùng đã tìm thấy ngươi rồi Ma Vương', 'translation': '', 'status': 'pending'},
+            {'index': 2, 'start_time': '00:00:19,720', 'end_time': '00:00:20,660', 'original': 'Ngươi là ai vậy hả?', 'translation': '', 'status': 'pending'}
+        ]
+    }
+    aisrt_file.write_text(json.dumps(aisrt_payload, ensure_ascii=False), encoding='utf-8')
+
+    ctrl.importSrt(str(srt_file))
+    data = model.get_all_data()
+    assert len(data) == 2
+    assert data[0]['translation'] == 'Cuối cùng đã tìm thấy ngươi rồi Ma Vương'
+    assert data[0]['status'] == 'ACCEPTED'
+    assert data[1]['translation'] == 'Ngươi là ai vậy hả?'
+    assert data[1]['status'] == 'ACCEPTED'
+
+
+def test_load_project_pretranslated_vietnamese_with_empty_sidecar(tmp_path):
+    import json
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    aisrt_file = tmp_path / 'batch_legacy.aisrt'
+    aisrt_payload = {
+        'metadata': {'source_language': 'English', 'source_file': 'batch_legacy.srt'},
+        'story_summary': '',
+        'subtitles': [
+            {'index': 1, 'start_time': '00:00:15,350', 'end_time': '00:00:17,540', 'original': 'Cuối cùng đã tìm thấy ngươi rồi Ma Vương', 'translation': '', 'status': 'pending'},
+            {'index': 2, 'start_time': '00:00:19,720', 'end_time': '00:00:20,660', 'original': 'Ngươi là ai vậy hả?', 'translation': '', 'status': 'pending'}
+        ]
+    }
+    aisrt_file.write_text(json.dumps(aisrt_payload, ensure_ascii=False), encoding='utf-8')
+
+    ctrl.loadProject(str(aisrt_file))
+    data = model.get_all_data()
+    assert len(data) == 2
+    assert data[0]['translation'] == 'Cuối cùng đã tìm thấy ngươi rồi Ma Vương'
+    assert data[0]['status'] == 'ACCEPTED'
+    assert data[1]['translation'] == 'Ngươi là ai vậy hả?'
+    assert data[1]['status'] == 'ACCEPTED'

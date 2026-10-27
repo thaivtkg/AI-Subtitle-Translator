@@ -568,16 +568,17 @@ class ProjectController(QObject):
         ])
         detected_lang = ContextAnalyzer.detect_native_language(sample_subs)
 
-        # 2. Tự động khôi phục bản dịch cho file SRT đã dịch sẵn tiếng Việt (khi không có sidecar)
-        if not has_sidecar and detected_lang == "Vietnamese":
+        # 2. Tự động khôi phục bản dịch cho file SRT đã dịch sẵn tiếng Việt (khi không có sidecar hoặc sidecar rỗng bản dịch)
+        has_any_translation = any(bool(str(sub.get("translation", "")).strip()) for sub in parsed_data if isinstance(sub, dict))
+        if (not has_sidecar or not has_any_translation) and detected_lang == "Vietnamese":
             for sub in parsed_data:
-                if not sub.get("translation"):
+                if isinstance(sub, dict) and not str(sub.get("translation", "")).strip():
                     sub["translation"] = sub.get("original", "")
                     sub["status"] = "ACCEPTED"
 
         # 3. Nạp dữ liệu mới vào Model
         self._subtitle_model.load_data(parsed_data)
-        self._set_project_state(True, False if has_sidecar else True)
+        self._set_project_state(True, False if (has_sidecar and has_any_translation) else True)
         
         # 4. Reset trạng thái giao diện hoặc khôi phục Story Summary
         if not has_sidecar:
@@ -598,10 +599,12 @@ class ProjectController(QObject):
         if old_is_ja != self._is_ja_origin:
             self.archetypeChanged.emit()
 
-        if has_sidecar:
+        if has_sidecar and has_any_translation:
             self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT & khôi phục trạng thái từ dự án: {os.path.basename(sidecar_path)}")
         elif detected_lang == "Vietnamese":
             self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu tiếng Việt hoàn tất từ SRT: {self._original_source_file}")
+        elif has_sidecar:
+            self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT & khôi phục trạng thái từ dự án: {os.path.basename(sidecar_path)}")
         else:
             self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT: {self._original_source_file}")
 
@@ -722,9 +725,10 @@ class ProjectController(QObject):
             str(sub.get("original", "")) for sub in unique_new_subs[:30] if isinstance(sub, dict)
         ])
         batch_lang = ContextAnalyzer.detect_native_language(sample_batch)
-        if not (os.path.exists(sidecar_path)) and batch_lang == "Vietnamese":
+        has_any_batch_trans = any(bool(str(sub.get("translation", "")).strip()) for sub in unique_new_subs if isinstance(sub, dict))
+        if (not os.path.exists(sidecar_path) or not has_any_batch_trans) and batch_lang == "Vietnamese":
             for sub in unique_new_subs:
-                if not sub.get("translation"):
+                if isinstance(sub, dict) and not str(sub.get("translation", "")).strip():
                     sub["translation"] = sub.get("original", "")
                     sub["status"] = "ACCEPTED"
 
@@ -863,6 +867,20 @@ class ProjectController(QObject):
             self._story_summary = (story_summary or "").strip()
             subtitles = data.get("subtitles", [])
             self._batch_slices = []
+
+            sample_subs = " ".join([
+                str(sub.get("original", "")) for sub in subtitles[:30] if isinstance(sub, dict)
+            ])
+            detected_lang = ContextAnalyzer.detect_native_language(sample_subs)
+            has_any_translation = any(bool(str(s.get("translation", "")).strip()) for s in subtitles if isinstance(s, dict))
+            is_healed_vi = False
+            if not has_any_translation and detected_lang == "Vietnamese":
+                for sub in subtitles:
+                    if isinstance(sub, dict) and not str(sub.get("translation", "")).strip():
+                        sub["translation"] = sub.get("original", "")
+                        sub["status"] = "ACCEPTED"
+                is_healed_vi = True
+
             self._subtitle_model.load_data(subtitles)
             self.glossary = loaded_glossary
             self.entity_dictionary = loaded_entities
@@ -902,7 +920,7 @@ class ProjectController(QObject):
             self.languageLoaded.emit(source_lang) # Chỉ emit 1 lần duy nhất
             # -------------------------------------------
 
-            self._set_project_state(True, False)
+            self._set_project_state(True, is_healed_vi)
             self.notify.emit("SUCCESS", f"Đã mở dự án: {os.path.basename(file_path)}")
         except Exception as e:
             self.notify.emit("ERROR", f"Lỗi mở dự án: {str(e)}")
