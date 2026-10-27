@@ -260,6 +260,11 @@ class TranslationController(QObject):
             if self._project_controller
             else ""
         )
+        active_archetype = (
+            getattr(self._project_controller, "activeArchetype", "")
+            if self._project_controller
+            else ""
+        )
         is_ja = (
             getattr(self._project_controller, "isJaOrigin", False)
             if self._project_controller
@@ -285,6 +290,7 @@ class TranslationController(QObject):
             active_pronoun_pair=active_pronoun,
             is_ja_origin=is_ja,
             model_family=model_family,
+            archetype=active_archetype,
         )
 
         if hasattr(self._worker_factory, "create_worker"):
@@ -459,6 +465,11 @@ class TranslationController(QObject):
             profile["temperature"] = 0.2
             style_instruction = "Lưu ý phong cách: Dịch bám sát từng từ ngữ gốc (literal), cấu trúc nghiêm ngặt và chuẩn xác."
 
+        active_archetype = (
+            getattr(self._project_controller, "activeArchetype", "")
+            if self._project_controller
+            else ""
+        )
         prompt = PromptBuilder.build(
             story_summary,
             source_lang,
@@ -472,6 +483,7 @@ class TranslationController(QObject):
             is_ja_origin=is_ja,
             model_family=model_family,
             style_instruction=style_instruction,
+            archetype=active_archetype,
         )
         self.alternativeTranslationLoading.emit(True)
 

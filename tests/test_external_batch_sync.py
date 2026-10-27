@@ -226,3 +226,129 @@ def test_append_batch_emits_batch_appended(tmp_path):
     ok = ctrl.appendNextBatch(str(batch2_file))
     assert ok is True
     assert emitted_indices == [2]
+
+
+def test_multi_batch_sync_writes_to_respective_batch_files(tmp_path):
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    batch1 = tmp_path / "ep1_batch_1_to_5.srt"
+    batch1.write_text(
+        "1\n00:00:01,000 --> 00:00:02,000\nOriginal 1\n\n"
+        "2\n00:00:03,000 --> 00:00:04,000\nOriginal 2\n\n",
+        encoding="utf-8"
+    )
+    ctrl.importSrt(str(batch1))
+    assert model.rowCount() == 2
+
+    batch2 = tmp_path / "ep1_batch_6_to_10.srt"
+    batch2.write_text(
+        "1\n00:00:05,000 --> 00:00:06,000\nOriginal 3\n\n"
+        "2\n00:00:07,000 --> 00:00:08,000\nOriginal 4\n\n",
+        encoding="utf-8"
+    )
+    ok = ctrl.appendNextBatch(str(batch2))
+    assert ok is True
+    assert model.rowCount() == 4
+
+    # Update translations in both batches
+    model.update_translation(0, "Dịch 1", "ACCEPTED")
+    model.update_translation(2, "Dịch 3", "ACCEPTED")
+
+    # Quick sync must update BOTH files without overwriting each other
+    sync_ok = ctrl.quickSyncToOriginal()
+    assert sync_ok is True
+
+    # Check batch 1
+    content1 = batch1.read_text(encoding="utf-8")
+    assert "Dịch 1" in content1
+    assert "Original 2" in content1
+    assert "Dịch 3" not in content1  # Batch 2 line must NOT be in batch 1!
+    assert (tmp_path / "ep1_batch_1_to_5.aisrt").exists()
+
+    # Check batch 2
+    content2 = batch2.read_text(encoding="utf-8")
+    assert "Dịch 3" in content2
+    assert "Original 4" in content2
+    assert "Dịch 1" not in content2  # Batch 1 line must NOT be in batch 2!
+    assert (tmp_path / "ep1_batch_6_to_10.aisrt").exists()
+
+
+def test_batch_append_deduplication_by_timecode(tmp_path):
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    # Batch 1 has lines 1 and 2
+    batch1 = tmp_path / "scene_batch_1_to_2.srt"
+    batch1.write_text(
+        "1\n00:00:01,000 --> 00:00:02,000\nLine 1\n\n"
+        "2\n00:00:03,000 --> 00:00:04,000\nLine 2\n\n",
+        encoding="utf-8"
+    )
+    ctrl.importSrt(str(batch1))
+    assert model.rowCount() == 2
+
+    # Cumulative batch has lines 1 and 2 (duplicate timecodes) plus lines 3 and 4
+    batch_cumulative = tmp_path / "scene_batch_3_to_4.srt"
+    batch_cumulative.write_text(
+        "1\n00:00:01,000 --> 00:00:02,000\nLine 1 Duplicate\n\n"
+        "2\n00:00:03,000 --> 00:00:04,000\nLine 2 Duplicate\n\n"
+        "3\n00:00:05,000 --> 00:00:06,000\nLine 3 New\n\n"
+        "4\n00:00:07,000 --> 00:00:08,000\nLine 4 New\n\n",
+        encoding="utf-8"
+    )
+    ok = ctrl.appendNextBatch(str(batch_cumulative))
+    assert ok is True
+    # Rows must be 4, NOT 6!
+    assert model.rowCount() == 4
+    all_data = model.get_all_data()
+    assert all_data[0]["original"] == "Line 1"
+    assert all_data[1]["original"] == "Line 2"
+    assert all_data[2]["original"] == "Line 3 New"
+    assert all_data[3]["original"] == "Line 4 New"
+
+
+def test_pure_model_archetype_prompt():
+    from app.core.prompt_builder import PromptBuilder
+    from app.core.context_analyzer import ARCHETYPE_PURE
+
+    prompt = PromptBuilder.build(
+        story_summary="Cuộc chiến Ma Vương và Thủy Thủ Thiên Thần",
+        source_lang="Japanese",
+        target_lang="Vietnamese",
+        current_sub="妖魔王やっと見つけたわ",
+        is_ja_origin=True,
+        archetype=ARCHETYPE_PURE,
+        active_pronoun_pair="",
+    )
+
+    # Pillars present
+    assert "STORY SUMMARY" in prompt
+    assert "Cuộc chiến Ma Vương" in prompt
+    assert "STRICT OUTPUT FORMAT" in prompt
+    assert "VIETNAMESE PURITY" in prompt
+
+    # No forced pronouns or school honorifics
+    assert "PRONOUN RELATIONSHIP" not in prompt
+    assert "JAPANESE TRANSLATION ARTIFACTS" not in prompt
+    assert "tiền bối" not in prompt
+    assert "senpai" not in prompt
+
+
+def test_japanese_origin_does_not_force_anime_school_archetype(tmp_path):
+    from app.core.context_analyzer import ARCHETYPE_CUSTOM
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    ja_file = tmp_path / "ja_scene.srt"
+    ja_file.write_text(
+        "1\n00:00:15,350 --> 00:00:17,540\n妖魔王やっと見つけたわ\n\n"
+        "2\n00:00:19,720 --> 00:00:20,660\n誰だお前は\n\n",
+        encoding="utf-8"
+    )
+    ctrl.importSrt(str(ja_file))
+
+    assert ctrl.isJaOrigin is True
+    # Must remain CUSTOM (or whichever user picked), NOT forced to anime_school!
+    assert ctrl.activeArchetype == ARCHETYPE_CUSTOM
+    assert "Tiền bối" not in ctrl.activePronounPair

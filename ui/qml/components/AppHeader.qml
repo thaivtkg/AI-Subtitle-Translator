@@ -503,8 +503,9 @@ ToolBar {
                             Text {
                                 text: {
                                     if (typeof projectController === "undefined") return "Tự do"
+                                    if (projectController.activeArchetype === "pure_model") return "Dịch thuần"
                                     var pair = projectController.activePronounPair || ""
-                                    return pair.startsWith("Tự do") ? "Tự do" : pair
+                                    return (!pair || pair.startsWith("Tự do")) ? "Tự do" : pair
                                 }
                                 font.pixelSize: 11
                                 font.bold: true

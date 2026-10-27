@@ -46,7 +46,7 @@ class SubtitleModel(QAbstractListModel):
         elif role == self.TranslationRole:
             return sub.get("translation", "")
         elif role == self.StatusRole:
-            return sub.get("status", "PENDING")
+            return str(sub.get("status", "PENDING") or "PENDING").upper()
         elif role == self.QaSeverityRole:
             return sub.get("_qa_severity", "")
         elif role == self.QaTooltipRole:
@@ -173,7 +173,8 @@ class SubtitleModel(QAbstractListModel):
 
     @staticmethod
     def _normalize_translation_state(sub):
-        status = str(sub.get("status", "PENDING")).upper()
+        status = str(sub.get("status", "PENDING") or "PENDING").upper()
+        sub["status"] = status
         translation = str(sub.get("translation", "") or "")
         if status in {"TRANSLATED", "EDITED", "ACCEPTED"} and not translation.strip():
             sub["translation"] = "Lỗi: Bản dịch rỗng."

@@ -893,7 +893,7 @@ ColumnLayout {
             id: delegateItem
             width: subListView.width
             property int itemRawIndex: root.isProxyModel ? (typeof rawIndex !== "undefined" ? rawIndex : (subListView.model.getRawIndex ? subListView.model.getRawIndex(index) : index)) : index
-            property string normalizedStatus: typeof status !== "undefined" ? (status === "Translating" ? "TRANSLATING" : status) : "PENDING"
+            property string normalizedStatus: typeof status !== "undefined" && status ? status.toString().toUpperCase() : "PENDING"
             property bool matchSearch: root.isProxyModel ? true : (root.searchQuery === "" ||
                                        (typeof originalText !== "undefined" && originalText.toLowerCase().indexOf(root.searchQuery) !== -1) ||
                                        (typeof translationText !== "undefined" && translationText.toLowerCase().indexOf(root.searchQuery) !== -1))

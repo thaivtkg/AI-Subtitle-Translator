@@ -10,6 +10,7 @@ import re
 from typing import Any
 
 # --- Archetype Identifiers ---
+ARCHETYPE_PURE = "pure_model"
 ARCHETYPE_ANCIENT_FANTASY = "ancient_fantasy"
 ARCHETYPE_ANIME_SCHOOL = "anime_school"
 ARCHETYPE_MODERN_ACTION = "modern_action"
@@ -18,6 +19,7 @@ ARCHETYPE_CUSTOM = "custom"
 
 # --- Default Pronoun Pair Mappings ---
 DEFAULT_PRONOUNS: dict[str, str] = {
+    ARCHETYPE_PURE: "",
     ARCHETYPE_ANCIENT_FANTASY: "Ta - Ngươi",
     ARCHETYPE_ANIME_SCHOOL: "Em - Tiền bối",
     ARCHETYPE_MODERN_ACTION: "Tôi - Bạn",
@@ -27,6 +29,12 @@ DEFAULT_PRONOUNS: dict[str, str] = {
 
 # --- Archetype Metadata (Used by UI Header Capsule & Dropdowns) ---
 ARCHETYPE_METADATA: dict[str, dict[str, Any]] = {
+    ARCHETYPE_PURE: {
+        "id": ARCHETYPE_PURE,
+        "name": "Dịch Thuần (Pure Model)",
+        "pronouns": "Tự do / Không ép",
+        "icon": "🔮",
+    },
     ARCHETYPE_ANCIENT_FANTASY: {
         "id": ARCHETYPE_ANCIENT_FANTASY,
         "name": "Cổ Trang / Kiếm Hiệp",
@@ -307,6 +315,7 @@ def analyze_context(text: str, source_lang: str = "") -> dict[str, Any]:
 
 class ContextAnalyzer:
     """Class wrapper providing static access to analysis methods."""
+    ARCHETYPE_PURE = ARCHETYPE_PURE
     ARCHETYPE_ANCIENT_FANTASY = ARCHETYPE_ANCIENT_FANTASY
     ARCHETYPE_ANIME_SCHOOL = ARCHETYPE_ANIME_SCHOOL
     ARCHETYPE_MODERN_ACTION = ARCHETYPE_MODERN_ACTION

@@ -17,6 +17,7 @@ def build_translation_prompt(
     is_ja_origin: bool = False,
     model_family: str = "qwen",
     style_instruction: str = "",
+    archetype: str = "",
 ) -> str:
     # 1. Nâng cấp vai trò thành Chuyên gia Bản địa hóa
     system_prompt = (
@@ -76,48 +77,56 @@ def build_translation_prompt(
     if target_lang.lower() == "vietnamese":
         rules = ["\nVIETNAMESE LOCALIZATION RULES (MUST FOLLOW):"]
         
-        # Khóa chống rò rỉ suy luận / commentary
+        # 1. Khóa chống rò rỉ suy luận / commentary (TRỤ CỘT BẢO VỆ CHẤT LƯỢNG)
         rules.append(
             "1. STRICT OUTPUT FORMAT: Output ONLY the direct translated Vietnamese subtitle. ABSOLUTELY DO NOT output any reasoning, explanation, alternatives, or English notes (e.g., NEVER output 'Either this...', 'Given the...', 'Switch to...', 'Note:')."
         )
-        # Định hướng xưng hô linh hoạt, cho phép 'tôi' tự nhiên
-        if active_pronoun_pair and active_pronoun_pair.strip() and "tự do" not in active_pronoun_pair.lower():
-            pair_str = active_pronoun_pair.strip()
-            if "tiền bối" in pair_str.lower():
-                rules.append(
-                    f"2. PRONOUN RELATIONSHIP: Main character relationship is '{pair_str}'. "
-                    "However, dialogue has ALTERNATING SPEAKERS: When the junior speaks, they address the other as 'tiền bối' and refer to themselves as 'em'. "
-                    "When the senior replies (e.g. 'I will not give up'), they refer to themselves naturally as 'tôi' or 'chị/anh' (e.g. 'Tôi sẽ không đầu hàng'). "
-                    "NEVER refer to oneself as 'Tiền bối không đầu hàng'!"
-                )
+        
+        is_pure_mode = (
+            archetype in ("pure_model", "pure")
+            or active_pronoun_pair in ("pure_model", "pure")
+        )
+        
+        if not is_pure_mode:
+            # Định hướng xưng hô linh hoạt, cho phép 'tôi' tự nhiên
+            if active_pronoun_pair and active_pronoun_pair.strip() and "tự do" not in active_pronoun_pair.lower():
+                pair_str = active_pronoun_pair.strip()
+                if "tiền bối" in pair_str.lower():
+                    rules.append(
+                        f"2. PRONOUN RELATIONSHIP: Main character relationship is '{pair_str}'. "
+                        "However, dialogue has ALTERNATING SPEAKERS: When the junior speaks, they address the other as 'tiền bối' and refer to themselves as 'em'. "
+                        "When the senior replies (e.g. 'I will not give up'), they refer to themselves naturally as 'tôi' or 'chị/anh' (e.g. 'Tôi sẽ không đầu hàng'). "
+                        "NEVER refer to oneself as 'Tiền bối không đầu hàng'!"
+                    )
+                else:
+                    rules.append(
+                        f"2. PRONOUN RELATIONSHIP: Main character relationship is strictly '{pair_str}'. "
+                        "Maintain natural spoken pronouns adhering to this relationship consistently."
+                    )
             else:
                 rules.append(
-                    f"2. PRONOUN RELATIONSHIP: Main character relationship is strictly '{pair_str}'. "
-                    "Maintain natural spoken pronouns adhering to this relationship consistently."
+                    "2. NATURAL PRONOUNS: Use natural pronouns suitable for the context. 'Tôi' is completely valid and natural for self-affirmation (e.g., 'Tôi sẽ không đầu hàng')."
                 )
-        else:
-            rules.append(
-                "2. NATURAL PRONOUNS: Use natural pronouns suitable for the context. 'Tôi' is completely valid and natural for self-affirmation (e.g., 'Tôi sẽ không đầu hàng')."
+            # Luật tiếng Nhật khi được đánh dấu
+            is_marked_ja_origin = (
+                is_ja_origin 
+                or source_lang.lower() in ("ja", "japanese")
             )
-        # Luật tiếng Nhật khi được đánh dấu
-        is_marked_ja_origin = (
-            is_ja_origin 
-            or source_lang.lower() in ("ja", "japanese")
-        )
-        if is_marked_ja_origin:
-            rules.append(
-                "3. JAPANESE TRANSLATION ARTIFACTS:\n"
-                "- Subtitle originates from Japanese (Anime/Drama).\n"
-                "- Translate 'senior' / 'seniors' as 'tiền bối' (or 'anh/chị tiền bối') when addressing schoolmates/colleagues. NEVER translate as 'người lớn tuổi' or 'học sinh lớp trên'.\n"
-                "- Translate 'senpai' as 'tiền bối'.\n"
-                "- Translate 'junior' as 'hậu bối' or 'em'."
-            )
+            if is_marked_ja_origin:
+                rules.append(
+                    "3. JAPANESE TRANSLATION ARTIFACTS:\n"
+                    "- Subtitle originates from Japanese (Anime/Drama).\n"
+                    "- Translate 'senior' / 'seniors' as 'tiền bối' (or 'anh/chị tiền bối') when addressing schoolmates/colleagues. NEVER translate as 'người lớn tuổi' or 'học sinh lớp trên'.\n"
+                    "- Translate 'senpai' as 'tiền bối'.\n"
+                    "- Translate 'junior' as 'hậu bối' or 'em'."
+                )
+
         rules.append(
-            "4. NATURAL DIALOGUE: The translation must sound like native spoken Vietnamese in movies/anime. Avoid unnatural word-by-word phrasing."
+            "NATURAL DIALOGUE: The translation must sound like native spoken Vietnamese in movies/anime. Avoid unnatural word-by-word phrasing."
         )
         # CẤM TUYỆT ĐỐI CHỮ HÁN / CJK TRONG BẢN DỊCH TIẾNG VIỆT
         rules.append(
-            "5. VIETNAMESE PURITY (NO CJK / NO HANZI): You MUST translate 100% into natural Vietnamese using the Latin alphabet (chữ Quốc ngữ). "
+            "VIETNAMESE PURITY (NO CJK / NO HANZI): You MUST translate 100% into natural Vietnamese using the Latin alphabet (chữ Quốc ngữ). "
             "ABSOLUTELY DO NOT output Chinese Hanzi (e.g., NEVER output '太天真了', translate as 'quá ngây thơ' or 'ngây thơ quá'), "
             "Japanese Kanji/Kana, or mixed script. Every single word in the output must be proper Vietnamese."
         )

@@ -240,8 +240,9 @@ def test_project_controller_auto_detect_japanese_on_import(tmp_path):
 
     assert "Japanese" in emitted_langs
     assert controller.isJaOrigin is True
-    assert controller.activeArchetype == "anime_school"
-    assert controller.activePronounPair == "Em - Tiền bối"
+    # Không tự động ép sang anime_school / Em - Tiền bối khi nhận diện tiếng Nhật
+    assert controller.activeArchetype == "custom"
+    assert "Tiền bối" not in controller.activePronounPair
 
 
 def test_project_controller_auto_detect_japanese_on_load_project(tmp_path):
@@ -280,4 +281,5 @@ def test_project_controller_auto_detect_japanese_on_load_project(tmp_path):
 
     assert "Japanese" in emitted_langs
     assert controller.isJaOrigin is True
-    assert controller.activeArchetype == "anime_school"
+    # Không tự động ép sang anime_school khi nhận diện tiếng Nhật
+    assert controller.activeArchetype == "custom"

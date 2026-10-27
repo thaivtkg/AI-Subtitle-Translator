@@ -14,7 +14,7 @@ from app.core.context_analyzer import (
 
 
 def test_archetype_constants_and_metadata():
-    assert len(ARCHETYPE_METADATA) == 5
+    assert len(ARCHETYPE_METADATA) == 6
     assert DEFAULT_PRONOUNS[ARCHETYPE_ANCIENT_FANTASY] == "Ta - Ngươi"
     assert DEFAULT_PRONOUNS[ARCHETYPE_ANIME_SCHOOL] == "Em - Tiền bối"
     assert DEFAULT_PRONOUNS[ARCHETYPE_MODERN_ACTION] == "Tôi - Bạn"

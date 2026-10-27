@@ -13,6 +13,7 @@ from app.core.translation_memory import TranslationMemory
 from app.core.context_analyzer import (
     ARCHETYPE_CUSTOM,
     ARCHETYPE_ANIME_SCHOOL,
+    ARCHETYPE_PURE,
     DEFAULT_PRONOUNS,
     ARCHETYPE_METADATA,
     ContextAnalyzer,
@@ -45,6 +46,8 @@ class ProjectController(QObject):
         self._subtitle_model = subtitle_model
         self._original_source_file = "unknown.srt"
         self._original_source_path = ""
+        self._primary_source_path = ""
+        self._batch_slices = []
         self._source_language = "English"
         self._target_language = "Vietnamese"
         self._is_batch_mode = False
@@ -192,13 +195,8 @@ class ProjectController(QObject):
 
         archetype_changed = old_summary != summary_clean
         if not self._is_archetype_locked:
-            if self._is_ja_origin and not summary_clean:
-                target_archetype = ARCHETYPE_ANIME_SCHOOL
-                target_pronouns = "Em - Tiền bối"
-            elif summary_clean:
+            if summary_clean:
                 target_archetype, target_pronouns = ContextAnalyzer.classify_archetype(summary_clean)
-                if self._is_ja_origin and target_archetype == ARCHETYPE_ANIME_SCHOOL:
-                    target_pronouns = "Em - Tiền bối"
             else:
                 target_archetype = self._active_archetype
                 target_pronouns = self._active_pronoun_pair
@@ -399,6 +397,9 @@ class ProjectController(QObject):
                 pass
         if self._subtitle_model:
             self._subtitle_model.load_data([])
+        self._primary_source_path = ""
+        self._batch_slices = []
+        self._original_source_path = ""
         self._original_source_file = "unknown.srt"
         self._story_summary = ""
         self._is_ja_origin = False
@@ -475,11 +476,18 @@ class ProjectController(QObject):
             if not matched and i < len(sidecar_subs):
                 matched = sidecar_subs[i]
             if matched:
-                if matched.get("status"):
-                    p_sub["status"] = matched["status"]
-                if matched.get("translation"):
-                    p_sub["translation"] = matched["translation"]
-                if matched.get("original") and matched.get("translation") and p_sub.get("original") == matched.get("translation"):
+                sidecar_status = str(matched.get("status", "")).upper()
+                sidecar_trans = matched.get("translation", "")
+                if sidecar_trans:
+                    p_sub["translation"] = sidecar_trans
+                    if sidecar_status in ("ACCEPTED", "TRANSLATED", "EDITED", "ERROR"):
+                        p_sub["status"] = sidecar_status
+                    else:
+                        p_sub["status"] = "TRANSLATED"
+                elif sidecar_status:
+                    p_sub["status"] = sidecar_status
+
+                if matched.get("original") and sidecar_trans and p_sub.get("original") == sidecar_trans:
                     p_sub["original"] = matched["original"]
                 if "_qa_severity" in matched:
                     p_sub["_qa_severity"] = matched["_qa_severity"]
@@ -493,6 +501,7 @@ class ProjectController(QObject):
             
         # FIX: Ghi nhận chính xác đường dẫn & tên file gốc lúc import
         self._original_source_path = file_path
+        self._primary_source_path = file_path
         self._original_source_file = os.path.basename(file_path)
 
         m = re.search(r'(?:^|_)batch_(\d+)_to_(\d+)', self._original_source_file, re.IGNORECASE)
@@ -508,6 +517,10 @@ class ProjectController(QObject):
             self.batchDetected.emit(0, 0)
         
         parsed_data = SRTParser.parse(file_path)
+        if parsed_data:
+            self._batch_slices = [(file_path, 0, len(parsed_data))]
+        else:
+            self._batch_slices = []
         if not parsed_data:
             self.notify.emit("ERROR", "Không thể đọc nội dung file SRT hoặc file rỗng!")
             return
@@ -574,16 +587,7 @@ class ProjectController(QObject):
         ja_detection = ContextAnalyzer.detect_ja_translated_en(sample_subs, "")
         old_is_ja = self._is_ja_origin
         self._is_ja_origin = (source_lang == "Japanese") or ja_detection.get("is_ja_origin", False)
-        archetype_changed = False
-        if not self._is_archetype_locked:
-            if self._is_ja_origin:
-                if self._active_archetype != ARCHETYPE_ANIME_SCHOOL or self._active_pronoun_pair != "Em - Tiền bối":
-                    self._active_archetype = ARCHETYPE_ANIME_SCHOOL
-                    self._active_pronoun_pair = "Em - Tiền bối"
-                    archetype_changed = True
         if old_is_ja != self._is_ja_origin:
-            archetype_changed = True
-        if archetype_changed:
             self.archetypeChanged.emit()
 
         if has_sidecar:
@@ -593,36 +597,65 @@ class ProjectController(QObject):
 
     @Slot(result=bool)
     def quickSyncToOriginal(self):
-        """Ghi đè trực tiếp dữ liệu dịch vào self._original_source_path bằng SRTExporter.export()"""
+        """Đồng bộ trực tiếp dữ liệu dịch về các file SRT gốc (hỗ trợ nhiều đợt)."""
         if not self._original_source_path:
             self.notify.emit("ERROR", "Không tìm thấy file nguồn gốc để đồng bộ!")
-            return False
-        dir_name = os.path.dirname(os.path.abspath(self._original_source_path))
-        if not os.path.exists(dir_name):
-            self.notify.emit("ERROR", "Thư mục chứa file gốc không tồn tại!")
             return False
         subtitles = self._subtitle_model.get_all_data() if self._subtitle_model else []
         if not subtitles:
             self.notify.emit("ERROR", "Không có dữ liệu phụ đề để đồng bộ!")
             return False
 
-        success, msg = SRTExporter.export(subtitles, self._original_source_path)
-        if success:
-            sidecar_path = os.path.splitext(self._original_source_path)[0] + ".aisrt"
-            self.saveProject(
-                sidecar_path,
-                getattr(self, "_story_summary", ""),
-                getattr(self, "_source_language", "English"),
-                getattr(self, "_target_language", "Vietnamese"),
-                notify=False,
-            )
-            self._is_dirty = False
-            self.projectStateChanged.emit()
-            self.notify.emit("SUCCESS", f"Đã đồng bộ trực tiếp về Studio: {os.path.basename(self._original_source_path)}")
-            return True
+        # Xác định danh sách đợt cần đồng bộ
+        if self._batch_slices:
+            batch_list = self._batch_slices
         else:
-            self.notify.emit("ERROR", f"Lỗi đồng bộ về Studio: {msg}")
+            batch_list = [(self._original_source_path, 0, len(subtitles))]
+
+        sync_errors = []
+        synced_files = []
+
+        for b_path, s_start, s_end in batch_list:
+            dir_name = os.path.dirname(os.path.abspath(b_path))
+            if not os.path.exists(dir_name):
+                sync_errors.append(f"Thư mục không tồn tại: {b_path}")
+                continue
+
+            b_subs = subtitles[s_start:s_end]
+            if not b_subs:
+                continue
+
+            export_subs = []
+            for i, s in enumerate(b_subs):
+                item = dict(s)
+                item["index"] = i + 1
+                export_subs.append(item)
+
+            ok, msg = SRTExporter.export(export_subs, b_path)
+            if ok:
+                sidecar_path = os.path.splitext(b_path)[0] + ".aisrt"
+                self.saveProject(
+                    sidecar_path,
+                    getattr(self, "_story_summary", ""),
+                    getattr(self, "_source_language", "English"),
+                    getattr(self, "_target_language", "Vietnamese"),
+                    notify=False,
+                )
+                synced_files.append(os.path.basename(b_path))
+            else:
+                sync_errors.append(f"{os.path.basename(b_path)}: {msg}")
+
+        if sync_errors:
+            self.notify.emit("ERROR", f"Lỗi đồng bộ: {'; '.join(sync_errors)}")
             return False
+
+        self._is_dirty = False
+        self.projectStateChanged.emit()
+        if len(synced_files) > 1:
+            self.notify.emit("SUCCESS", f"Đã đồng bộ {len(synced_files)} đợt về Studio: {', '.join(synced_files)}")
+        else:
+            self.notify.emit("SUCCESS", f"Đã đồng bộ trực tiếp về Studio: {synced_files[0] if synced_files else ''}")
+        return True
 
     @Slot(str, result=bool)
     def appendNextBatch(self, file_url):
@@ -646,6 +679,19 @@ class ProjectController(QObject):
             except Exception as e:
                 print(f"[APPEND_BATCH] Failed to restore sidecar {sidecar_path}: {e}")
 
+        # KHỬ TRÙNG LẶP THEO MỐC THỜI GIAN (Deduplication by Timecode)
+        existing_times = {
+            (sub.get("start_time"), sub.get("end_time"))
+            for sub in (self._subtitle_model.get_all_data() if self._subtitle_model else [])
+        }
+        unique_new_subs = [
+            sub for sub in parsed_data
+            if (sub.get("start_time"), sub.get("end_time")) not in existing_times
+        ]
+        if not unique_new_subs:
+            self.notify.emit("WARNING", "Tất cả các câu trong đợt này đã tồn tại trong dự án!")
+            return True
+
         file_name = os.path.basename(file_path)
         m = re.search(r'(?:^|_)batch_(\d+)_to_(\d+)', file_name, re.IGNORECASE)
         if m:
@@ -658,13 +704,18 @@ class ProjectController(QObject):
                 self._batch_end_num = new_end
             self.batchDetected.emit(self._batch_start_num, self._batch_end_num)
 
-        self._original_source_path = file_path
-        self._original_source_file = file_name
+        # Bảo toàn primary source path
+        if not self._original_source_path and self._primary_source_path:
+            self._original_source_path = self._primary_source_path
+
         first_new_index = len(self._subtitle_model.get_all_data()) if self._subtitle_model else 0
-        self._subtitle_model.append_data(parsed_data)
+        end_new_index = first_new_index + len(unique_new_subs)
+        self._batch_slices.append((file_path, first_new_index, end_new_index))
+
+        self._subtitle_model.append_data(unique_new_subs)
 
         sample_batch = " ".join([
-            str(sub.get("original", "")) for sub in parsed_data[:30] if isinstance(sub, dict)
+            str(sub.get("original", "")) for sub in unique_new_subs[:30] if isinstance(sub, dict)
         ])
         batch_lang = ContextAnalyzer.detect_native_language(sample_batch)
         if batch_lang == "Japanese" and not self._is_ja_origin:
@@ -674,7 +725,7 @@ class ProjectController(QObject):
         self._is_dirty = True
         self.projectStateChanged.emit()
         self.batchAppended.emit(first_new_index)
-        self.notify.emit("SUCCESS", f"Đã nối tiếp {len(parsed_data)} câu từ đợt mới: {self._original_source_file}")
+        self.notify.emit("SUCCESS", f"Đã nối tiếp {len(unique_new_subs)} câu từ đợt mới: {file_name}")
         return True
 
     # ---- BỔ SUNG 2 HÀM LƯU VÀ MỞ PROJECT ----
@@ -796,6 +847,7 @@ class ProjectController(QObject):
             story_summary = data.get("story_summary", "")
             self._story_summary = (story_summary or "").strip()
             subtitles = data.get("subtitles", [])
+            self._batch_slices = []
             self._subtitle_model.load_data(subtitles)
             self.glossary = loaded_glossary
             self.entity_dictionary = loaded_entities
@@ -828,9 +880,6 @@ class ProjectController(QObject):
                 source_lang = detected_lang
             if detected_lang == "Japanese" and not self._is_ja_origin:
                 self._is_ja_origin = True
-                if not self._is_archetype_locked and (self._active_archetype == ARCHETYPE_CUSTOM or not self._active_archetype):
-                    self._active_archetype = ARCHETYPE_ANIME_SCHOOL
-                    self._active_pronoun_pair = "Em - Tiền bối"
                 self.archetypeChanged.emit()
             
             self._source_language = source_lang
