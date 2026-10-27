@@ -562,20 +562,28 @@ class ProjectController(QObject):
             except Exception as e:
                 print(f"[IMPORT_SRT] Failed to restore sidecar {sidecar_path}: {e}")
             
-        # 1. Nạp dữ liệu mới vào Model
-        self._subtitle_model.load_data(parsed_data)
-        self._set_project_state(True, False if has_sidecar else True)
-        
-        # 2. Reset trạng thái giao diện hoặc khôi phục Story Summary
-        if not has_sidecar:
-            self._story_summary = ""
-        self.projectLoaded.emit(self._story_summary)
-
-        # 3. Quét 30 câu phụ đề đầu tiên tự động nhận diện ngôn ngữ & dấu vết tiếng Nhật
+        # 1. Quét 30 câu phụ đề đầu tiên tự động nhận diện ngôn ngữ
         sample_subs = " ".join([
             str(sub.get("original", "")) for sub in parsed_data[:30] if isinstance(sub, dict)
         ])
         detected_lang = ContextAnalyzer.detect_native_language(sample_subs)
+
+        # 2. Tự động khôi phục bản dịch cho file SRT đã dịch sẵn tiếng Việt (khi không có sidecar)
+        if not has_sidecar and detected_lang == "Vietnamese":
+            for sub in parsed_data:
+                if not sub.get("translation"):
+                    sub["translation"] = sub.get("original", "")
+                    sub["status"] = "ACCEPTED"
+
+        # 3. Nạp dữ liệu mới vào Model
+        self._subtitle_model.load_data(parsed_data)
+        self._set_project_state(True, False if has_sidecar else True)
+        
+        # 4. Reset trạng thái giao diện hoặc khôi phục Story Summary
+        if not has_sidecar:
+            self._story_summary = ""
+        self.projectLoaded.emit(self._story_summary)
+
         if not has_sidecar or not sidecar_source_lang or (sidecar_source_lang == "English" and detected_lang != "English"):
             source_lang = detected_lang
         else:
@@ -592,6 +600,8 @@ class ProjectController(QObject):
 
         if has_sidecar:
             self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT & khôi phục trạng thái từ dự án: {os.path.basename(sidecar_path)}")
+        elif detected_lang == "Vietnamese":
+            self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu tiếng Việt hoàn tất từ SRT: {self._original_source_file}")
         else:
             self.notify.emit("SUCCESS", f"Đã tải {len(parsed_data)} câu từ SRT: {self._original_source_file}")
 
@@ -708,16 +718,21 @@ class ProjectController(QObject):
         if not self._original_source_path and self._primary_source_path:
             self._original_source_path = self._primary_source_path
 
+        sample_batch = " ".join([
+            str(sub.get("original", "")) for sub in unique_new_subs[:30] if isinstance(sub, dict)
+        ])
+        batch_lang = ContextAnalyzer.detect_native_language(sample_batch)
+        if not (os.path.exists(sidecar_path)) and batch_lang == "Vietnamese":
+            for sub in unique_new_subs:
+                if not sub.get("translation"):
+                    sub["translation"] = sub.get("original", "")
+                    sub["status"] = "ACCEPTED"
+
         first_new_index = len(self._subtitle_model.get_all_data()) if self._subtitle_model else 0
         end_new_index = first_new_index + len(unique_new_subs)
         self._batch_slices.append((file_path, first_new_index, end_new_index))
 
         self._subtitle_model.append_data(unique_new_subs)
-
-        sample_batch = " ".join([
-            str(sub.get("original", "")) for sub in unique_new_subs[:30] if isinstance(sub, dict)
-        ])
-        batch_lang = ContextAnalyzer.detect_native_language(sample_batch)
         if batch_lang == "Japanese" and not self._is_ja_origin:
             self._is_ja_origin = True
             self.archetypeChanged.emit()

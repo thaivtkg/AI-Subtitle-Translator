@@ -188,6 +188,8 @@ def test_detect_native_language():
     assert ContextAnalyzer.detect_native_language("안녕하세요") == "Korean"
     assert ContextAnalyzer.detect_native_language("你好世界") == "Chinese (Simplified)"
     assert ContextAnalyzer.detect_native_language("Hello, how are you today?") == "English"
+    assert ContextAnalyzer.detect_native_language("Cuối cùng đã tìm thấy ngươi rồi Ma Vương") == "Vietnamese"
+    assert ContextAnalyzer.detect_native_language("Tôi là học sinh") == "Vietnamese"
     assert ContextAnalyzer.detect_native_language("") == "English"
 
 

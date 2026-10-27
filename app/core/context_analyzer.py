@@ -145,12 +145,15 @@ JA_ANIME_SENIOR_ADDRESS_REGEX = re.compile(
 )
 
 
+VI_ACCENTS = re.compile(r'[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]', re.IGNORECASE)
+
 def detect_native_language(text: str) -> str:
     """
     Tự động nhận diện ngôn ngữ gốc dựa trên dải mã Unicode chuẩn:
     - Chứa Hiragana [\u3040-\u309F] hoặc Katakana [\u30A0-\u30FF] -> 100% Japanese
     - Chứa Hangul [\uAC00-\uD7AF] -> Korean
     - Chứa chữ Hán [\u4E00-\u9FFF] (không có Kana) -> Chinese (Simplified)
+    - Chứa dấu tiếng Việt -> Vietnamese
     - Mặc định -> English
     """
     if not text:
@@ -161,6 +164,8 @@ def detect_native_language(text: str) -> str:
         return "Korean"
     if re.search(r'[\u4e00-\u9fff]', text):
         return "Chinese (Simplified)"
+    if VI_ACCENTS.search(text):
+        return "Vietnamese"
     return "English"
 
 

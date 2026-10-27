@@ -352,3 +352,61 @@ def test_japanese_origin_does_not_force_anime_school_archetype(tmp_path):
     # Must remain CUSTOM (or whichever user picked), NOT forced to anime_school!
     assert ctrl.activeArchetype == ARCHETYPE_CUSTOM
     assert "Tiền bối" not in ctrl.activePronounPair
+
+
+def test_import_pretranslated_vietnamese_srt_without_sidecar(tmp_path):
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    vi_file = tmp_path / 'JMSZ38_02_batch_1_to_5.srt'
+    vi_file.write_text(
+        '1\n00:00:15,350 --> 00:00:17,540\nCuối cùng đã tìm thấy ngươi rồi Ma Vương\n\n'
+        '2\n00:00:19,720 --> 00:00:20,660\nNgươi là ai vậy hả?\n\n',
+        encoding='utf-8'
+    )
+    ctrl.importSrt(str(vi_file))
+
+    assert ctrl._source_language == 'Vietnamese'
+    data = model.get_all_data()
+    assert len(data) == 2
+    assert data[0]['original'] == 'Cuối cùng đã tìm thấy ngươi rồi Ma Vương'
+    assert data[0]['translation'] == 'Cuối cùng đã tìm thấy ngươi rồi Ma Vương'
+    assert data[0]['status'] == 'ACCEPTED'
+    assert data[1]['original'] == 'Ngươi là ai vậy hả?'
+    assert data[1]['translation'] == 'Ngươi là ai vậy hả?'
+    assert data[1]['status'] == 'ACCEPTED'
+
+
+def test_append_pretranslated_vietnamese_batch_without_sidecar(tmp_path):
+    model = SubtitleModel()
+    ctrl = ProjectController(model)
+
+    batch1 = tmp_path / 'proj_batch_1_to_2.srt'
+    batch1.write_text(
+        '1\n00:00:01,000 --> 00:00:03,000\nHello world\n\n'
+        '2\n00:00:04,000 --> 00:00:06,000\nWelcome here\n\n',
+        encoding='utf-8'
+    )
+    ctrl.importSrt(str(batch1))
+    assert model.rowCount() == 2
+
+    batch2 = tmp_path / 'proj_batch_3_to_4.srt'
+    batch2.write_text(
+        '1\n00:00:07,000 --> 00:00:09,000\nChào mừng bạn đến đây\n\n'
+        '2\n00:00:10,000 --> 00:00:12,000\nHẹn gặp lại lần sau\n\n',
+        encoding='utf-8'
+    )
+    ok = ctrl.appendNextBatch(str(batch2))
+    assert ok is True
+    assert model.rowCount() == 4
+
+    data = model.get_all_data()
+    assert data[0]['original'] == 'Hello world'
+    assert data[0]['translation'] == ''
+    assert data[0]['status'] == 'PENDING'
+    assert data[2]['original'] == 'Chào mừng bạn đến đây'
+    assert data[2]['translation'] == 'Chào mừng bạn đến đây'
+    assert data[2]['status'] == 'ACCEPTED'
+    assert data[3]['original'] == 'Hẹn gặp lại lần sau'
+    assert data[3]['translation'] == 'Hẹn gặp lại lần sau'
+    assert data[3]['status'] == 'ACCEPTED'

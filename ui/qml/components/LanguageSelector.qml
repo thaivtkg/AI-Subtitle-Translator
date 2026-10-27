@@ -16,7 +16,7 @@ RowLayout {
     ComboBox {
         objectName: "sourceLanguageCombo"
         id: sourceCombo
-        model: ["English", "Japanese", "Chinese (Simplified)", "Chinese (Traditional)", "Korean", "Spanish", "French", "German", "Russian"]
+        model: ["English", "Japanese", "Chinese (Simplified)", "Chinese (Traditional)", "Korean", "Spanish", "French", "German", "Russian", "Vietnamese"]
         font.pixelSize: root.compact ? 12 : 14
         Layout.minimumWidth: root.compact ? 75 : 110
         Layout.preferredWidth: root.compact ? 95 : 160
