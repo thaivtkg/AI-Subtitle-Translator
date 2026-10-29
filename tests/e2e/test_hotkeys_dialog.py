@@ -2,6 +2,7 @@
 E2E integration test for Hotkeys Cheatsheet Modal (Bảng tra cứu phím tắt F1).
 Verifies:
 - btnHotkeys on header opens dialog
+- Geometry and padding: 560x560 with topPadding: 16 and bottomPadding: 20
 - F1 key toggles dialog open and closed
 - Double clicking shortcut hint container in workspace opens dialog
 - Escape key closes dialog
@@ -28,6 +29,15 @@ def test_hotkeys_cheatsheet_interactions():
         driver.click("btnHotkeys")
         QTest.qWait(80)
         assert dialog.property("visible") is True
+        assert dialog.property("width") == 560.0
+        assert dialog.property("height") == 560.0
+
+        scroll = driver.find("cheatsheetScroll")
+        assert scroll is not None
+        assert scroll.property("topPadding") == 16.0
+        assert scroll.property("bottomPadding") == 20.0
+        assert scroll.property("leftPadding") == 20.0
+        assert scroll.property("rightPadding") == 20.0
 
         # 2. Đóng bằng phím Escape
         QTest.keyClick(harness.window, Qt.Key_Escape)

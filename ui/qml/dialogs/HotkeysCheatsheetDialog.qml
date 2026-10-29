@@ -15,7 +15,7 @@ Dialog {
     anchors.centerIn: Overlay.overlay
 
     width: Math.min(560, Overlay.overlay ? Overlay.overlay.width - 32 : 560)
-    height: Math.min(480, Overlay.overlay ? Overlay.overlay.height - 32 : 480)
+    height: Math.min(560, Overlay.overlay ? Overlay.overlay.height - 32 : 560)
     padding: 0
 
     Shortcut {
@@ -140,17 +140,20 @@ Dialog {
         // CONTENT SCROLLVIEW
         // ==========================================
         ScrollView {
+            id: cheatsheetScroll
+            objectName: "cheatsheetScroll"
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
+            topPadding: 16
+            bottomPadding: 20
+            leftPadding: 20
+            rightPadding: 20
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
-                width: parent.width
+                width: cheatsheetScroll.availableWidth
                 spacing: 14
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.margins: 18
 
                 // --- GROUP 1: BIÊN DỊCH & DUYỆT BÀI ---
                 ColumnLayout {
