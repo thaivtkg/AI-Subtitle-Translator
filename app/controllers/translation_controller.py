@@ -8,6 +8,7 @@ from app.core.hardware_detector import HardwareDetector
 class TranslationController(QObject):
     statusChanged = Signal(str)
     translationUpdated = Signal(str)
+    originalUpdated = Signal(str)
     notify = Signal(str, str)
     contextUpdated = Signal() # TÍN HIỆU MỚI CHO CONTEXT
     progressChanged = Signal()
@@ -142,13 +143,13 @@ class TranslationController(QObject):
     @Property(str, notify=translationUpdated)
     def currentTranslation(self): return self._current_translation
 
-    @Property(str, notify=translationUpdated)
+    @Property(str, notify=originalUpdated)
     def currentOriginal(self): return self._current_original
     
-    @Property(str, notify=translationUpdated)
+    @Property(str, notify=originalUpdated)
     def currentStartTime(self): return self._current_start_time
     
-    @Property(str, notify=translationUpdated)
+    @Property(str, notify=originalUpdated)
     def currentEndTime(self): return self._current_end_time
 
     # EXPOSE CONTEXT RA QML
@@ -225,6 +226,7 @@ class TranslationController(QObject):
             self.translationProgressChanged.emit(0)
             self.statusChanged.emit(self._status)
             self.translationUpdated.emit(self._current_translation)
+            self.originalUpdated.emit(self._current_original)
             self.contextUpdated.emit()
             self.qaStatusChanged.emit()
             return
@@ -260,6 +262,7 @@ class TranslationController(QObject):
         self.translationProgressChanged.emit(0)
         self.statusChanged.emit(self._status)
         self.translationUpdated.emit(self._current_translation)
+        self.originalUpdated.emit(self._current_original)
         self.contextUpdated.emit()
         self.qaStatusChanged.emit()
         self.appliedTermsChanged.emit()

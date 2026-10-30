@@ -267,3 +267,33 @@ def test_prompt_builder_translation_and_auto_terms_pipeline():
     assert "- original_term -> meaning" in prompt
     assert "STRICT OUTPUT FORMAT" in prompt
 
+
+def test_original_updated_signal_isolation_during_streaming():
+    """Kiểm tra tín hiệu originalUpdated độc lập, không bị kích hoạt trong lúc stream bản dịch."""
+    model = SubtitleModel()
+    model.load_data([
+        {"index": 1, "start_time": "00:00:01,000", "end_time": "00:00:03,000", "original": "妖魔王やっと見つけたわ", "translation": "", "status": "PENDING"}
+    ])
+    tc = TranslationController(model)
+
+    orig_emits = []
+    trans_emits = []
+    tc.originalUpdated.connect(lambda s: orig_emits.append(s))
+    tc.translationUpdated.connect(lambda s: trans_emits.append(s))
+
+    # 1. loadSubtitle: Cả originalUpdated và translationUpdated đều phát
+    tc.loadSubtitle(0)
+    assert len(orig_emits) == 1
+    assert orig_emits[-1] == "妖魔王やっと見つけたわ"
+    assert tc.currentOriginal == "妖魔王やっと見つけたわ"
+
+    # 2. Streaming chunks (on_progress): CHỈ translationUpdated phát, originalUpdated đứng yên tuyệt đối
+    orig_count_before = len(orig_emits)
+    tc._active_translation_index = 0
+    for chunk in ["Cuối", "Cuối cùng", "Cuối cùng đã tìm thấy", "Cuối cùng đã tìm thấy ngươi"]:
+        tc.on_progress(0, chunk)
+
+    assert len(orig_emits) == orig_count_before  # originalUpdated đứng yên tuyệt đối!
+    assert len(trans_emits) >= 4  # translationUpdated phát đều đặn theo token
+
+

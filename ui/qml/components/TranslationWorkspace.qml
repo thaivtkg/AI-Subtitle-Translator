@@ -104,7 +104,9 @@ Item {
             Connections {
                 target: typeof translationController !== "undefined" ? translationController : null
                 function onCurrentOriginalChanged() {
-                    glideAnim.restart()
+                    if (typeof translationController !== "undefined" && translationController.status !== "TRANSLATING") {
+                        glideAnim.restart()
+                    }
                     workspace.altTranslation = ""
                     workspace.altLoading = false
                 }
