@@ -66,8 +66,8 @@ def main():
     QQuickWindow.setDefaultAlphaBuffer(True)
     app = QGuiApplication(sys.argv)
 
-    
     engine = QQmlApplicationEngine()
+    engine.quit.connect(app.quit)
 
     profile = HardwareDetector.get_recommended_profile()
     gpu_info = profile['gpu_info']

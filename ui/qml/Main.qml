@@ -19,9 +19,17 @@ ApplicationWindow {
     title: "AI Subtitle Translator - Professional Workspace"
     color: "transparent"
 
+    property string pendingCloseAction: ""
+    property bool forceClose: false
+
     onClosing: (close) => {
+        if (forceClose) {
+            close.accepted = true
+            return
+        }
         if (typeof projectController !== "undefined" && projectController.hasProject && projectController.isDirty) {
             close.accepted = false
+            pendingCloseAction = "EXIT_APP"
             dirtyCloseConfirmDialog.open()
         }
     }
@@ -327,7 +335,20 @@ ApplicationWindow {
         nameFilters: ["AI Subtitle Project (*.aisrt)"];
         defaultSuffix: "aisrt";
         // ĐÃ FIX: Xóa onAccepted bị lặp
-        onAccepted: projectController.saveProject(selectedFile, globalStorySummary, transWorkspace.getSourceLanguage(), "Vietnamese")
+        onAccepted: {
+            projectController.saveProject(selectedFile, globalStorySummary, transWorkspace.getSourceLanguage(), "Vietnamese")
+            if (pendingCloseAction === "EXIT_APP_SAVING") {
+                forceClose = true
+                Qt.quit()
+                mainWindow.close()
+            } else if (pendingCloseAction === "CLOSE_PROJECT_SAVING") {
+                projectController.closeProject()
+            }
+            pendingCloseAction = ""
+        }
+        onRejected: {
+            pendingCloseAction = ""
+        }
     }
 
     FileDialog { id: exportSrtDialog; title: "Xuất file SRT đã dịch"; fileMode: FileDialog.SaveFile; nameFilters: ["Subtitle files (*.srt)"]; defaultSuffix: "srt"; onAccepted: projectController.exportSrt(selectedFile) }
@@ -533,6 +554,7 @@ ApplicationWindow {
         if (typeof batchController !== "undefined" && batchController.executionLocked) return
         if (typeof projectController !== "undefined" && projectController.hasProject) {
             if (projectController.isDirty) {
+                pendingCloseAction = "CLOSE_PROJECT"
                 dirtyCloseConfirmDialog.open()
             } else {
                 projectController.closeProject()
@@ -548,6 +570,11 @@ ApplicationWindow {
         width: 440
         padding: 0
         closePolicy: Dialog.CloseOnEscape
+        onClosed: {
+            if (pendingCloseAction !== "EXIT_APP_SAVING" && pendingCloseAction !== "CLOSE_PROJECT_SAVING") {
+                pendingCloseAction = ""
+            }
+        }
 
         background: Rectangle {
             color: Qt.rgba(0.97, 0.96, 0.99, 0.96)
@@ -618,7 +645,10 @@ ApplicationWindow {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: dirtyCloseConfirmDialog.close()
+                            onClicked: {
+                                pendingCloseAction = ""
+                                dirtyCloseConfirmDialog.close()
+                            }
                         }
                     }
                 }
@@ -645,7 +675,10 @@ ApplicationWindow {
                     AppButton {
                         text: "Hủy"
                         isDarkGlass: true
-                        onClicked: dirtyCloseConfirmDialog.close()
+                        onClicked: {
+                            pendingCloseAction = ""
+                            dirtyCloseConfirmDialog.close()
+                        }
                     }
 
                     Item { Layout.fillWidth: true }
@@ -654,8 +687,16 @@ ApplicationWindow {
                         text: "Đóng không lưu"
                         isDarkGlass: true
                         onClicked: {
+                            var action = pendingCloseAction
                             dirtyCloseConfirmDialog.close()
-                            projectController.closeProject()
+                            pendingCloseAction = ""
+                            if (action === "EXIT_APP") {
+                                forceClose = true
+                                Qt.quit()
+                                mainWindow.close()
+                            } else {
+                                projectController.closeProject()
+                            }
                         }
                     }
 
@@ -663,7 +704,13 @@ ApplicationWindow {
                         text: "Lưu dự án"
                         isPrimary: true
                         onClicked: {
+                            var action = pendingCloseAction
                             dirtyCloseConfirmDialog.close()
+                            if (action === "EXIT_APP") {
+                                pendingCloseAction = "EXIT_APP_SAVING"
+                            } else {
+                                pendingCloseAction = "CLOSE_PROJECT_SAVING"
+                            }
                             saveProjectDialog.open()
                         }
                     }

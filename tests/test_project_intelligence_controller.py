@@ -227,6 +227,10 @@ def test_dirty_project_close_confirmation_contract():
     with open("ui/qml/components/SubtitleListView.qml", "r", encoding="utf-8") as f:
         sub_view_qml = f.read()
     assert "handleCloseProject" in sub_view_qml
+    assert "pendingCloseAction" in main_qml
+    assert "EXIT_APP" in main_qml
+    assert "CLOSE_PROJECT" in main_qml
+    assert "forceClose" in main_qml
 
 
 
