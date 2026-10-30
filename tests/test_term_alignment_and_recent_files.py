@@ -208,3 +208,47 @@ def test_extract_terms_for_subtitle_on_demand():
     assert len(terms) == 1
     assert terms[0]["source"] == "妖魔王"
     assert terms[0]["target"] == "Ma Vương"
+
+
+def test_rogue_vocab_leakage_shield():
+    """Kiểm tra lá chắn siêu phòng vệ triệt tiêu hoàn toàn rò rỉ rác (-Tu goc->, -从根源->)."""
+    model = SubtitleModel()
+    tc = TranslationController(model)
+
+    rogue_output = (
+        "LÀ ĐÃ TÌM THẤY NGƯƠI RỐT CUỘC\n"
+        "-Tu goc-> 文 -> nghia la\n"
+        "-从根源->ai -> người"
+    )
+    # Lá chắn worker
+    clean_worker = TranslationWorker._visible_translation(rogue_output)
+    assert clean_worker == "LÀ ĐÃ TÌM THẤY NGƯƠI RỐT CUỘC"
+
+    # Lá chắn controller
+    clean_ctrl = tc._clean_translated_text(rogue_output)
+    assert clean_ctrl == "LÀ ĐÃ TÌM THẤY NGƯƠI RỐT CUỘC"
+
+
+def test_translation_progress_tracking():
+    """Kiểm tra tiến độ dịch % cập nhật chính xác từ 10% -> dynamic % -> 100%."""
+    model = SubtitleModel()
+    model.load_data([
+        {"index": 1, "start_time": "00:00:01,000", "end_time": "00:00:03,000", "original": "妖魔王やっと見つけたわ", "translation": "", "status": "PENDING"}
+    ])
+    tc = TranslationController(model)
+    tc.loadSubtitle(0)
+    assert tc.translationProgress == 0
+
+    tc._active_translation_index = 0
+    tc._current_original = "妖魔王やっと見つけたわ"
+    tc._translation_progress = 10
+    tc.translationProgressChanged.emit(10)
+    assert tc.translationProgress == 10
+
+    # Giả lập streaming progress
+    tc.on_progress(0, "LÀ ĐÃ TÌM THẤY")
+    assert 15 <= tc.translationProgress <= 95
+
+    # Giả lập hoàn tất
+    tc.on_finished(0, "LÀ ĐÃ TÌM THẤY NGƯƠI RỐT CUỘC")
+    assert tc.translationProgress == 100

@@ -105,11 +105,7 @@ def build_translation_prompt(
     if style_instruction and style_instruction.strip():
         user_prompt += f"STYLE INSTRUCTION:\n{style_instruction.strip()}\n\n"
 
-    user_prompt += (
-        f"Output ONLY the final direct {target_lang} translation on the first line.\n"
-        "Then, on a new line, write '[TỪ GỐC]' and list each key source word/phrase and its translated meaning like:\n"
-        "- <từ gốc> -> <nghĩa tương ứng>"
-    )
+    user_prompt += f"Output ONLY the direct spoken {target_lang} translation for the current subtitle directly. ABSOLUTELY NO explanations, no notes, no vocabulary list."
 
     # 6. MODEL-SPECIFIC CHAT TEMPLATE WRAPPER
     return format_chat(system_prompt, user_prompt, model_family)

@@ -23,13 +23,17 @@ class TranslationWorker(QThread):
 
     @staticmethod
     def extract_auto_terms(raw_text):
-        """Bóc tách cặp từ gốc và nghĩa tiếng Việt từ khối [TỪ GỐC]."""
+        """Bóc tách cặp từ gốc và nghĩa tiếng Việt từ khối [TỪ GỐC] hoặc các biến thể."""
         if not raw_text:
             return []
-        match = re.search(r'\[(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC)\]', raw_text, re.IGNORECASE)
+        match = re.search(
+            r'(?:\[?\s*(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC|VOCAB|Vocabulary)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
+            raw_text,
+            re.IGNORECASE
+        )
         if not match:
             return []
-        terms_block = raw_text[match.end():]
+        terms_block = raw_text[match.start():]
         terms = []
         seen = set()
         for line in terms_block.strip().splitlines():
@@ -37,6 +41,7 @@ class TranslationWorker(QThread):
             if not line:
                 continue
             line = re.sub(r'^(?:[-*•]|\d+\.)\s*', '', line).strip()
+            line = re.sub(r'^(?:\[?\s*(?:TỪ GỐC|TU GOC|Từ gốc|VOCAB)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)\s*', '', line, flags=re.IGNORECASE).strip()
             parts = re.split(r'\s*(?:->|➔|=>|:|=)\s*', line, maxsplit=1)
             if len(parts) == 2:
                 src = parts[0].strip().strip('"`\'')
@@ -48,7 +53,7 @@ class TranslationWorker(QThread):
 
     @staticmethod
     def _visible_translation(raw_text):
-        """Return only translated text; keep model reasoning and [TỪ GỐC] out of the UI."""
+        """Return only translated text; keep model reasoning and rogue vocab tags out of UI."""
         if not raw_text:
             return ""
         text = raw_text
@@ -62,15 +67,22 @@ class TranslationWorker(QThread):
                     text = text[:-size].strip()
                     break
 
-        # Cắt bỏ khối [TỪ GỐC] và nội dung phía sau
-        m = re.search(r'\[(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC)\]', text, re.IGNORECASE)
-        if m:
-            text = text[:m.start()].strip()
+        # Cắt bỏ bất kỳ dòng nào bắt đầu bằng biến thể từ gốc (TỪ GỐC, -Tu goc->, -从根源->...)
+        parts = re.split(
+            r'(?im)^\s*[-*•]?\s*(?:\[?\s*(?:TỪ GỐC|Tu goc|Từ gốc|VOCAB|Vocabulary)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
+            text,
+            maxsplit=1
+        )
+        if len(parts) > 1:
+            text = parts[0].strip()
         else:
-            # Lá chắn chống rò rỉ token dở dang khi stream [TỪ GỐC]
+            # Lá chắn chống rò rỉ token dở dang khi stream
             prefixes = [
                 "[từ gốc", "[từ gố", "[từ g", "[từ ", "[từ",
                 "[tu goc", "[tu go", "[tu g", "[tu ", "[tu",
+                "-tu goc", "-tu go", "-tu g", "-tu ", "-tu",
+                "-từ gốc", "-từ gố", "-từ g", "-từ ", "-từ",
+                "-从根源", "-从根", "-从",
             ]
             text_lower = text.lower().rstrip()
             for p in prefixes:

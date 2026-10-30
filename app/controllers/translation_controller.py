@@ -18,6 +18,7 @@ class TranslationController(QObject):
     alternativeTranslationReady = Signal(int, str, str)
     alternativeTranslationLoading = Signal(bool)
     appliedTermsChanged = Signal()
+    translationProgressChanged = Signal(int)
 
     def __init__(self, subtitle_model, worker_factory=None):
         super().__init__()
@@ -32,6 +33,7 @@ class TranslationController(QObject):
         self._current_end_time = ""
         self._context_prev = "" # LƯU CONTEXT TRƯỚC
         self._context_next = "" # LƯU CONTEXT SAU
+        self._translation_progress = 0
         
         self._subtitle_model = subtitle_model
         self._worker_factory = worker_factory or TranslationWorker
@@ -121,6 +123,10 @@ class TranslationController(QObject):
         if self._engine_status != status:
             self._engine_status = status
             self.engineStatusChanged.emit(status)
+
+    @Property(int, notify=translationProgressChanged)
+    def translationProgress(self):
+        return self._translation_progress
 
     @Property(str, notify=statusChanged)
     def status(self): return self._status
@@ -215,6 +221,8 @@ class TranslationController(QObject):
             self._context_prev = ""
             self._context_next = ""
             self._status = "PENDING"
+            self._translation_progress = 0
+            self.translationProgressChanged.emit(0)
             self.statusChanged.emit(self._status)
             self.translationUpdated.emit(self._current_translation)
             self.contextUpdated.emit()
@@ -248,6 +256,8 @@ class TranslationController(QObject):
         self._context_prev = "\n\n".join(prev_ctx) if prev_ctx else "Không có dữ liệu trước."
         self._context_next = "\n\n".join(next_ctx) if next_ctx else "Không có dữ liệu sau."
         
+        self._translation_progress = 0
+        self.translationProgressChanged.emit(0)
         self.statusChanged.emit(self._status)
         self.translationUpdated.emit(self._current_translation)
         self.contextUpdated.emit()
@@ -271,6 +281,8 @@ class TranslationController(QObject):
         self._selection_changed_during_translation = False
         self._status = "TRANSLATING"
         self._set_engine_status("Translating")
+        self._translation_progress = 10
+        self.translationProgressChanged.emit(10)
         self.statusChanged.emit(self._status)
         self._current_translation = ""
         self.translationUpdated.emit("")
@@ -373,6 +385,9 @@ class TranslationController(QObject):
         ):
             self._current_translation = text
             self._status = "TRANSLATING"
+            expected_len = max(len(self._current_original) * 2, 20)
+            self._translation_progress = min(95, max(15, int((len(text) / expected_len) * 80) + 15))
+            self.translationProgressChanged.emit(self._translation_progress)
             self.translationUpdated.emit(text)
 
     @Slot(int, str)
@@ -414,6 +429,8 @@ class TranslationController(QObject):
 
         self._subtitle_model.update_translation(index, clean_text, "TRANSLATED")
         self.appliedTermsChanged.emit()
+        self._translation_progress = 100
+        self.translationProgressChanged.emit(100)
         if index == self._active_translation_index:
             self._active_translation_index = -1
             if (
@@ -452,6 +469,8 @@ class TranslationController(QObject):
                 self._current_translation = message
                 self.statusChanged.emit(self._status)
                 self.translationUpdated.emit(self._current_translation)
+        self._translation_progress = 0
+        self.translationProgressChanged.emit(0)
         self._set_engine_status("Error")
         self.translationFailed.emit(index, message)
 
@@ -482,9 +501,10 @@ class TranslationController(QObject):
     @staticmethod
     def _clean_translated_text(text: str) -> str:
         clean_text = (text or "").strip()
-        m = re.search(r'\[(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC)\]', clean_text, re.IGNORECASE)
-        if m:
-            clean_text = clean_text[:m.start()].strip()
+        clean_text = re.split(
+            r'(?im)^\s*[-*•]?\s*(?:\[?\s*(?:TỪ GỐC|Tu goc|Từ gốc|VOCAB|Vocabulary)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
+            clean_text
+        )[0].strip()
         clean_text = re.sub(r'^\[Line \d+\]:\s*', '', clean_text, flags=re.IGNORECASE).strip()
         clean_text = re.sub(r'(?i)^\s*[*_]*(?:Translation|Bản dịch|Direct translation)[:*_]*\s*', '', clean_text).strip()
         clean_text = re.split(
