@@ -399,5 +399,42 @@ def test_settings_singleton_and_anti_overwrite_between_controllers(tmp_path):
     assert s_reloaded.active_model_id == "llama-3.1-8b-instruct-q4_k_m"
 
 
+def test_deepseek_r1_reasoning_shield_and_stop_tokens():
+    """Kiểm tra triệt tiêu rò rỉ suy luận (Chain of Thought / Monologue) của DeepSeek R1."""
+    # 1. Output có thẻ </think>
+    r1_output = (
+        "Wait, let's think carefully about this sentence.\n"
+        "The Japanese is: 身も心もすべてを捧げるためです\n"
+        "So it means to dedicate both body and soul.\n"
+        "</think>\n"
+        "Để dâng hiến trọn vẹn cả thể xác lẫn tâm hồn.\n"
+        "[TỪ GỐC]\n"
+        "- 捧げる -> dâng hiến"
+    )
+    clean_display = TranslationWorker._visible_translation(r1_output)
+    assert clean_display == "Để dâng hiến trọn vẹn cả thể xác lẫn tâm hồn."
+
+    clean_ctrl = TranslationController._clean_translated_text(r1_output)
+    assert clean_ctrl == "Để dâng hiến trọn vẹn cả thể xác lẫn tâm hồn."
+
+    # 2. Output độc thoại thô khi bị cấm thẻ <think>
+    r1_raw_monologue = (
+        "Wait, that can't be right. Let's think carefully.\n"
+        "Final output: Để dâng hiến trọn vẹn cả thể xác lẫn tâm hồn."
+    )
+    assert TranslationWorker._visible_translation(r1_raw_monologue) == "Để dâng hiến trọn vẹn cả thể xác lẫn tâm hồn."
+    assert TranslationController._clean_translated_text(r1_raw_monologue) == "Để dâng hiến trọn vẹn cả thể xác lẫn tâm hồn."
+
+    # 3. Output prompt echo
+    r1_echo = (
+        "--- CURRENT SUBTITLE TO TRANSLATE ---\n"
+        "身も心もすべてを捧げるためです\n"
+        "--- Output ---\n"
+        "Để dâng hiến trọn vẹn cả thể xác lẫn tâm hồn."
+    )
+    assert TranslationWorker._visible_translation(r1_echo) == "Để dâng hiến trọn vẹn cả thể xác lẫn tâm hồn."
+    assert TranslationController._clean_translated_text(r1_echo) == "Để dâng hiến trọn vẹn cả thể xác lẫn tâm hồn."
+
+
 
 

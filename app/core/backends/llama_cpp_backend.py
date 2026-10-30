@@ -47,7 +47,11 @@ class LlamaCppBackend(BaseInferenceBackend):
         result = self._llm(
             prompt,
             max_tokens=kwargs.get("max_tokens", 256),
-            stop=["<|im_end|>", "<end_of_turn>", "<|eot_id|>", "</current_subtitle_to_translate>"],
+            stop=[
+                "<|im_end|>", "<end_of_turn>", "<|eot_id|>", "</current_subtitle_to_translate>",
+                "<｜end of sentence｜>", "<｜end▁of▁sentence｜>", "<｜User｜>", "<｜Assistant｜>",
+                "<|end_of_sentence|>",
+            ],
             stream=False,
         )
         return result["choices"][0]["text"]
@@ -59,7 +63,11 @@ class LlamaCppBackend(BaseInferenceBackend):
         yield from self._llm(
             prompt,
             max_tokens=kwargs.get("max_tokens", 256),
-            stop=["<|im_end|>", "<end_of_turn>", "<|eot_id|>", "</current_subtitle_to_translate>"],
+            stop=[
+                "<|im_end|>", "<end_of_turn>", "<|eot_id|>", "</current_subtitle_to_translate>",
+                "<｜end of sentence｜>", "<｜end▁of▁sentence｜>", "<｜User｜>", "<｜Assistant｜>",
+                "<|end_of_sentence|>",
+            ],
             stream=True,
         )
 

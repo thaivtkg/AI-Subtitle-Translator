@@ -340,6 +340,8 @@ class TranslationController(QObject):
             model_family = "gemma"
         elif "llama" in model_name:
             model_family = "llama"
+        elif "deepseek" in model_name:
+            model_family = "deepseek"
         else:
             model_family = "qwen"
 
@@ -504,6 +506,21 @@ class TranslationController(QObject):
     @staticmethod
     def _clean_translated_text(text: str) -> str:
         clean_text = (text or "").strip()
+        if "</think>" in clean_text:
+            clean_text = clean_text.split("</think>", 1)[1].strip()
+        if "<think>" in clean_text:
+            clean_text = clean_text.split("<think>", 1)[0].strip()
+
+        # Cát bỏ Prompt Echo nếu model lặp lại prompt
+        if "--- CURRENT SUBTITLE" in clean_text or "--- current subtitle" in clean_text:
+            out_match = re.search(r'(?:---\s*Output[^\n]*\n|Translation:\s*\n?)(.*)', clean_text, re.DOTALL | re.IGNORECASE)
+            if out_match:
+                clean_text = out_match.group(1).strip()
+
+        # Chặn độc thoại suy luận thô
+        if "So final output:" in clean_text or "Final output:" in clean_text:
+            clean_text = re.split(r'(?:So final output:|Final output:)', clean_text, flags=re.IGNORECASE)[-1].strip()
+
         clean_text = re.split(
             r'(?im)(?:^\s*[-*•]?\s*|\n\s*[-*•]?\s*)(?:\[?\s*(?:TỪ GỐC|Tu goc|Từ gốc|VOCAB|Vocabulary|Thuật ngữ)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
             clean_text
@@ -548,6 +565,8 @@ class TranslationController(QObject):
             model_family = "gemma"
         elif "llama" in model_name:
             model_family = "llama"
+        elif "deepseek" in model_name:
+            model_family = "deepseek"
         else:
             model_family = "qwen"
 
@@ -636,7 +655,7 @@ class TranslationController(QObject):
         source_lang = "Japanese" if getattr(self._project_controller, "isJaOrigin", False) else "English"
         target_lang = "Vietnamese"
         model_name = (self.hardware_profile.get("model_name") or "").lower()
-        model_family = "gemma" if "gemma" in model_name else ("llama" if "llama" in model_name else "qwen")
+        model_family = "gemma" if "gemma" in model_name else ("llama" if "llama" in model_name else ("deepseek" if "deepseek" in model_name else "qwen"))
 
         prompt = PromptBuilder.build_alignment(
             source_sub=original,

@@ -73,6 +73,20 @@ class TranslationWorker(QThread):
                     text = text[:-size].strip()
                     break
 
+        # Cắt bỏ lặp lại prompt echo nếu model nhắc lại prompt
+        if "--- CURRENT SUBTITLE" in text or "--- current subtitle" in text:
+            out_match = re.search(r'(?:---\s*Output[^\n]*\n|Translation:\s*\n?)(.*)', text, re.DOTALL | re.IGNORECASE)
+            if out_match:
+                text = out_match.group(1)
+            else:
+                return ""
+
+        # Chặn độc thoại suy luận thô nếu model DeepSeek rò rỉ suy luận
+        if "So final output:" in text or "Final output:" in text:
+            text = re.split(r'(?:So final output:|Final output:)', text, flags=re.IGNORECASE)[-1]
+        elif re.search(r'(?:Wait, that can\'t be right|Let\'s think carefully|Alright, I need to translate|Let me break it down)', text, re.IGNORECASE):
+            return ""
+
         # Cắt bỏ bất kỳ dòng nào bắt đầu bằng biến thể từ gốc (TỪ GỐC, -Tu goc->, -从根源->...)
         parts = re.split(
             r'(?im)(?:^\s*[-*•]?\s*|\n\s*[-*•]?\s*)(?:\[?\s*(?:TỪ GỐC|Tu goc|Từ gốc|VOCAB|Vocabulary|Thuật ngữ)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
@@ -127,20 +141,29 @@ class TranslationWorker(QThread):
             stream = manager.generate_stream(self.prompt, max_tokens=1024)
             
             raw_text = ""
+            is_prefilled_think = "<think>" in self.prompt and not self.prompt.rstrip().endswith("</think>")
+
             for output in stream:
-                if self._is_cancelled: 
+                if self._is_cancelled:
                     return
                 chunk = output["choices"][0]["text"] if isinstance(output, dict) else output
                 raw_text += chunk
-                
+
                 # --- 3. ẨN THINK VÀ [TỪ GỐC], CHỈ STREAM PHẦN DỊCH ---
-                display_text = self._visible_translation(raw_text)
-                
+                if is_prefilled_think and "</think>" not in raw_text:
+                    display_text = ""
+                else:
+                    display_text = self._visible_translation(raw_text)
+
                 if display_text:
                     self.progress.emit(self.target_index, display_text)
-                
-            final_clean = self._visible_translation(raw_text)
-            auto_terms = self.extract_auto_terms(raw_text)
+
+            if is_prefilled_think and "</think>" in raw_text:
+                final_clean = self._visible_translation(raw_text.split("</think>", 1)[1])
+                auto_terms = self.extract_auto_terms(raw_text.split("</think>", 1)[1])
+            else:
+                final_clean = self._visible_translation(raw_text)
+                auto_terms = self.extract_auto_terms(raw_text)
             self.extracted_terms = auto_terms
             print(
                 f"[TRANSLATION_FINISH] target={self.target_index} "

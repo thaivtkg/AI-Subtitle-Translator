@@ -103,5 +103,33 @@ class TestPromptBuilder(unittest.TestCase):
         res_in_progress = TranslationWorker._visible_translation("<think>Thinking...")
         self.assertEqual(res_in_progress, "")
 
+    def test_prompt_format_deepseek_and_reasoning_shield(self):
+        """Kiểm tra định dạng DeepSeek và lá chắn chặn độc thoại suy luận rò rỉ."""
+        from app.llm.worker import TranslationWorker
+        deepseek_prompt = PromptBuilder.build(
+            story_summary="Summary",
+            current_sub="身も心もすべてを捧げるためです",
+            model_family="deepseek",
+        )
+        self.assertIn("<｜User｜>", deepseek_prompt)
+        self.assertIn("<｜Assistant｜><think>", deepseek_prompt)
+
+        # Chặn lặp lại prompt header
+        echo_text = """--- CURRENT SUBTITLE TO TRANSLATE ---
+身も心もすべてを捧げるためです
+--- Output ---
+Để dâng hết cả tâm hồn"""
+        self.assertEqual(TranslationWorker._visible_translation(echo_text), "Để dâng hết cả tâm hồn")
+
+        # Chặn độc thoại suy luận thô không có thẻ think
+        raw_reasoning = """Wait, that can't be right. Let's think carefully.
+First subtitle: it's about being everything...
+Maybe better translation..."""
+        self.assertEqual(TranslationWorker._visible_translation(raw_reasoning), "")
+
+        # Trích xuất khi có So final output:
+        full_monologue = raw_reasoning + """\nSo final output:\nĐể dâng trọn tâm hồn\n[TỪ GỐC]\n- 身 -> thân"""
+        self.assertEqual(TranslationWorker._visible_translation(full_monologue), "Để dâng trọn tâm hồn")
+
 if __name__ == "__main__":
     unittest.main()
