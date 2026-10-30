@@ -893,64 +893,86 @@ Item {
             Repeater {
                 model: (typeof translationController !== "undefined" && translationController.currentAppliedTerms) ? translationController.currentAppliedTerms : []
                 delegate: Rectangle {
-                    implicitHeight: 24
-                    implicitWidth: termChipRow.implicitWidth + 14
-                    radius: 12
-                    color: modelData.is_glossary ? Qt.rgba(0.05, 0.65, 0.40, 0.12) : Qt.rgba(0.0, 0.45, 1.0, 0.10)
-                    border.color: modelData.is_glossary ? Qt.rgba(0.05, 0.65, 0.40, 0.35) : Qt.rgba(0.0, 0.45, 1.0, 0.28)
-                    border.width: 1
+                    implicitHeight: 26
+                    implicitWidth: termChipRow.implicitWidth + 20
+                    radius: 13
+                    color: modelData.is_glossary ? Qt.rgba(0.94, 0.99, 0.96, 0.95) : (chipMouse.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.98) : Qt.rgba(1.0, 1.0, 1.0, 0.92))
+                    border.color: modelData.is_glossary ? "#10B981" : (chipMouse.containsMouse ? "#2563EB" : Qt.rgba(1.0, 1.0, 1.0, 0.95))
+                    border.width: 1.5
 
                     RowLayout {
                         id: termChipRow
                         anchors.centerIn: parent
-                        spacing: 5
+                        spacing: 6
 
                         Text {
                             text: "🏷️"
-                            font.pixelSize: 10
+                            font.pixelSize: 11
+                            Layout.alignment: Qt.AlignVCenter
                         }
 
                         Text {
-                            text: modelData.source + " ➔ " + modelData.target
-                            color: modelData.is_glossary ? "#059669" : Theme.accentSapphire
-                            font.pixelSize: 10
+                            text: modelData.source
+                            color: "#0F172A"
+                            font.pixelSize: 11
                             font.bold: true
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+
+                        Text {
+                            text: "➔"
+                            color: "#64748B"
+                            font.pixelSize: 11
+                            font.bold: true
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+
+                        Text {
+                            text: modelData.target
+                            color: modelData.is_glossary ? "#047857" : "#2563EB"
+                            font.pixelSize: 11
+                            font.bold: true
+                            Layout.alignment: Qt.AlignVCenter
                         }
 
                         Text {
                             text: "✓"
-                            color: "#059669"
-                            font.pixelSize: 10
+                            color: "#10B981"
+                            font.pixelSize: 11
                             font.bold: true
                             visible: modelData.is_glossary
+                            Layout.alignment: Qt.AlignVCenter
                         }
 
                         Rectangle {
                             id: btnPinChip
-                            implicitWidth: 16
-                            implicitHeight: 16
-                            radius: 8
-                            color: pinMouse.containsMouse ? Qt.rgba(0.0, 0.45, 1.0, 0.25) : Qt.rgba(0.0, 0.45, 1.0, 0.12)
-                            border.color: pinMouse.containsMouse ? Theme.accentSapphire : Qt.rgba(0.0, 0.45, 1.0, 0.25)
+                            implicitWidth: 18
+                            implicitHeight: 18
+                            radius: 9
+                            color: chipMouse.containsMouse ? Qt.rgba(0.15, 0.45, 0.95, 0.18) : Qt.rgba(0.0, 0.0, 0.0, 0.05)
+                            border.color: chipMouse.containsMouse ? "#2563EB" : Qt.rgba(0.0, 0.0, 0.0, 0.15)
                             border.width: 1
                             visible: !modelData.is_glossary
+                            Layout.alignment: Qt.AlignVCenter
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "📌"
-                                font.pixelSize: 9
+                                font.pixelSize: 10
                             }
+                        }
+                    }
 
-                            MouseArea {
-                                id: pinMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (typeof translationController !== "undefined") {
-                                        translationController.pinTermToGlossary(modelData.source, modelData.target)
-                                    }
-                                }
+                    MouseArea {
+                        id: chipMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: modelData.is_glossary ? Qt.ArrowCursor : Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.text: modelData.is_glossary ? "Đã lưu vào Thuật ngữ dự án" : "1-Click để ghim vĩnh viễn vào Thuật ngữ dự án"
+                        onClicked: {
+                            if (!modelData.is_glossary && typeof translationController !== "undefined") {
+                                translationController.pinTermToGlossary(modelData.source, modelData.target)
                             }
                         }
                     }
@@ -965,28 +987,30 @@ Item {
                          translationController.currentOriginal !== "" &&
                          translationController.currentTranslation !== "" &&
                          translationController.status !== "TRANSLATING"
-                implicitHeight: 24
-                implicitWidth: extractBtnRow.implicitWidth + 16
-                radius: 12
-                color: extractMouse.pressed ? Qt.rgba(0.0, 0.45, 1.0, 0.22) : (extractMouse.containsMouse ? Qt.rgba(0.0, 0.45, 1.0, 0.15) : Qt.rgba(0.0, 0.45, 1.0, 0.08))
-                border.color: extractMouse.containsMouse ? Theme.accentSapphire : Qt.rgba(0.0, 0.45, 1.0, 0.25)
-                border.width: 1
+                implicitHeight: 26
+                implicitWidth: extractBtnRow.implicitWidth + 20
+                radius: 13
+                color: extractMouse.pressed ? Qt.rgba(1.0, 1.0, 1.0, 0.98) : (extractMouse.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.95) : Qt.rgba(1.0, 1.0, 1.0, 0.90))
+                border.color: extractMouse.containsMouse ? "#2563EB" : Qt.rgba(1.0, 1.0, 1.0, 0.95)
+                border.width: 1.5
 
                 RowLayout {
                     id: extractBtnRow
                     anchors.centerIn: parent
-                    spacing: 5
+                    spacing: 6
 
                     Text {
                         text: "🔍"
-                        font.pixelSize: 10
+                        font.pixelSize: 11
+                        Layout.alignment: Qt.AlignVCenter
                     }
 
                     Text {
                         text: "Tra từ gốc & nghĩa"
-                        color: Theme.accentSapphire
-                        font.pixelSize: 10
+                        color: "#1D4ED8"
+                        font.pixelSize: 11
                         font.bold: true
+                        Layout.alignment: Qt.AlignVCenter
                     }
                 }
 
@@ -995,6 +1019,8 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    ToolTip.visible: containsMouse
+                    ToolTip.text: "Bóc tách từ gốc và nghĩa cho câu hiện tại (0.5s)"
                     onClicked: {
                         if (typeof translationController !== "undefined") {
                             translationController.extractTermsForSubtitle(translationController.currentSubtitleIndex)

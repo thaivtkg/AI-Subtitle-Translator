@@ -79,7 +79,9 @@ def build_translation_prompt(
         
         # 1. Khóa chống rò rỉ suy luận / commentary (TRỤ CỘT BẢO VỆ CHẤT LƯỢNG)
         rules.append(
-            "1. STRICT OUTPUT FORMAT: Output ONLY the direct translated Vietnamese subtitle. ABSOLUTELY DO NOT output any reasoning, explanation, alternatives, or English notes (e.g., NEVER output 'Either this...', 'Given the...', 'Switch to...', 'Note:')."
+            f"1. STRICT OUTPUT FORMAT: Provide the direct spoken {target_lang} subtitle on the first line. "
+            "Then, list key original terms under '[TỪ GỐC]' formatted as '- original_term -> meaning'. "
+            "ABSOLUTELY NO reasoning, commentary, or conversation."
         )
         
         # 2. Thoại tự nhiên thuần khiết theo ngữ cảnh
@@ -105,7 +107,12 @@ def build_translation_prompt(
     if style_instruction and style_instruction.strip():
         user_prompt += f"STYLE INSTRUCTION:\n{style_instruction.strip()}\n\n"
 
-    user_prompt += f"Output ONLY the direct spoken {target_lang} translation for the current subtitle directly. ABSOLUTELY NO explanations, no notes, no vocabulary list."
+    user_prompt += (
+        f"Output the direct spoken {target_lang} translation for the current subtitle on the first line.\n"
+        "Then, on a new line, output '[TỪ GỐC]' followed by key original terms and their meanings like:\n"
+        "[TỪ GỐC]\n"
+        "- original_term -> meaning"
+    )
 
     # 6. MODEL-SPECIFIC CHAT TEMPLATE WRAPPER
     return format_chat(system_prompt, user_prompt, model_family)

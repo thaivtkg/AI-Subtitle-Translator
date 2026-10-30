@@ -252,3 +252,18 @@ def test_translation_progress_tracking():
     # Giả lập hoàn tất
     tc.on_finished(0, "LÀ ĐÃ TÌM THẤY NGƯƠI RỐT CUỘC")
     assert tc.translationProgress == 100
+
+
+def test_prompt_builder_translation_and_auto_terms_pipeline():
+    """Kiểm tra luồng 1 (Translation Pipeline): PromptBuilder yêu cầu bản dịch + khối [TỪ GỐC]."""
+    from app.core.prompt_builder import PromptBuilder
+    prompt = PromptBuilder.build(
+        story_summary="Chiến tranh Ma Vương",
+        source_lang="Japanese",
+        target_lang="Vietnamese",
+        current_sub="妖魔王やっと見つけたわ",
+    )
+    assert "[TỪ GỐC]" in prompt
+    assert "- original_term -> meaning" in prompt
+    assert "STRICT OUTPUT FORMAT" in prompt
+

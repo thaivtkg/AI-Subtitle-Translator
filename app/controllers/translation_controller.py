@@ -502,9 +502,10 @@ class TranslationController(QObject):
     def _clean_translated_text(text: str) -> str:
         clean_text = (text or "").strip()
         clean_text = re.split(
-            r'(?im)^\s*[-*•]?\s*(?:\[?\s*(?:TỪ GỐC|Tu goc|Từ gốc|VOCAB|Vocabulary)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
+            r'(?im)(?:^\s*[-*•]?\s*|\n\s*[-*•]?\s*)(?:\[?\s*(?:TỪ GỐC|Tu goc|Từ gốc|VOCAB|Vocabulary|Thuật ngữ)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
             clean_text
         )[0].strip()
+        clean_text = re.sub(r'(?im)\n+\s*\[\s*(?:TỪ|TU|VOCAB|Thuật ngữ).*$', '', clean_text).strip()
         clean_text = re.sub(r'^\[Line \d+\]:\s*', '', clean_text, flags=re.IGNORECASE).strip()
         clean_text = re.sub(r'(?i)^\s*[*_]*(?:Translation|Bản dịch|Direct translation)[:*_]*\s*', '', clean_text).strip()
         clean_text = re.split(

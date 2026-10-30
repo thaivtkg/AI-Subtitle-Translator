@@ -27,7 +27,7 @@ class TranslationWorker(QThread):
         if not raw_text:
             return []
         match = re.search(
-            r'(?:\[?\s*(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC|VOCAB|Vocabulary)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
+            r'(?:\[?\s*(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC|VOCAB|Vocabulary|Thuật ngữ)\s*\]?|(?:Từ gốc|Tu goc|从根源)\s*(?:->|➔|=>|:|=))',
             raw_text,
             re.IGNORECASE
         )
@@ -41,7 +41,13 @@ class TranslationWorker(QThread):
             if not line:
                 continue
             line = re.sub(r'^(?:[-*•]|\d+\.)\s*', '', line).strip()
-            line = re.sub(r'^(?:\[?\s*(?:TỪ GỐC|TU GOC|Từ gốc|VOCAB)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)\s*', '', line, flags=re.IGNORECASE).strip()
+            line = re.sub(
+                r'^(?:\[?\s*(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC|VOCAB|Vocabulary|Thuật ngữ)\s*\]?|(?:Từ gốc|Tu goc|从根源)\s*(?:->|➔|=>|:|=))\s*',
+                '',
+                line,
+                flags=re.IGNORECASE
+            ).strip()
+            line = re.sub(r'^(?:->|➔|=>|:|=)\s*', '', line).strip()
             parts = re.split(r'\s*(?:->|➔|=>|:|=)\s*', line, maxsplit=1)
             if len(parts) == 2:
                 src = parts[0].strip().strip('"`\'')
@@ -69,7 +75,7 @@ class TranslationWorker(QThread):
 
         # Cắt bỏ bất kỳ dòng nào bắt đầu bằng biến thể từ gốc (TỪ GỐC, -Tu goc->, -从根源->...)
         parts = re.split(
-            r'(?im)^\s*[-*•]?\s*(?:\[?\s*(?:TỪ GỐC|Tu goc|Từ gốc|VOCAB|Vocabulary)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
+            r'(?im)(?:^\s*[-*•]?\s*|\n\s*[-*•]?\s*)(?:\[?\s*(?:TỪ GỐC|Tu goc|Từ gốc|VOCAB|Vocabulary|Thuật ngữ)\s*\]?|Từ gốc\s*->|Tu goc\s*->|从根源\s*->)',
             text,
             maxsplit=1
         )
@@ -83,6 +89,7 @@ class TranslationWorker(QThread):
                 "-tu goc", "-tu go", "-tu g", "-tu ", "-tu",
                 "-từ gốc", "-từ gố", "-từ g", "-từ ", "-từ",
                 "-从根源", "-从根", "-从",
+                "[vocab", "[thuật ngữ", "[thuat ngu",
             ]
             text_lower = text.lower().rstrip()
             for p in prefixes:
