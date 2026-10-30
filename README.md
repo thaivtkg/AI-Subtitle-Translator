@@ -4,7 +4,7 @@
 [![PySide6](https://img.shields.io/badge/GUI-PySide6%20%2F%20Qt%20Quick-41CD52.svg?logo=qt&logoColor=white)](https://www.qt.io/)
 [![Llama.cpp](https://img.shields.io/badge/Inference-llama--cpp--python-FF6F00.svg)](https://github.com/abetlen/llama-cpp-python)
 [![CUDA](https://img.shields.io/badge/Acceleration-NVIDIA%20CUDA-76B900.svg?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
-[![Tests](https://img.shields.io/badge/Tests-255%20Passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-385%20Passed-brightgreen.svg)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **AI Subtitle Translator** là phần mềm dịch và biên tập phụ đề chuyên nghiệp (CAT Tool) thế hệ mới, hoạt động **100% Ngoại tuyến (Offline)** trên máy tính cá nhân. Ứng dụng khai thác tối đa sức mạnh của các mô hình ngôn ngữ lớn cục bộ (Local LLM qua định dạng GGUF như **Qwen 2.5**, **DeepSeek**) để mang lại bản dịch tiếng Việt tự nhiên, chuẩn văn phong điện ảnh, bảo mật tuyệt đối dữ liệu và không yêu cầu bất kỳ API Key hay kết nối Internet nào.
@@ -40,16 +40,24 @@
 ### 🧠 3. Bộ ba Trí tuệ Bản địa hóa (Translation Intelligence)
 * **Translation Memory (TM):** Tự động ghi nhớ các cặp câu gốc - câu dịch theo nguyên lý *Last-Write-Wins (LWW)*. Tái sử dụng câu dịch với độ chính xác 100% mà không cần gọi lại LLM.
 * **Glossary & Forbidden Words:** Quản lý bảng thuật ngữ chuyên ngành; áp đặt quy tắc dịch và danh sách từ cấm kỵ để triệt tiêu hiện tượng ảo giác (hallucination).
+* **Bóc tách Thuật ngữ Tự động & Ghim / Bỏ ghim Hai chiều (Auto Term Alignment & Bi-directional Pinning):**
+  * Tự động trích xuất các cặp từ gốc - nghĩa dịch đồng thời trong cùng một lượt suy luận dịch thuật mà không tốn thêm request.
+  * Hỗ trợ truy vấn bóc tách thuật ngữ theo yêu cầu (*On-Demand Query* ~0.5s) cho các file phụ đề đã có bản dịch sẵn.
+  * Ghim thuật ngữ trực tiếp vào Glossary chỉ với 1-click để đồng bộ vĩnh viễn cho toàn bộ các câu dịch tiếp theo.
+  * Cơ chế Bỏ ghim hai chiều (*Bi-directional Unpin*): Cho phép gỡ bỏ thuật ngữ bất kỳ lúc nào trực tiếp từ luồng dịch hoặc từ Bảng ngữ cảnh dự án (Intelligence Tab), dữ liệu được đồng bộ hóa tức thì giữa các bộ điều khiển.
+* **Lá chắn Chống Rò rỉ Token (Rogue Vocab Shield):** Bộ lọc regex đa tiền tố thời gian thực cắt bỏ triệt để các token suy luận nội bộ và cấu trúc phụ trợ (`[TỪ GỐC]`, `-Tu goc->`, `从根源->`...) ngay trong lúc stream, đảm bảo ô bản dịch chỉ nhận câu phụ đề đích thuần khiết.
 * **Entity Dictionary:** Quản lý danh xưng nhân vật, đại từ, địa danh đồng bộ xuyên suốt toàn bộ mùa phim / series.
 * **Story Summary:** Khu vực ghi chú cốt truyện tổng quát để định hướng phong cách dịch của AI.
 
 ### ⚙️ 4. Động cơ Dịch thuật Tự động (Batch Processing Engine)
 * Đưa toàn bộ file phụ đề vào hàng đợi xử lý nền qua `QThread` độc lập, giao diện không bao giờ bị đơ (Zero-blocking UI).
+* **Kiến trúc Cách ly Tín hiệu (Signal Isolation):** Phân tách độc lập tín hiệu cập nhật câu gốc (`originalUpdated`) và dòng dữ liệu stream bản dịch (`translationUpdated`), triệt tiêu xung đột trạng thái khi truyền token ở tốc độ cao.
 * Hỗ trợ Tạm dừng (`Pause`), Tiếp tục (`Resume`), Hủy an toàn (`Cancel`) và Dịch lại các câu lỗi (`Retry Failed`).
 * **Checkpoint an toàn:** Tự động lưu tiến độ vào file dự án `.aisrt`. Bạn có thể tắt máy và tiếp tục bất kỳ lúc nào mà không bị mất dữ liệu.
 
-### 📦 5. Quản lý Mô hình Thông minh (Smart Model Manager)
+### 📦 5. Quản lý Mô hình Thông minh & Cài đặt (Smart Model & Settings Manager)
 * **Hardware-Aware Scanning:** Tự động quét phần cứng (GPU VRAM, System RAM, CUDA driver) và gắn nhãn đề xuất mô hình phù hợp (`RECOMMENDED`, `COMPATIBLE`).
+* **Cơ chế Singleton & Hợp nhất Cài đặt An toàn (Safe Disk-Merge):** Quản lý cấu hình `AppSettings` theo cơ chế Singleton per-path kết hợp tự động nạp và hợp nhất dữ liệu từ đĩa trước khi lưu; loại bỏ hoàn toàn xung đột ghi đè chéo (Race Condition & Split-Brain Cache) giữa các controller, đảm bảo bảo toàn cấu hình mô hình đã chọn và danh sách tệp gần đây khi ứng dụng tắt và mở lại.
 * Hỗ trợ tải mô hình ngầm với cơ chế **Atomic Promotion** (tải qua file tạm `.part`, chỉ đổi tên thành `.gguf` khi SHA256 và kích thước hợp lệ 100%).
 * Danh mục mô hình tối ưu cho tiếng Việt:
   * **Qwen 2.5 3B / 7B / 14B Instruct (GGUF)**
@@ -130,7 +138,7 @@ Khi mở ứng dụng lần đầu, hãy bấm vào nút **Quản lý Mô hình*
 
 ## 🧪 Kiểm định chất lượng (Testing)
 
-Dự án được bảo vệ toàn diện với **255 bài kiểm thử tự động** bao gồm Unit Tests, E2E UI Harness (PySide6 QTest), Deterministic Worker Tests, QA Rules và Round-trip Serialization:
+Dự án được bảo vệ toàn diện với **385 bài kiểm thử tự động** bao gồm Unit Tests, E2E UI Harness (PySide6 QTest), Deterministic Worker Tests, QA Rules và Round-trip Serialization:
 
 ```powershell
 # Chạy toàn bộ test suite
@@ -156,7 +164,7 @@ AI-Subtitle-Translator/
 │   │   ├── components/   # SubtitleListView, TranslationWorkspace, ContextInspector...
 │   │   ├── dialogs/      # ModelManagerDialog, ExportGuardDialog...
 │   │   └── theme/        # Theme.qml (Bảng màu, typography, khoảng cách)
-├── tests/                # 255+ bài kiểm thử tự động (E2E, Core, Controllers)
+├── tests/                # 385+ bài kiểm thử tự động (E2E, Core, Controllers)
 ├── main.py               # Điểm khởi chạy ứng dụng chính
 ├── pytest.ini            # Cấu hình kiểm thử tự động
 └── requirements.txt      # Danh sách thư viện phụ thuộc
