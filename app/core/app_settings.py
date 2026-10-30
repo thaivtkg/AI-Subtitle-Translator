@@ -10,14 +10,23 @@ class AppSettings:
         "custom_n_gpu_layers": -1,
         "recent_files": [],
     }
+    _instances: Dict[str, "AppSettings"] = {}
 
-    def __init__(self, file_path: Optional[str] = None):
-        self.file_path = file_path or os.path.join(
+    def __new__(cls, file_path: Optional[str] = None):
+        resolved = os.path.normpath(file_path or os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             "app_settings.json",
-        )
-        self._data: Dict[str, Any] = dict(self.DEFAULT_SETTINGS)
-        self.load()
+        ))
+        if resolved not in cls._instances:
+            instance = super().__new__(cls)
+            instance.file_path = resolved
+            instance._data = dict(cls.DEFAULT_SETTINGS)
+            instance.load()
+            cls._instances[resolved] = instance
+        return cls._instances[resolved]
+
+    def __init__(self, file_path: Optional[str] = None):
+        pass
 
     def load(self) -> None:
         if not os.path.exists(self.file_path):
@@ -35,6 +44,15 @@ class AppSettings:
             parent_dir = os.path.dirname(self.file_path)
             if parent_dir and not os.path.exists(parent_dir):
                 os.makedirs(parent_dir, exist_ok=True)
+            if os.path.exists(self.file_path):
+                try:
+                    with open(self.file_path, "r", encoding="utf-8") as f:
+                        disk_data = json.load(f)
+                        if isinstance(disk_data, dict):
+                            disk_data.update(self._data)
+                            self._data = disk_data
+                except Exception:
+                    pass
             with open(self.file_path, "w", encoding="utf-8") as f:
                 json.dump(self._data, f, indent=2, ensure_ascii=False)
             return True

@@ -95,18 +95,6 @@ def main():
         project_id=f"runtime-{uuid4()}",
     )
     engine.rootContext().setContextProperty("batchController", batch_controller)
-    
-    project_controller = ProjectController(subtitle_model)
-    engine.rootContext().setContextProperty("projectController", project_controller)
-
-    # Gắn (bind) dữ liệu ngữ cảnh vào luồng dịch thuật
-    translation_controller.bind_intelligence(
-        glossary=project_controller.glossary,
-        entities=project_controller.entity_dictionary,
-        translation_memory=project_controller.translation_memory,
-        project_controller=project_controller,
-    )
-    project_controller.bind_translation_controller(translation_controller)
 
     if getattr(sys, "frozen", False):
         base_dir = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
@@ -127,12 +115,25 @@ def main():
                 shutil.copy2(bundled_settings, settings_file)
             except Exception:
                 pass
+    app_settings = AppSettings(file_path=settings_file)
+
+    project_controller = ProjectController(subtitle_model, settings=app_settings)
+    engine.rootContext().setContextProperty("projectController", project_controller)
+
+    # Gắn (bind) dữ liệu ngữ cảnh vào luồng dịch thuật
+    translation_controller.bind_intelligence(
+        glossary=project_controller.glossary,
+        entities=project_controller.entity_dictionary,
+        translation_memory=project_controller.translation_memory,
+        project_controller=project_controller,
+    )
+    project_controller.bind_translation_controller(translation_controller)
 
     model_controller = ModelController(
         models_dir=models_dir,
         translation_controller=translation_controller,
         batch_controller=batch_controller,
-        settings=AppSettings(file_path=settings_file),
+        settings=app_settings,
     )
     engine.rootContext().setContextProperty("modelController", model_controller)
     

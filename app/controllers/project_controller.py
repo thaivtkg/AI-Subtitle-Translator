@@ -2,6 +2,7 @@ import re
 import os
 import json
 import time
+from typing import Optional, Any
 from uuid import uuid4
 from PySide6.QtCore import QObject, Slot, Signal, Property, QUrl
 from app.core.srt_exporter import SRTExporter
@@ -43,8 +44,13 @@ class ProjectController(QObject):
     batchDetected = Signal(int, int)
     batchAppended = Signal(int)
 
-    def __init__(self, subtitle_model=None):
-        super().__init__()
+    def __init__(
+        self,
+        subtitle_model: Optional[Any] = None,
+        settings: Optional[AppSettings] = None,
+        parent: Optional[QObject] = None,
+    ):
+        super().__init__(parent)
         self._subtitle_model = subtitle_model
         self._original_source_file = "unknown.srt"
         self._original_source_path = ""
@@ -61,7 +67,7 @@ class ProjectController(QObject):
         self.glossary = Glossary()
         self.entity_dictionary = EntityDictionary()
         self.translation_memory = TranslationMemory()
-        self._settings = AppSettings()
+        self._settings = settings or AppSettings()
         self._active_archetype = ARCHETYPE_PURE
         self._active_pronoun_pair = ""
         self._is_archetype_locked = False

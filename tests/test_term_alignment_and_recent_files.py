@@ -360,4 +360,44 @@ def test_bi_directional_unpin_architecture():
     assert next(t for t in terms_after_intel_remove if t["source"] == "妖魔王")["is_glossary"] is False
 
 
+def test_settings_singleton_and_anti_overwrite_between_controllers(tmp_path):
+    """Kiểm tra chống ghi đè dữ liệu chéo (Race Condition / Split-Brain) giữa ProjectController và ModelController."""
+    import json
+    from app.controllers.model_controller import ModelController
+
+    settings_file = str(tmp_path / "app_settings.json")
+    s_proj = AppSettings(file_path=settings_file)
+    s_model = AppSettings(file_path=settings_file)
+    assert s_proj is s_model  # Cùng trỏ vào 1 singleton instance
+
+    dummy_model_file = tmp_path / "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf"
+    dummy_model_file.write_bytes(b"dummy")
+
+    model = SubtitleModel()
+    pc = ProjectController(model, settings=s_proj)
+    mc = ModelController(models_dir=str(tmp_path), settings=s_model)
+
+    # 1. ModelController chọn model Llama 3.1
+    mc.selectActiveModel("llama-3.1-8b-instruct-q4_k_m")
+    assert s_model.active_model_id == "llama-3.1-8b-instruct-q4_k_m"
+    assert s_proj.active_model_id == "llama-3.1-8b-instruct-q4_k_m"
+
+    # 2. ProjectController ghi file recent
+    dummy_srt = tmp_path / "test.srt"
+    dummy_srt.write_text("dummy", encoding="utf-8")
+    pc._add_recent_file(str(dummy_srt))
+
+    # 3. Đọc trực tiếp từ đĩa: active_model_id vẫn phải nguyên vẹn là llama 3.1
+    with open(settings_file, "r", encoding="utf-8") as f:
+        disk_data = json.load(f)
+    assert disk_data["active_model_id"] == "llama-3.1-8b-instruct-q4_k_m"
+    assert any("test.srt" in f for f in disk_data["recent_files"])
+
+    # 4. Tạo instance mới sau khi xóa cache bộ nhớ: không bị reset về mặc định
+    AppSettings._instances.clear()
+    s_reloaded = AppSettings(file_path=settings_file)
+    assert s_reloaded.active_model_id == "llama-3.1-8b-instruct-q4_k_m"
+
+
+
 

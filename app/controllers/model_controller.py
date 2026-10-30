@@ -66,6 +66,8 @@ class ModelController(QObject):
 
         # Khởi tạo active model id từ settings hoặc fallback thông minh
         self._active_model_id = self._determine_initial_active_model()
+        if self._settings.active_model_id != self._active_model_id:
+            self._settings.active_model_id = self._active_model_id
         self._apply_active_model_profile()
 
     def bind_translation_controller(self, controller: QObject) -> None:
@@ -287,6 +289,7 @@ class ModelController(QObject):
             self.notify.emit("ERROR", "Model này chưa được tải về máy.")
             return False
 
+        self._settings.active_model_id = model_id
         if self._active_model_id != model_id:
             # Thu hồi VRAM của model cũ ngay khi người dùng bấm chọn model khác
             try:
@@ -295,7 +298,6 @@ class ModelController(QObject):
             except Exception:
                 pass
             self._active_model_id = model_id
-            self._settings.active_model_id = model_id
             self._apply_active_model_profile()
             self.activeModelChanged.emit(model_id)
             self.modelListChanged.emit()

@@ -285,7 +285,8 @@ def test_tc_mm_09_execution_concurrency_lock(qapp):
         tc = TranslationController(model)
         tc._status = "TRANSLATING"  # Đang dịch
 
-        mc = ModelController(models_dir=tmp_dir, translation_controller=tc)
+        test_settings = AppSettings(os.path.join(tmp_dir, "test_settings.json"))
+        mc = ModelController(models_dir=tmp_dir, translation_controller=tc, settings=test_settings)
         assert mc.isExecutionLocked is True
 
         # Đổi model bị khóa
@@ -457,7 +458,7 @@ def test_tc_mm_15_no_model_list_changed_spam_during_progress(qapp, monkeypatch):
         assert len(spy_list_changed) == 3
 
 
-def test_active_model_pinned_to_top_and_llama33_url():
+def test_active_model_pinned_to_top_and_llama33_url(tmp_path):
     import urllib.request
     from app.core.model_catalog import MODEL_CATALOG
     from app.controllers.model_controller import ModelController
@@ -468,7 +469,7 @@ def test_active_model_pinned_to_top_and_llama33_url():
     with urllib.request.urlopen(req, timeout=10) as resp:
         assert resp.status == 200
     # 2. Kiểm tra Model đang sử dụng luôn đứng đầu danh sách
-    settings = AppSettings()
+    settings = AppSettings(file_path=str(tmp_path / "test_settings.json"))
     controller = ModelController(models_dir="models", settings=settings)
     models_list = controller.models
     assert len(models_list) > 0
@@ -493,7 +494,8 @@ def test_tc_mm_17_vram_cleanup_and_safe_hybrid_layers(tmp_path):
     fake_gpu = {"has_gpu_hardware": True, "name": "RTX 3050", "vram_gb": 4.0}
     # Tạo dummy model file cho translategemma
     (tmp_path / "gemma-2-9b-it-Q4_K_M.gguf").write_bytes(b"dummy weights")
-    controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True)
+    test_settings = AppSettings(file_path=str(tmp_path / "test_settings.json"))
+    controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True, settings=test_settings)
     
     mock_trans = MagicMock()
     mock_trans.hardware_profile = {}
@@ -522,7 +524,8 @@ def test_tc_mm_18_realtime_vram_telemetry(tmp_path):
     fake_gpu = {"has_gpu_hardware": True, "name": "RTX 3050", "vram_gb": 4.0}
     # Tạo dummy model file cho translategemma
     (tmp_path / "gemma-2-9b-it-Q4_K_M.gguf").write_bytes(b"dummy weights")
-    controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True)
+    test_settings = AppSettings(file_path=str(tmp_path / "test_settings.json"))
+    controller = ModelController(models_dir=str(tmp_path), gpu_info=fake_gpu, llama_has_cuda=True, settings=test_settings)
     assert controller.vramTotal > 0.0 or controller.vramTotal == -1.0
 
 
@@ -544,7 +547,8 @@ def test_tc_mm_19_minimalist_launchpad_and_unified_file_dialog():
 
 def test_tc_mm_20_select_model_guard_against_missing_file(tmp_path):
     """Kiểm tra BUG-07: Chặn kích hoạt model nếu file GGUF chưa tải về máy."""
-    controller = ModelController(models_dir=str(tmp_path))
+    test_settings = AppSettings(file_path=str(tmp_path / "test_settings.json"))
+    controller = ModelController(models_dir=str(tmp_path), settings=test_settings)
     # Chưa có file trên đĩa -> Từ chối
     assert controller.selectActiveModel("qwen2.5-3b-instruct-q4_k_m") is False
     # Sau khi có file trên đĩa -> Kích hoạt thành công
