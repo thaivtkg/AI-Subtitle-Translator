@@ -692,3 +692,22 @@ class TranslationController(QObject):
             self.notify.emit("SUCCESS", f"Đã ghim '{src}' ➔ '{tgt}' vào Thuật ngữ.")
             return True
         return False
+
+    @Slot(str, result=bool)
+    def unpinTermFromGlossary(self, source_term: str) -> bool:
+        """Bỏ ghim thuật ngữ khỏi Glossary của dự án (1-click)."""
+        src = (source_term or "").strip()
+        if not src:
+            return False
+        if self._project_controller and hasattr(self._project_controller, "removeGlossaryTerm"):
+            ok = self._project_controller.removeGlossaryTerm(src)
+            if ok:
+                self.appliedTermsChanged.emit()
+                return True
+        elif self.glossary:
+            if self.glossary.get(src) is not None:
+                self.glossary.remove(src)
+                self.appliedTermsChanged.emit()
+                self.notify.emit("SUCCESS", f"Đã bỏ ghim thuật ngữ: '{src}'")
+                return True
+        return False

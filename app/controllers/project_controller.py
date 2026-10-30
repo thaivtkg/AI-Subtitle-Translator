@@ -270,15 +270,26 @@ class ProjectController(QObject):
             self.archetypeChanged.emit()
             self.markDirty()
 
-    @Slot(str)
-    def dismissAutoTerm(self, source_term: str):
-        entry = self.glossary.get(source_term)
+    @Slot(str, result=bool)
+    def removeGlossaryTerm(self, source_term: str) -> bool:
+        """Xóa hoặc bỏ ghim một thuật ngữ khỏi Glossary (cả AI lẫn thủ công)."""
+        src = (source_term or "").strip()
+        if not src:
+            return False
+        entry = self.glossary.get(src)
         if entry is not None:
             if getattr(entry, "is_auto", False):
-                self.dismissed_auto_terms.add(source_term)
-            self.glossary.remove(source_term)
+                self.dismissed_auto_terms.add(src)
+            self.glossary.remove(src)
             self.glossaryChanged.emit()
             self.markDirty()
+            self.notify.emit("SUCCESS", f"Đã bỏ ghim thuật ngữ: '{src}'")
+            return True
+        return False
+
+    @Slot(str)
+    def dismissAutoTerm(self, source_term: str):
+        self.removeGlossaryTerm(source_term)
 
     @Slot(str, str, str, result=bool)
     @Slot(str, str, result=bool)

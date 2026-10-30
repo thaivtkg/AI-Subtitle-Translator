@@ -899,7 +899,7 @@ Item {
                     implicitWidth: termChipRow.implicitWidth + 20
                     radius: 13
                     color: modelData.is_glossary ? Qt.rgba(0.94, 0.99, 0.96, 0.95) : (chipMouse.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.98) : Qt.rgba(1.0, 1.0, 1.0, 0.92))
-                    border.color: modelData.is_glossary ? "#10B981" : (chipMouse.containsMouse ? "#2563EB" : Qt.rgba(1.0, 1.0, 1.0, 0.95))
+                    border.color: modelData.is_glossary ? (chipMouse.containsMouse ? "#EF4444" : "#10B981") : (chipMouse.containsMouse ? "#2563EB" : Qt.rgba(1.0, 1.0, 1.0, 0.95))
                     border.width: 1.5
 
                     RowLayout {
@@ -938,8 +938,8 @@ Item {
                         }
 
                         Text {
-                            text: "✓"
-                            color: "#10B981"
+                            text: (modelData.is_glossary && chipMouse.containsMouse) ? "✕" : "✓"
+                            color: (modelData.is_glossary && chipMouse.containsMouse) ? "#EF4444" : "#10B981"
                             font.pixelSize: 11
                             font.bold: true
                             visible: modelData.is_glossary
@@ -969,12 +969,16 @@ Item {
                         id: chipMouse
                         anchors.fill: parent
                         hoverEnabled: true
-                        cursorShape: modelData.is_glossary ? Qt.ArrowCursor : Qt.PointingHandCursor
+                        cursorShape: Qt.PointingHandCursor
                         ToolTip.visible: containsMouse
-                        ToolTip.text: modelData.is_glossary ? "Đã lưu vào Thuật ngữ dự án" : "1-Click để ghim vĩnh viễn vào Thuật ngữ dự án"
+                        ToolTip.text: modelData.is_glossary ? "Nhấp để bỏ ghim khỏi Thuật ngữ dự án" : "1-Click để ghim vĩnh viễn vào Thuật ngữ dự án"
                         onClicked: {
-                            if (!modelData.is_glossary && typeof translationController !== "undefined") {
-                                translationController.pinTermToGlossary(modelData.source, modelData.target)
+                            if (typeof translationController !== "undefined") {
+                                if (modelData.is_glossary) {
+                                    translationController.unpinTermFromGlossary(modelData.source)
+                                } else {
+                                    translationController.pinTermToGlossary(modelData.source, modelData.target)
+                                }
                             }
                         }
                     }

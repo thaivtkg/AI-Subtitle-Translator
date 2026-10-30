@@ -297,3 +297,67 @@ def test_original_updated_signal_isolation_during_streaming():
     assert len(trans_emits) >= 4  # translationUpdated phát đều đặn theo token
 
 
+def test_bi_directional_unpin_architecture():
+    """Kiểm tra cơ chế bỏ ghim hai chiều giữa TranslationWorkspace và ContextInspector."""
+    model = SubtitleModel()
+    model.load_data([
+        {
+            "index": 1,
+            "start_time": "00:00:01,000",
+            "end_time": "00:00:03,000",
+            "original": "妖魔王やっと見つけたわ",
+            "translation": "Cuối cùng ta cũng tìm thấy ngươi rồi Ma Vương",
+            "status": "TRANSLATED",
+            "auto_terms": [
+                {"source": "妖魔王", "target": "Ma vương"},
+                {"source": "やっと", "target": "cuối cùng"}
+            ]
+        }
+    ])
+
+    proj_ctrl = ProjectController(model)
+    tc = TranslationController(model)
+    tc.bind_intelligence(
+        glossary=proj_ctrl.glossary,
+        entities=proj_ctrl.entity_dictionary,
+        translation_memory=proj_ctrl.translation_memory,
+        project_controller=proj_ctrl,
+    )
+
+    tc.loadSubtitle(0)
+    # Ban đầu: cả 2 terms đều là auto_terms (is_glossary = False)
+    terms = tc.currentAppliedTerms
+    assert len(terms) == 2
+    assert terms[0]["source"] == "妖魔王"
+    assert terms[0]["is_glossary"] is False
+
+    # 1. Ghim từ Workspace: pinTermToGlossary
+    pinned = tc.pinTermToGlossary("妖魔王", "Ma vương")
+    assert pinned is True
+    assert any(item["source_term"] == "妖魔王" for item in proj_ctrl.glossaryTerms)
+    terms_pinned = tc.currentAppliedTerms
+    term_ymw = next(t for t in terms_pinned if t["source"] == "妖魔王")
+    assert term_ymw["is_glossary"] is True
+
+    # 2. Bỏ ghim từ Workspace: unpinTermFromGlossary
+    unpinned = tc.unpinTermFromGlossary("妖魔王")
+    assert unpinned is True
+    assert not any(item["source_term"] == "妖魔王" for item in proj_ctrl.glossaryTerms)
+    terms_unpinned = tc.currentAppliedTerms
+    term_ymw_reverted = next(t for t in terms_unpinned if t["source"] == "妖魔王")
+    assert term_ymw_reverted["is_glossary"] is False  # Tự động trở lại trạng thái auto_term chưa ghim
+
+    # 3. Bỏ ghim từ Intelligence Tab (ProjectController.removeGlossaryTerm)
+    tc.pinTermToGlossary("妖魔王", "Ma vương")
+    assert any(item["source_term"] == "妖魔王" for item in proj_ctrl.glossaryTerms)
+    assert next(t for t in tc.currentAppliedTerms if t["source"] == "妖魔王")["is_glossary"] is True
+
+    removed = proj_ctrl.removeGlossaryTerm("妖魔王")
+    assert removed is True
+    assert not any(item["source_term"] == "妖魔王" for item in proj_ctrl.glossaryTerms)
+    # Thẻ chip ở Workspace tự động đồng bộ về is_glossary: False
+    terms_after_intel_remove = tc.currentAppliedTerms
+    assert next(t for t in terms_after_intel_remove if t["source"] == "妖魔王")["is_glossary"] is False
+
+
+

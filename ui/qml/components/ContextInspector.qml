@@ -740,7 +740,7 @@ ColumnLayout {
                                         Rectangle {
                                             id: btnDismissTerm
                                             objectName: "btnDismissTerm_" + modelData.source_term
-                                            visible: modelData.is_auto
+                                            visible: true
                                             implicitWidth: 16
                                             implicitHeight: 16
                                             radius: 8
@@ -761,7 +761,7 @@ ColumnLayout {
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: {
                                                     if (typeof projectController !== "undefined") {
-                                                        projectController.dismissAutoTerm(modelData.source_term)
+                                                        projectController.removeGlossaryTerm(modelData.source_term)
                                                     }
                                                 }
                                             }
