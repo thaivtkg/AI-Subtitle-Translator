@@ -7,6 +7,7 @@ class DeterministicTranslationWorker(QThread):
     progress = Signal(int, str)
     finished = Signal(int, str)
     error = Signal(int, str)
+    termsExtracted = Signal(int, list)
 
     RESPONSES = {
         0: "Nữ chiến binh phép thuật, Pontens!",

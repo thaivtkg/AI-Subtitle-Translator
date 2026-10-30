@@ -146,3 +146,39 @@ def test_context_inspector_geometry_and_padding(harness):
     driver.click("btnOriginCapsule")
     QTest.qWait(50)
     assert harness.project_controller.isJaOrigin == init_is_ja
+
+
+def test_term_alignment_flow_and_extract_button(harness):
+    """Kiểm tra hiển thị nút Tra từ gốc và thẻ chip ánh xạ từ vựng trên TranslationWorkspace."""
+    driver = harness.driver
+    tc = harness.translation_controller
+
+    # Cài đặt dữ liệu cho câu đang chọn: có original và translation nhưng chưa có auto_terms
+    subtitles = harness.model.get_all_data()
+    subtitles[0]["original"] = "妖魔王やっと見つけたわ"
+    subtitles[0]["translation"] = "Cuối cùng ta cũng tìm thấy ngươi rồi Ma Vương"
+    subtitles[0]["status"] = "TRANSLATED"
+    tc.loadSubtitle(0)
+    QTest.qWait(50)
+
+    # 1. Nút btnExtractTerms xuất hiện vì câu đã dịch sẵn nhưng chưa có auto_terms
+    btn_extract = driver.find("btnExtractTerms")
+    assert btn_extract is not None
+    assert btn_extract.property("visible") is True
+
+    # 2. Gán auto_terms cho câu 0 và nạp lại
+    subtitles[0]["auto_terms"] = [{"source": "妖魔王", "target": "ác quỷ"}]
+    tc.loadSubtitle(0)
+    QTest.qWait(50)
+
+    # Nút btnExtractTerms ẩn đi, termAlignmentFlow hiển thị chip
+    assert btn_extract.property("visible") is False
+    flow = driver.find("termAlignmentFlow")
+    assert flow is not None
+    assert flow.property("visible") is True
+
+    # 3. Ghim thuật ngữ qua 1-click
+    assert tc.currentAppliedTerms[0]["is_glossary"] is False
+    ok = tc.pinTermToGlossary("妖魔王", "ác quỷ")
+    assert ok is True
+    assert tc.currentAppliedTerms[0]["is_glossary"] is True

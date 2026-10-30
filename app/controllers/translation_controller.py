@@ -37,6 +37,7 @@ class TranslationController(QObject):
         self._worker_factory = worker_factory or TranslationWorker
         self.worker = None
         self.alt_worker = None
+        self._extract_worker = None
         self.hardware_profile = HardwareDetector.get_recommended_profile()
         self._glossary = None
         self._entities = None
@@ -59,6 +60,10 @@ class TranslationController(QObject):
             if hasattr(self.alt_worker, "cancel"):
                 self.alt_worker.cancel()
             self.alt_worker.wait(2000)
+        if self._extract_worker and hasattr(self._extract_worker, "isRunning") and self._extract_worker.isRunning():
+            if hasattr(self._extract_worker, "cancel"):
+                self._extract_worker.cancel()
+            self._extract_worker.wait(2000)
 
     def _emit_qa_status(self, *args):
         self.qaStatusChanged.emit()
@@ -167,20 +172,36 @@ class TranslationController(QObject):
             return []
         terms = []
         seen = set()
+
+        # Ưu tiên 1: Các từ khớp với Glossary và Entity Dictionary (is_glossary: True)
         if self.glossary:
             for hit in self.glossary.match(self._current_original, word_boundary=True):
                 src = hit.source_term
                 tgt = hit.preferred_translation
                 if src.lower() not in seen:
                     seen.add(src.lower())
-                    terms.append({"source": src, "target": tgt})
+                    terms.append({"source": src, "target": tgt, "is_glossary": True})
         if self.entities:
             for hit in self.entities.match(self._current_original, word_boundary=True):
                 src = getattr(hit, "matched_form", "") or getattr(hit, "entity_name", "")
                 tgt = getattr(hit, "canonical_translation", "")
                 if src and src.lower() not in seen:
                     seen.add(src.lower())
-                    terms.append({"source": src, "target": tgt})
+                    terms.append({"source": src, "target": tgt, "is_glossary": True})
+
+        # Ưu tiên 2: Toàn bộ các từ gốc tự động bóc tách (auto_terms) của câu đang chọn
+        subtitles = self._subtitle_model.get_all_data()
+        if 0 <= self._current_index < len(subtitles):
+            sub = subtitles[self._current_index]
+            auto_terms = sub.get("auto_terms", [])
+            if isinstance(auto_terms, list):
+                for item in auto_terms:
+                    if isinstance(item, dict):
+                        src = (item.get("source") or "").strip()
+                        tgt = (item.get("target") or "").strip()
+                        if src and tgt and src.lower() not in seen:
+                            seen.add(src.lower())
+                            terms.append({"source": src, "target": tgt, "is_glossary": False})
         return terms
 
     @Slot(int)
@@ -326,10 +347,20 @@ class TranslationController(QObject):
             self.worker = self._worker_factory(index, prompt, self.hardware_profile) if not hasattr(self._worker_factory, "create_worker") else self._worker_factory.create_worker(index, prompt, self.hardware_profile)
         else:
             self.worker = self._worker_factory(index, prompt, self.hardware_profile)
+        if hasattr(self.worker, "termsExtracted"):
+            self.worker.termsExtracted.connect(self.on_terms_extracted)
         self.worker.progress.connect(self.on_progress)
         self.worker.finished.connect(self.on_finished)
         self.worker.error.connect(self.on_error)
         self.worker.start()
+
+    @Slot(int, list)
+    def on_terms_extracted(self, index, terms):
+        subtitles = self._subtitle_model.get_all_data()
+        if 0 <= index < len(subtitles):
+            subtitles[index]["auto_terms"] = terms
+            if index == self._current_index:
+                self.appliedTermsChanged.emit()
 
     @Slot(int, str)
     def on_progress(self, index, text):
@@ -374,6 +405,12 @@ class TranslationController(QObject):
             self._set_engine_status("Error")
             self.translationFailed.emit(index, message)
             return
+
+        # Lưu trữ auto_terms từ worker nếu chưa lưu qua signal
+        if hasattr(self.worker, "extracted_terms") and self.worker.extracted_terms:
+            subtitles = self._subtitle_model.get_all_data()
+            if 0 <= index < len(subtitles) and not subtitles[index].get("auto_terms"):
+                subtitles[index]["auto_terms"] = self.worker.extracted_terms
 
         self._subtitle_model.update_translation(index, clean_text, "TRANSLATED")
         self.appliedTermsChanged.emit()
@@ -445,6 +482,9 @@ class TranslationController(QObject):
     @staticmethod
     def _clean_translated_text(text: str) -> str:
         clean_text = (text or "").strip()
+        m = re.search(r'\[(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC)\]', clean_text, re.IGNORECASE)
+        if m:
+            clean_text = clean_text[:m.start()].strip()
         clean_text = re.sub(r'^\[Line \d+\]:\s*', '', clean_text, flags=re.IGNORECASE).strip()
         clean_text = re.sub(r'(?i)^\s*[*_]*(?:Translation|Bản dịch|Direct translation)[:*_]*\s*', '', clean_text).strip()
         clean_text = re.split(
@@ -544,3 +584,87 @@ class TranslationController(QObject):
                 self._status = "EDITED"
                 self.translationUpdated.emit(text)
                 self.statusChanged.emit(self._status)
+
+    @Slot(int)
+    def extractTermsForSubtitle(self, index: int):
+        """Dành cho câu đã có bản dịch sẵn (như khi mở file cũ): chạy phân tích nhanh để bóc tách từ gốc."""
+        subtitles = self._subtitle_model.get_all_data()
+        if not (0 <= index < len(subtitles)):
+            return
+        sub = subtitles[index]
+        original = (sub.get("original") or "").strip()
+        translation = (sub.get("translation") or "").strip()
+        if not original or not translation:
+            return
+
+        # Nếu câu đã có sẵn auto_terms, kích hoạt hiển thị ngay
+        if sub.get("auto_terms"):
+            self.appliedTermsChanged.emit()
+            return
+
+        # Kiểm tra nếu translation chứa sẵn khối [TỪ GỐC]
+        inline_terms = TranslationWorker.extract_auto_terms(translation)
+        if inline_terms:
+            sub["auto_terms"] = inline_terms
+            self.appliedTermsChanged.emit()
+            return
+
+        source_lang = "Japanese" if getattr(self._project_controller, "isJaOrigin", False) else "English"
+        target_lang = "Vietnamese"
+        model_name = (self.hardware_profile.get("model_name") or "").lower()
+        model_family = "gemma" if "gemma" in model_name else ("llama" if "llama" in model_name else "qwen")
+
+        prompt = PromptBuilder.build_alignment(
+            source_sub=original,
+            translated_sub=translation,
+            source_lang=source_lang,
+            target_lang=target_lang,
+            model_family=model_family,
+        )
+
+        profile = dict(self.hardware_profile)
+        profile["temperature"] = 0.1
+
+        if hasattr(self._worker_factory, "create_worker"):
+            worker = self._worker_factory.create_worker(index, prompt, profile)
+        else:
+            worker = self._worker_factory(index, prompt, profile)
+
+        self._extract_worker = worker
+
+        def _on_extracted(idx, text):
+            terms = getattr(worker, "extracted_terms", None)
+            if not terms:
+                terms = TranslationWorker.extract_auto_terms(text)
+            if not terms and text:
+                terms = TranslationWorker.extract_auto_terms("[TỪ GỐC]\n" + text)
+            if 0 <= idx < len(subtitles) and terms:
+                subtitles[idx]["auto_terms"] = terms
+                if idx == self._current_index:
+                    self.appliedTermsChanged.emit()
+
+        if hasattr(worker, "termsExtracted"):
+            worker.termsExtracted.connect(lambda idx, t: _on_extracted(idx, ""))
+        worker.finished.connect(_on_extracted)
+        worker.start()
+
+    @Slot(str, str, result=bool)
+    def pinTermToGlossary(self, source_term: str, target_term: str) -> bool:
+        """Ghim thuật ngữ vào Glossary của dự án vĩnh viễn (1-click)."""
+        src = (source_term or "").strip()
+        tgt = (target_term or "").strip()
+        if not src or not tgt:
+            return False
+
+        if self._project_controller and hasattr(self._project_controller, "addManualGlossaryTerm"):
+            ok = self._project_controller.addManualGlossaryTerm(src, tgt)
+            if ok:
+                self.appliedTermsChanged.emit()
+                self.notify.emit("SUCCESS", f"Đã ghim '{src}' ➔ '{tgt}' vào Thuật ngữ dự án.")
+                return True
+        elif self.glossary:
+            self.glossary.add(src, tgt, (), is_auto=False)
+            self.appliedTermsChanged.emit()
+            self.notify.emit("SUCCESS", f"Đã ghim '{src}' ➔ '{tgt}' vào Thuật ngữ.")
+            return True
+        return False

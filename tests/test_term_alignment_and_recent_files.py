@@ -101,3 +101,110 @@ def test_recent_files_settings_and_controller(tmp_path):
     # Test openRecentFile
     ctrl.openRecentFile(str(f1))
     assert ctrl.originalSourcePath == str(f1)
+from app.llm.worker import TranslationWorker
+
+
+def test_worker_auto_terms_extraction_and_visible_shield():
+    raw_output = (
+        "Cuối cùng ta cũng tìm thấy ngươi rồi Ma Vương!\n\n"
+        "[TỪ GỐC]\n"
+        "- 妖魔王 -> Ma Vương\n"
+        "* やっと ➔ cuối cùng\n"
+        "- 'セーラーエンジェル' -> \"Chiến Binh Thiên Sứ\"\n"
+    )
+
+    # 1. Bóc tách từ vựng
+    terms = TranslationWorker.extract_auto_terms(raw_output)
+    assert len(terms) == 3
+    assert terms[0] == {"source": "妖魔王", "target": "Ma Vương"}
+    assert terms[1] == {"source": "やっと", "target": "cuối cùng"}
+    assert terms[2] == {"source": "セーラーエンジェル", "target": "Chiến Binh Thiên Sứ"}
+
+    # 2. Lá chắn hiển thị: Cắt sạch [TỪ GỐC] khỏi ô nhập liệu
+    clean_display = TranslationWorker._visible_translation(raw_output)
+    assert clean_display == "Cuối cùng ta cũng tìm thấy ngươi rồi Ma Vương!"
+
+    # 3. Lá chắn token dở dang khi đang stream
+    streaming_chunk_1 = "Cuối cùng ta cũng tìm thấy ngươi rồi Ma Vương!\n[TỪ"
+    assert TranslationWorker._visible_translation(streaming_chunk_1) == "Cuối cùng ta cũng tìm thấy ngươi rồi Ma Vương!"
+
+    streaming_chunk_2 = "Cuối cùng ta cũng tìm thấy ngươi rồi Ma Vương!\n[từ gốc"
+    assert TranslationWorker._visible_translation(streaming_chunk_2) == "Cuối cùng ta cũng tìm thấy ngươi rồi Ma Vương!"
+
+
+def test_auto_terms_priority_and_pin_to_glossary():
+    model = SubtitleModel()
+    model.load_data([
+        {
+            "index": 1,
+            "start_time": "00:00:01,000",
+            "end_time": "00:00:03,000",
+            "original": "妖魔王やっと見つけたわ",
+            "translation": "Cuối cùng ta cũng tìm thấy ngươi rồi Ma Vương",
+            "status": "TRANSLATED",
+            "auto_terms": [
+                {"source": "妖魔王", "target": "ác quỷ"},
+                {"source": "やっと", "target": "cuối cùng"}
+            ]
+        }
+    ])
+
+    proj_ctrl = ProjectController(model)
+    tc = TranslationController(model)
+    tc.bind_intelligence(
+        glossary=proj_ctrl.glossary,
+        entities=proj_ctrl.entity_dictionary,
+        translation_memory=proj_ctrl.translation_memory,
+        project_controller=proj_ctrl,
+    )
+
+    tc.loadSubtitle(0)
+    terms = tc.currentAppliedTerms
+    assert len(terms) == 2
+    # Ban đầu là auto_terms: is_glossary = False
+    assert terms[0]["source"] == "妖魔王"
+    assert terms[0]["target"] == "ác quỷ"
+    assert terms[0]["is_glossary"] is False
+
+    # Người dùng nhấn 📌 để ghim vào Glossary vĩnh viễn
+    pinned = tc.pinTermToGlossary("妖魔王", "ác quỷ")
+    assert pinned is True
+    assert proj_ctrl.glossary.get("妖魔王") is not None
+    assert proj_ctrl.glossary.get("妖魔王").preferred_translation == "ác quỷ"
+
+    # Sau khi ghim, term chuyển sang is_glossary = True và không bị trùng lặp
+    terms_after = tc.currentAppliedTerms
+    assert len(terms_after) == 2
+    hit_pinned = next(t for t in terms_after if t["source"] == "妖魔王")
+    assert hit_pinned["is_glossary"] is True
+
+
+def test_extract_terms_for_subtitle_on_demand():
+    model = SubtitleModel()
+    model.load_data([
+        {
+            "index": 1,
+            "start_time": "00:00:01,000",
+            "end_time": "00:00:03,000",
+            "original": "妖魔王",
+            "translation": "Ma Vương\n[TỪ GỐC]\n- 妖魔王 -> Ma Vương",
+            "status": "ACCEPTED",
+        }
+    ])
+
+    proj_ctrl = ProjectController(model)
+    tc = TranslationController(model)
+    tc.bind_intelligence(
+        glossary=proj_ctrl.glossary,
+        entities=proj_ctrl.entity_dictionary,
+        translation_memory=proj_ctrl.translation_memory,
+        project_controller=proj_ctrl,
+    )
+
+    # Chạy trích xuất cho câu đã có sẵn
+    tc.extractTermsForSubtitle(0)
+    tc.loadSubtitle(0)
+    terms = tc.currentAppliedTerms
+    assert len(terms) == 1
+    assert terms[0]["source"] == "妖魔王"
+    assert terms[0]["target"] == "Ma Vương"

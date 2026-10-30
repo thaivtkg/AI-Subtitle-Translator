@@ -105,7 +105,11 @@ def build_translation_prompt(
     if style_instruction and style_instruction.strip():
         user_prompt += f"STYLE INSTRUCTION:\n{style_instruction.strip()}\n\n"
 
-    user_prompt += f"Output ONLY the final {target_lang} translation for the current subtitle directly. No extra words."
+    user_prompt += (
+        f"Output ONLY the final direct {target_lang} translation on the first line.\n"
+        "Then, on a new line, write '[TỪ GỐC]' and list each key source word/phrase and its translated meaning like:\n"
+        "- <từ gốc> -> <nghĩa tương ứng>"
+    )
 
     # 6. MODEL-SPECIFIC CHAT TEMPLATE WRAPPER
     return format_chat(system_prompt, user_prompt, model_family)
@@ -132,6 +136,29 @@ def format_chat(system_prompt: str, user_prompt: str, model_family: str = "qwen"
         )
 
 
+def build_alignment_prompt(
+    source_sub: str,
+    translated_sub: str,
+    source_lang: str = "Japanese",
+    target_lang: str = "Vietnamese",
+    model_family: str = "qwen",
+) -> str:
+    system_prompt = (
+        f"You are an expert bilingual localization specialist aligning {source_lang} and {target_lang}.\n"
+        "Extract key corresponding words/phrases between the source and the translation.\n"
+        "Output ONLY in the specified format with no extra explanation."
+    )
+    user_prompt = (
+        f"SOURCE ({source_lang}):\n{source_sub}\n\n"
+        f"TRANSLATION ({target_lang}):\n{translated_sub}\n\n"
+        "List each key source word/phrase and its translated meaning under '[TỪ GỐC]':\n"
+        "[TỪ GỐC]\n"
+        "- <source term> -> <translated term>"
+    )
+    return format_chat(system_prompt, user_prompt, model_family)
+
+
 class PromptBuilder:
     build = staticmethod(build_translation_prompt)
+    build_alignment = staticmethod(build_alignment_prompt)
     format_chat = staticmethod(format_chat)

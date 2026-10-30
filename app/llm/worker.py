@@ -1,4 +1,5 @@
 import os
+import re
 from PySide6.QtCore import QThread, Signal
 from app.llm.model_manager import ModelManager
 
@@ -6,6 +7,7 @@ class TranslationWorker(QThread):
     progress = Signal(int, str)
     finished = Signal(int, str)
     error = Signal(int, str)
+    termsExtracted = Signal(int, list)
 
     def __init__(self, target_index, prompt, profile):
         super().__init__()
@@ -14,23 +16,70 @@ class TranslationWorker(QThread):
         self.profile = profile
         self.model_path = profile.get("model_path") or os.path.join("models", profile.get("model_name", "qwen2.5-7b-instruct-q4_k_m.gguf"))
         self._is_cancelled = False
+        self.extracted_terms = []
 
     def cancel(self):
         self._is_cancelled = True
 
     @staticmethod
+    def extract_auto_terms(raw_text):
+        """Bóc tách cặp từ gốc và nghĩa tiếng Việt từ khối [TỪ GỐC]."""
+        if not raw_text:
+            return []
+        match = re.search(r'\[(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC)\]', raw_text, re.IGNORECASE)
+        if not match:
+            return []
+        terms_block = raw_text[match.end():]
+        terms = []
+        seen = set()
+        for line in terms_block.strip().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            line = re.sub(r'^(?:[-*•]|\d+\.)\s*', '', line).strip()
+            parts = re.split(r'\s*(?:->|➔|=>|:|=)\s*', line, maxsplit=1)
+            if len(parts) == 2:
+                src = parts[0].strip().strip('"`\'')
+                tgt = parts[1].strip().strip('"`\'')
+                if src and tgt and src.lower() not in seen:
+                    seen.add(src.lower())
+                    terms.append({"source": src, "target": tgt})
+        return terms
+
+    @staticmethod
     def _visible_translation(raw_text):
-        """Return only translated text; keep model reasoning out of the UI."""
-        if "</think>" in raw_text:
-            raw_text = raw_text.split("</think>", 1)[1]
-        elif "<think>" in raw_text:
+        """Return only translated text; keep model reasoning and [TỪ GỐC] out of the UI."""
+        if not raw_text:
+            return ""
+        text = raw_text
+        if "</think>" in text:
+            text = text.split("</think>", 1)[1]
+        elif "<think>" in text:
             return ""
         else:
             for size in range(len("<think>") - 1, 0, -1):
-                if raw_text.endswith("<think>"[:size]):
-                    return raw_text[:-size].strip()
+                if text.endswith("<think>"[:size]):
+                    text = text[:-size].strip()
+                    break
 
-        return raw_text.strip()
+        # Cắt bỏ khối [TỪ GỐC] và nội dung phía sau
+        m = re.search(r'\[(?:TỪ GỐC|TU GOC|Từ gốc|TU_GOC)\]', text, re.IGNORECASE)
+        if m:
+            text = text[:m.start()].strip()
+        else:
+            # Lá chắn chống rò rỉ token dở dang khi stream [TỪ GỐC]
+            prefixes = [
+                "[từ gốc", "[từ gố", "[từ g", "[từ ", "[từ",
+                "[tu goc", "[tu go", "[tu g", "[tu ", "[tu",
+            ]
+            text_lower = text.lower().rstrip()
+            for p in prefixes:
+                if text_lower.endswith(p):
+                    cut_len = len(text_lower) - text_lower.rfind(p)
+                    text = text.rstrip()[:-cut_len].strip()
+                    break
+
+        return text.strip()
 
     def run(self):
         try:
@@ -65,19 +114,24 @@ class TranslationWorker(QThread):
                 chunk = output["choices"][0]["text"] if isinstance(output, dict) else output
                 raw_text += chunk
                 
-                # --- 3. ẨN THINK, CHỈ STREAM PHẦN DỊCH ---
+                # --- 3. ẨN THINK VÀ [TỪ GỐC], CHỈ STREAM PHẦN DỊCH ---
                 display_text = self._visible_translation(raw_text)
                 
                 if display_text:
                     self.progress.emit(self.target_index, display_text)
                 
             final_clean = self._visible_translation(raw_text)
+            auto_terms = self.extract_auto_terms(raw_text)
+            self.extracted_terms = auto_terms
             print(
                 f"[TRANSLATION_FINISH] target={self.target_index} "
                 f"raw_len={len(raw_text)} clean_len={len(final_clean)} "
+                f"terms_count={len(auto_terms)} "
                 f"clean_text={final_clean!a}",
                 flush=True,
             )
+            if auto_terms:
+                self.termsExtracted.emit(self.target_index, auto_terms)
             self.finished.emit(self.target_index, final_clean)
             
         except Exception as e:
